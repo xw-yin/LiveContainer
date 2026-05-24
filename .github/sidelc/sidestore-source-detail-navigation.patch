@@ -1,5 +1,5 @@
 diff --git a/AltStore/App Detail/AppViewController.swift b/AltStore/App Detail/AppViewController.swift
-index 496c04d..c3115ee 100644
+index 496c04d..767610f 100644
 --- a/AltStore/App Detail/AppViewController.swift	
 +++ b/AltStore/App Detail/AppViewController.swift	
 @@ -65,6 +65,11 @@ final class AppViewController: UIViewController
@@ -85,7 +85,18 @@ index 496c04d..c3115ee 100644
      }
      
      func showNavigationBar()
-@@ -472,8 +461,9 @@ private extension AppViewController
+@@ -462,18 +451,18 @@ private extension AppViewController
+         if isHidden
+         {
+             barAppearance.configureWithTransparentBackground()
+-            barAppearance.ignoresUserInteraction = true
+         }
+         else
+         {
+             barAppearance.configureWithDefaultBackground()
+-            barAppearance.ignoresUserInteraction = false
+         }
++        barAppearance.ignoresUserInteraction = false
          
          barAppearance.titleTextAttributes = [.foregroundColor: UIColor.clear]
          
@@ -96,7 +107,7 @@ index 496c04d..c3115ee 100644
          
          self.navigationItem.standardAppearance = barAppearance
          self.navigationItem.scrollEdgeAppearance = barAppearance
-@@ -532,7 +522,7 @@ private extension AppViewController
+@@ -532,7 +521,7 @@ private extension AppViewController
  
  extension AppViewController
  {
@@ -106,7 +117,7 @@ index 496c04d..c3115ee 100644
          self.navigationController?.popViewController(animated: true)
      }
 diff --git a/AltStore/Components/HeaderContentViewController.swift b/AltStore/Components/HeaderContentViewController.swift
-index cc57393..3e12906 100644
+index cc57393..4863621 100644
 --- a/AltStore/Components/HeaderContentViewController.swift
 +++ b/AltStore/Components/HeaderContentViewController.swift
 @@ -151,8 +151,10 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
@@ -201,7 +212,22 @@ index cc57393..3e12906 100644
      
      //MARK: UIAdaptivePresentationControllerDelegate
      
-@@ -562,8 +546,8 @@ private extension HeaderContentViewController
+@@ -537,13 +521,12 @@ private extension HeaderContentViewController
+         if isHidden
+         {
+             barAppearance.configureWithTransparentBackground()
+-            barAppearance.ignoresUserInteraction = true
+         }
+         else
+         {
+             barAppearance.configureWithDefaultBackground()
+-            barAppearance.ignoresUserInteraction = false
+         }
++        barAppearance.ignoresUserInteraction = false
+         
+         barAppearance.titleTextAttributes = [.foregroundColor: UIColor.clear]
+         
+@@ -562,8 +545,8 @@ private extension HeaderContentViewController
              return tintColor
          }
          
