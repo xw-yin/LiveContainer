@@ -1,3 +1,110 @@
+diff --git a/AltStore/App Detail/AppViewController.swift b/AltStore/App Detail/AppViewController.swift
+index 496c04d..c3115ee 100644
+--- a/AltStore/App Detail/AppViewController.swift	
++++ b/AltStore/App Detail/AppViewController.swift	
+@@ -65,6 +65,11 @@ final class AppViewController: UIViewController
+                         
+         self.navigationBarTitleView.sizeToFit()
+         self.navigationItem.titleView = self.navigationBarTitleView
++
++        let backImage = UIImage(systemName: "chevron.backward", withConfiguration: UIImage.SymbolConfiguration(weight: .semibold))
++        let backBarButtonItem = UIBarButtonItem(image: backImage, style: .plain, target: self, action: #selector(Self.popViewController(_:)))
++        self.navigationItem.leftBarButtonItem = backBarButtonItem
++        self.navigationItem.rightBarButtonItem = nil
+         
+         // spacing in storyboard wasn't working, so had to do programatically
+         if let stackView = self.navigationBarTitleView as? UIStackView {
+@@ -104,6 +109,7 @@ final class AppViewController: UIViewController
+         
+         self.bannerView.button.addTarget(self, action: #selector(AppViewController.performAppAction(_:)), for: .primaryActionTriggered)
+         
++        self.backButtonContainerView.isHidden = true
+         self.backButtonContainerView.tintColor = self.app.tintColor
+         
+         self.navigationBarDownloadButton.tintColor = self.app.tintColor
+@@ -231,15 +237,11 @@ final class AppViewController: UIViewController
+         let inset = 12 as CGFloat
+         let padding = 20 as CGFloat
+         
+-        let backButtonSize = self.backButton.sizeThatFits(CGSize(width: 1000, height: 1000))
+-        var backButtonFrame = CGRect(x: inset, y: statusBarHeight,
+-                                     width: backButtonSize.width + 20, height: backButtonSize.height + 20)
+-        
+         var headerFrame = CGRect(x: inset, y: 0, width: self.view.bounds.width - inset * 2, height: self.bannerView.bounds.height)
+         var contentFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height)
+         var backgroundIconFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.width)
+         
+-        let minimumHeaderY = backButtonFrame.maxY + 8
++        let minimumHeaderY = statusBarHeight + (self.navigationController?.navigationBar.bounds.height ?? 44) + 8
+         
+         let minimumContentY = minimumHeaderY + headerFrame.height + padding
+         let maximumContentY = self.view.bounds.width * 0.667
+@@ -275,7 +277,7 @@ final class AppViewController: UIViewController
+         }
+         
+         // Animate navigation bar.
+-        let showNavigationBarThreshold = (maximumContentY - minimumContentY) + backButtonFrame.origin.y
++        let showNavigationBarThreshold = (maximumContentY - minimumContentY) + statusBarHeight
+         if self.scrollView.contentOffset.y > showNavigationBarThreshold
+         {
+             if self.navigationBarAnimator == nil
+@@ -306,13 +308,6 @@ final class AppViewController: UIViewController
+             self.resetNavigationBarAnimation()
+         }
+         
+-        let beginMovingBackButtonThreshold = (maximumContentY - minimumContentY)
+-        if self.scrollView.contentOffset.y > beginMovingBackButtonThreshold
+-        {
+-            let difference = self.scrollView.contentOffset.y - beginMovingBackButtonThreshold
+-            backButtonFrame.origin.y -= difference
+-        }
+-        
+         let pinContentToTopThreshold = maximumContentY
+         if self.scrollView.contentOffset.y > pinContentToTopThreshold
+         {
+@@ -336,12 +331,8 @@ final class AppViewController: UIViewController
+         self.bannerView.frame = headerFrame
+         self.backgroundAppIconImageView.frame = backgroundIconFrame
+         self.backgroundBlurView.frame = backgroundIconFrame
+-        self.backButtonContainerView.frame = backButtonFrame
+-        
+         self.contentViewControllerShadowView.frame = self.contentViewController.view.frame
+         
+-        self.backButtonContainerView.layer.cornerRadius = self.backButtonContainerView.bounds.midY
+-        
+         self.scrollView.verticalScrollIndicatorInsets.top = statusBarHeight
+         
+         // Adjust content offset + size.
+@@ -410,9 +401,7 @@ private extension AppViewController
+         self.navigationBarDownloadButton.progress = self.bannerView.button.progress
+         self.navigationBarDownloadButton.countdownDate = self.bannerView.button.countdownDate
+         
+-        let barButtonItem = self.navigationItem.rightBarButtonItem
+         self.navigationItem.rightBarButtonItem = nil
+-        self.navigationItem.rightBarButtonItem = barButtonItem
+     }
+     
+     func showNavigationBar()
+@@ -472,8 +461,9 @@ private extension AppViewController
+         
+         barAppearance.titleTextAttributes = [.foregroundColor: UIColor.clear]
+         
+-        let tintColor = isHidden ? UIColor.clear : self.app.tintColor ?? .altPrimary
++        let tintColor = self.app.tintColor ?? .altPrimary
+         barAppearance.configureWithTintColor(tintColor)
++        self.navigationItem.leftBarButtonItem?.tintColor = tintColor
+         
+         self.navigationItem.standardAppearance = barAppearance
+         self.navigationItem.scrollEdgeAppearance = barAppearance
+@@ -532,7 +522,7 @@ private extension AppViewController
+ 
+ extension AppViewController
+ {
+-    @IBAction func popViewController(_ sender: UIButton)
++    @IBAction func popViewController(_ sender: Any)
+     {
+         self.navigationController?.popViewController(animated: true)
+     }
 diff --git a/AltStore/Components/HeaderContentViewController.swift b/AltStore/Components/HeaderContentViewController.swift
 index cc57393..3e12906 100644
 --- a/AltStore/Components/HeaderContentViewController.swift
