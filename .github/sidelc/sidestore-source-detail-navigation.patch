@@ -1,0 +1,179 @@
+diff --git a/AltStore/Components/HeaderContentViewController.swift b/AltStore/Components/HeaderContentViewController.swift
+index cc57393..3e12906 100644
+--- a/AltStore/Components/HeaderContentViewController.swift
++++ b/AltStore/Components/HeaderContentViewController.swift
+@@ -151,8 +151,10 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.backButton.image = image
+         self.backButton.tintColor = self.tintColor
+         self.backButton.sizeToFit()
+-        self.backButton.addTarget(self.navigationController, action: #selector(UINavigationController.popViewController(animated:)), for: .primaryActionTriggered)
+-        self.view.addSubview(self.backButton)
++        self.backButton.isHidden = true
++
++        let backBarButtonItem = UIBarButtonItem(image: image, style: .plain, target: self, action: #selector(Self.popViewController))
++        self.navigationItem.leftBarButtonItem = backBarButtonItem
+         
+         
+         // Content View Controller
+@@ -203,15 +205,6 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.navigationBarButton = PillButton(type: .system)
+         self.navigationBarButton.setContentCompressionResistancePriority(UILayoutPriority(rawValue: 9000), for: .horizontal) // Prioritize over title length.
+         
+-        if #available(iOS 26.0, *) {
+-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: self.navigationBarButton)
+-        } else {
+-            // Embed navigationBarButton in container view with Auto Layout to ensure it can automatically update its size.
+-            let buttonContainerView = UIView()
+-            buttonContainerView.addSubview(self.navigationBarButton, pinningEdgesWith: .zero)
+-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: buttonContainerView)
+-        }
+-        
+         NSLayoutConstraint.activate([
+             self.navigationBarIconView.widthAnchor.constraint(equalToConstant: 35),
+             self.navigationBarIconView.heightAnchor.constraint(equalTo: self.navigationBarIconView.widthAnchor)
+@@ -316,16 +309,12 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         let inset = 15 as CGFloat
+         let padding = 20 as CGFloat
+         
+-        let backButtonSize = self.backButton.sizeThatFits(CGSize(width: Double.infinity, height: .infinity))
+-        let largestBackButtonDimension = max(backButtonSize.width, backButtonSize.height) // Enforce 1:1 aspect ratio.
+-        var backButtonFrame = CGRect(x: inset, y: statusBarHeight, width: largestBackButtonDimension, height: largestBackButtonDimension)
+-        
+         var headerFrame = CGRect(x: inset, y: 0, width: self.view.bounds.width - inset * 2, height: self.headerView.bounds.height)
+         var contentFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.height)
+         var backgroundIconFrame = CGRect(x: 0, y: 0, width: self.view.bounds.width, height: self.view.bounds.width)
+         
+         let backButtonPadding = 8.0
+-        let minimumHeaderY = backButtonFrame.maxY + backButtonPadding
++        let minimumHeaderY = statusBarHeight + (self.navigationController?.navigationBar.bounds.height ?? 44) + backButtonPadding
+         
+         let minimumContentHeight = minimumHeaderY + headerFrame.height + padding // Minimum height for header + back button + spacing.
+         let maximumContentY = max(self.view.bounds.width * 0.667, minimumContentHeight) // Initial Y-value of content view.
+@@ -341,7 +330,7 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.updateBlur()
+         
+         // Animate navigation bar.
+-        let showNavigationBarThreshold = (maximumContentY - minimumContentHeight) + backButtonFrame.origin.y
++        let showNavigationBarThreshold = (maximumContentY - minimumContentHeight) + statusBarHeight
+         if self.scrollView.contentOffset.y > showNavigationBarThreshold
+         {
+             if self.navigationBarAnimator == nil
+@@ -372,13 +361,6 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+             self.resetNavigationBarAnimation()
+         }
+         
+-        let beginMovingBackButtonThreshold = (maximumContentY - minimumContentHeight)
+-        if self.scrollView.contentOffset.y > beginMovingBackButtonThreshold
+-        {
+-            let difference = self.scrollView.contentOffset.y - beginMovingBackButtonThreshold
+-            backButtonFrame.origin.y -= difference
+-        }
+-        
+         let pinContentToTopThreshold = maximumContentY
+         if self.scrollView.contentOffset.y > pinContentToTopThreshold
+         {
+@@ -402,9 +384,6 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.contentViewControllerShadowView.frame = contentFrame
+         self.backgroundImageView.frame = backgroundIconFrame
+         
+-        self.backButton.frame = backButtonFrame
+-        self.backButton.layer.cornerRadius = backButtonFrame.height / 2
+-        
+         // Adjust header scroll view content size for paging
+         self.headerView.frame = CGRect(origin: .zero, size: headerFrame.size)
+         self.headerScrollView.frame = headerFrame
+@@ -450,6 +429,11 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self._shouldResetLayout = true
+         self.view.setNeedsLayout()
+     }
++
++    @objc private func popViewController()
++    {
++        self.navigationController?.popViewController(animated: true)
++    }
+     
+     //MARK: UIAdaptivePresentationControllerDelegate
+     
+@@ -562,8 +546,8 @@ private extension HeaderContentViewController
+             return tintColor
+         }
+         
+-        let tintColor = isHidden ? UIColor.clear : dynamicColor
+-        barAppearance.configureWithTintColor(tintColor)
++        barAppearance.configureWithTintColor(dynamicColor)
++        self.navigationItem.leftBarButtonItem?.tintColor = dynamicColor
+         
+         self.navigationItem.standardAppearance = barAppearance
+         self.navigationItem.scrollEdgeAppearance = barAppearance
+diff --git a/AltStore/Sources/SourceDetailViewController.swift b/AltStore/Sources/SourceDetailViewController.swift
+index 89de8d7..4ce6293 100644
+--- a/AltStore/Sources/SourceDetailViewController.swift
++++ b/AltStore/Sources/SourceDetailViewController.swift
+@@ -107,8 +107,6 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView,
+         self.addButton.sizeToFit()
+         self.view.addSubview(self.addButton)
+         
+-        self.navigationBarButton.addTarget(self, action: #selector(SourceDetailViewController.addSource), for: .primaryActionTriggered)
+-        
+         Nuke.loadImage(with: self.source.effectiveIconURL, into: self.navigationBarIconView)
+         Nuke.loadImage(with: self.source.effectiveHeaderImageURL, into: self.backgroundImageView)
+         
+@@ -130,7 +128,8 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView,
+         
+         // Place in top-right corner.
+         let inset = 15.0
+-        self.addButton.center.y = self.backButton.center.y
++        let statusBarHeight = self.view.window?.windowScene?.statusBarManager?.statusBarFrame.height ?? 0
++        self.addButton.center.y = statusBarHeight + (self.navigationController?.navigationBar.bounds.height ?? 44) / 2
+         self.addButton.frame.origin.x = self.view.bounds.width - inset - self.addButton.bounds.width
+         
+         guard self.view.bounds != self.previousBounds else { return }
+@@ -174,7 +173,6 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView,
+         {
+             // Update isIndicatingActivity first to ensure later updates are applied correctly.
+             self.addButton.isIndicatingActivity = self.viewModel.isAddingSource
+-            self.navigationBarButton.isIndicatingActivity = self.viewModel.isAddingSource
+             
+             let title: String
+             
+@@ -188,26 +186,14 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView,
+                 self.navigationBarButton.tintColor = .refreshRed
+                 
+                 self.addButton.isHidden = false
+-                self.navigationBarButton.isHidden = false
+-                
+-                if #available(iOS 16, *)
+-                {
+-                    // Hide REMOVE button in navigation bar.
+-                    self.navigationItem.rightBarButtonItem?.isHidden = true
+-                }
++                self.navigationBarButton.isHidden = true
+                 
+             case false?:
+                 title = NSLocalizedString("ADD", comment: "")
+                 self.navigationBarButton.tintColor = self.source.effectiveTintColor?.adjustedForDisplay ?? .altPrimary
+                 
+                 self.addButton.isHidden = false
+-                self.navigationBarButton.isHidden = false
+-                
+-                if #available(iOS 16, *)
+-                {
+-                    // Show ADD button in navigation bar.
+-                    self.navigationItem.rightBarButtonItem?.isHidden = false
+-                }
++                self.navigationBarButton.isHidden = true
+                 
+             case nil:
+                 title = ""
+@@ -221,11 +207,6 @@ class SourceDetailViewController: HeaderContentViewController<SourceHeaderView,
+                 self.addButton.title = title
+             }
+             
+-            if title != self.navigationBarButton.title(for: .normal) && !self.navigationBarButton.isIndicatingActivity
+-            {
+-                self.navigationBarButton.setTitle(title, for: .normal)
+-            }
+-            
+             self.view.setNeedsLayout()
+         }
+     }
