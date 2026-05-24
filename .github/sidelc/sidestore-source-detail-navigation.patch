@@ -554,6 +554,24 @@ index fc54773..2fd3093 100644
 -        .navigationTitle("")
      }
  }
+diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
+index f61c139..b9e4d1e 100644
+--- a/AltStore/Settings/SettingsViewController.swift
++++ b/AltStore/Settings/SettingsViewController.swift
+@@ -1366,6 +1366,13 @@ class SettingsViewController: UITableViewController
+                 })
+                 
+                 let vc = UIHostingController(rootView: anisetteServersView)
++                let appearance = UINavigationBarAppearance()
++                appearance.configureWithDefaultBackground()
++                appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
++                appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
++                vc.navigationItem.standardAppearance = appearance
++                vc.navigationItem.scrollEdgeAppearance = appearance
++                vc.navigationItem.compactAppearance = appearance
+                 self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
+ 
+             case .vpnConfiguration:
 diff --git a/AltStore/Sources/SourceDetailViewController.swift b/AltStore/Sources/SourceDetailViewController.swift
 index 89de8d7..4ce6293 100644
 --- a/AltStore/Sources/SourceDetailViewController.swift
