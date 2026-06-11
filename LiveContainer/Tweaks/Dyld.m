@@ -23,6 +23,9 @@ typedef struct {
     uint32_t        version;
 } dyld_build_version_t;
 
+static const dyld_platform_t kLCPlatformIOS = 2;
+static const dyld_platform_t kLCPlatformVersionSet = 0xffffffff;
+
 uint32_t lcImageIndex = 0;
 uint32_t appMainImageIndex = 0;
 void* appExecutableHandle = 0;
@@ -43,6 +46,7 @@ uint32_t guestAppSdkVersion = 0;
 uint32_t guestAppSdkVersionSet = 0;
 bool (*orig_dyld_program_sdk_at_least)(void* dyldPtr, dyld_build_version_t version);
 uint32_t (*orig_dyld_get_program_sdk_version)(void* dyldPtr);
+uint64_t (*orig_dyld_get_program_sdk_version_token)(void* dyldPtr);
 
 static void overwriteAppExecutableFileType(void) {
     struct mach_header_64* appImageMachOHeader = (struct mach_header_64*) orig_dyld_get_image_header(appMainImageIndex);
@@ -169,10 +173,10 @@ void saveCachedSymbol(NSString* symbolName, mach_header_u* header, uint64_t offs
 }
 
 bool hook_dyld_program_sdk_at_least(void* dyldApiInstancePtr, dyld_build_version_t version) {
-    // we are targeting ios, so we hard code 2
-    if(version.platform == 0xffffffff){
+    (void)dyldApiInstancePtr;
+    if(version.platform == kLCPlatformVersionSet){
         return version.version <= guestAppSdkVersionSet;
-    } else if (version.platform == 2){
+    } else if(version.platform == kLCPlatformIOS){
         return version.version <= guestAppSdkVersion;
     } else {
         return false;
@@ -180,7 +184,19 @@ bool hook_dyld_program_sdk_at_least(void* dyldApiInstancePtr, dyld_build_version
 }
 
 uint32_t hook_dyld_get_program_sdk_version(void* dyldApiInstancePtr) {
+    (void)dyldApiInstancePtr;
     return guestAppSdkVersion;
+}
+
+uint64_t hook_dyld_get_program_sdk_version_token(void* dyldApiInstancePtr) {
+    (void)dyldApiInstancePtr;
+    dyld_build_version_t token = {
+        .platform = kLCPlatformIOS,
+        .version = guestAppSdkVersion,
+    };
+    uint64_t result = 0;
+    memcpy(&result, &token, sizeof(token));
+    return result;
 }
 
 static bool LCDecodeLdrUnsigned64(uint32_t instruction, uint32_t expectedBaseReg, uint32_t *targetReg, uint32_t *offset) {
@@ -226,18 +242,32 @@ static bool LCDecodeLdrPreIndex64(uint32_t instruction, uint32_t expectedBaseReg
     return true;
 }
 
-static bool LCDecodeMovWideImmediate(uint32_t instruction, uint32_t *targetReg, uint64_t *value) {
-    if((instruction & 0x7F800000) != 0x52800000) {
+static bool LCDecodeMovWideImmediate(uint32_t instruction, uint32_t *targetReg, uint64_t *value, uint32_t *shift, bool *isMovK) {
+    // Ignore sf but require a move-wide immediate opcode: MOVZ (opc=10) or MOVK (opc=11).
+    uint32_t opcode = instruction & 0x7F800000;
+    bool decodedMovZ = opcode == 0x52800000;
+    bool decodedMovK = opcode == 0x72800000;
+    if(!decodedMovZ && !decodedMovK) {
+        return false;
+    }
+
+    uint32_t immediateShift = ((instruction >> 21) & 0x3) * 16;
+    if((instruction & 0x80000000) == 0 && immediateShift >= 32) {
         return false;
     }
 
     uint64_t imm16 = (instruction & 0x1FFFE0) >> 5;
-    uint32_t shift = ((instruction >> 21) & 0x3) * 16;
     if(targetReg) {
         *targetReg = instruction & 0x1F;
     }
     if(value) {
-        *value = imm16 << shift;
+        *value = imm16 << immediateShift;
+    }
+    if(shift) {
+        *shift = immediateShift;
+    }
+    if(isMovK) {
+        *isMovK = decodedMovK;
     }
     return true;
 }
@@ -333,9 +363,20 @@ static void *LCFindDyldApiSlotFromStub(uint32_t *baseAddr, uint32_t scanStart, u
 
         uint32_t immediateReg = 0;
         uint64_t immediateValue = 0;
-        if(LCDecodeMovWideImmediate(instruction, &immediateReg, &immediateValue) && immediateReg != 31) {
-            hasImmediate[immediateReg] = true;
-            immediateByReg[immediateReg] = immediateValue;
+        uint32_t immediateShift = 0;
+        bool isMovK = false;
+        if(LCDecodeMovWideImmediate(instruction, &immediateReg, &immediateValue, &immediateShift, &isMovK) && immediateReg != 31) {
+            if(isMovK) {
+                if(hasImmediate[immediateReg]) {
+                    uint64_t immediateMask = 0xFFFFULL << immediateShift;
+                    immediateByReg[immediateReg] = (immediateByReg[immediateReg] & ~immediateMask) | immediateValue;
+                } else {
+                    hasImmediate[immediateReg] = false;
+                }
+            } else {
+                hasImmediate[immediateReg] = true;
+                immediateByReg[immediateReg] = immediateValue;
+            }
             continue;
         }
 
@@ -481,38 +522,75 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
     return true;
 }
 
+static bool performOptionalHookDyldApi(const char* functionName, uint32_t adrpOffset, void** origFunction, void* hookFunction) {
+    if(!dlsym(RTLD_DEFAULT, functionName)) {
+        return false;
+    }
+    return performHookDyldApi(functionName, adrpOffset, origFunction, hookFunction);
+}
+
 bool initGuestSDKVersionInfo(void) {
     void* dyldBase = getDyldBase();
-    // it seems Apple is constantly changing findVersionSetEquivalent's signature so we directly search sVersionMap instead
-    uint32_t* versionMapPtr = getCachedSymbol(@"__ZN5dyld3L11sVersionMapE", dyldBase);
+    if(!dyldBase) {
+        NSLog(@"[LC] Cannot spoof SDK version: dyld base was not found");
+        return false;
+    }
+
+    NSString *versionMapSymbol = @"__ZN5dyld3L11sVersionMapE";
+    const uint32_t firstVersionSet = 0x07db0901;
+    const uint32_t firstIOSVersion = 0x00050000;
+    uint32_t* versionMapPtr = getCachedSymbol(versionMapSymbol, dyldBase);
+    if(versionMapPtr && (!LCAddressRangeIsReadable(versionMapPtr, sizeof(uint32_t) * 3) ||
+                         versionMapPtr[0] != firstVersionSet ||
+                         versionMapPtr[2] != firstIOSVersion)) {
+        NSLog(@"[LC] Ignoring stale SDK version map cache entry");
+        versionMapPtr = NULL;
+    }
+
     if(!versionMapPtr) {
+        uint64_t offset = 0;
 #if !TARGET_OS_SIMULATOR
         const char* dyldPath = "/usr/lib/dyld";
-        uint64_t offset = LCFindSymbolOffset(dyldPath, "__ZN5dyld3L11sVersionMapE");
+        offset = LCFindSymbolOffset(dyldPath, "__ZN5dyld3L11sVersionMapE");
 #else
         void *result = litehook_find_symbol(dyldBase, "__ZN5dyld3L11sVersionMapE");
-        uint64_t offset = (uint64_t)result - (uint64_t)dyldBase;
+        if(result) {
+            offset = (uint64_t)result - (uint64_t)dyldBase;
+        }
 #endif
-        versionMapPtr = dyldBase + offset;
-        saveCachedSymbol(@"__ZN5dyld3L11sVersionMapE", dyldBase, offset);
+        if(offset == 0) {
+            NSLog(@"[LC] Cannot spoof SDK version: dyld SDK version map symbol was not found");
+            return false;
+        }
+
+        versionMapPtr = (uint32_t *)((uint8_t *)dyldBase + offset);
+        if(!LCAddressRangeIsReadable(versionMapPtr, sizeof(uint32_t) * 3) ||
+           versionMapPtr[0] != firstVersionSet ||
+           versionMapPtr[2] != firstIOSVersion) {
+            NSLog(@"[LC] Cannot spoof SDK version: dyld SDK version map has an unsupported layout");
+            return false;
+        }
+        saveCachedSymbol(versionMapSymbol, dyldBase, offset);
     }
-    
-    assert(versionMapPtr);
-    // however sVersionMap's struct size is also unknown, but we can figure it out
-    // we assume the size is 10K so we won't need to change this line until maybe iOS 40
-    uint32_t* versionMapEnd = versionMapPtr + 2560;
-    // ensure the first is versionSet and the third is iOS version (5.0.0)
-    assert(versionMapPtr[0] == 0x07db0901 && versionMapPtr[2] == 0x00050000);
-    // get struct size. we assume size is smaller then 128. appearently Apple won't have so many platforms
+
+    // sVersionMap's struct size is private, so infer it by finding the next
+    // known version set entry. Keep every probe bounds-checked so newer dyld
+    // layouts disable spoofing instead of crashing the process.
     uint32_t size = 0;
     for(int i = 1; i < 128; ++i) {
-        // find the next versionSet (for 6.0.0)
+        if(!LCAddressRangeIsReadable(&versionMapPtr[i], sizeof(uint32_t))) {
+            NSLog(@"[LC] Cannot spoof SDK version: SDK version map is not readable");
+            return false;
+        }
         if(versionMapPtr[i] == 0x07dc0901) {
             size = i;
             break;
         }
     }
-    assert(size);
+    if(size == 0) {
+        NSLog(@"[LC] Cannot spoof SDK version: SDK version map entry size was not found");
+        return false;
+    }
     
     NSOperatingSystemVersion currentVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
     uint32_t maxVersion = ((uint32_t)currentVersion.majorVersion << 16) | ((uint32_t)currentVersion.minorVersion << 8);
@@ -520,16 +598,25 @@ bool initGuestSDKVersionInfo(void) {
     uint32_t candidateVersion = 0;
     uint32_t candidateVersionEquivalent = 0;
     uint32_t newVersionSetVersion = 0;
+    uint32_t* versionMapEnd = versionMapPtr + 2560;
     for(uint32_t* nowVersionMapItem = versionMapPtr; nowVersionMapItem < versionMapEnd; nowVersionMapItem += size) {
+        if(!LCAddressRangeIsReadable(nowVersionMapItem, sizeof(uint32_t) * 3)) {
+            break;
+        }
         newVersionSetVersion = nowVersionMapItem[2];
-        if (newVersionSetVersion > guestAppSdkVersion) { break; }
+        if(newVersionSetVersion > guestAppSdkVersion) { break; }
         candidateVersion = newVersionSetVersion;
         candidateVersionEquivalent = nowVersionMapItem[0];
         if(newVersionSetVersion >= maxVersion) { break; }
     }
     
-    if (newVersionSetVersion == 0xffffffff && candidateVersion == 0) {
+    if(newVersionSetVersion == 0xffffffff && candidateVersion == 0) {
         candidateVersionEquivalent = newVersionSetVersion;
+    }
+
+    if(candidateVersionEquivalent == 0) {
+        NSLog(@"[LC] Cannot spoof SDK version: no suitable SDK version mapping was found");
+        return false;
     }
 
     guestAppSdkVersionSet = candidateVersionEquivalent;
@@ -586,10 +673,29 @@ void DyldHooksInit(bool hideLiveContainer, bool hookDlopen, uint32_t spoofSDKVer
     
     if(spoofSDKVersion) {
         guestAppSdkVersion = spoofSDKVersion;
-        if(!initGuestSDKVersionInfo() ||
-           !performHookDyldApi("dyld_program_sdk_at_least", 1, (void**)&orig_dyld_program_sdk_at_least, hook_dyld_program_sdk_at_least) ||
-           !performHookDyldApi("dyld_get_program_sdk_version", 0, (void**)&orig_dyld_get_program_sdk_version, hook_dyld_get_program_sdk_version)) {
-            return;
+        bool hasVersionSetMap = initGuestSDKVersionInfo();
+        if(!hasVersionSetMap) {
+            // This only affects dyld's private cross-platform version-set constants.
+            // Concrete iOS SDK checks and token callers can still be spoofed.
+            guestAppSdkVersionSet = 0;
+        }
+
+        bool hookedSdkAtLeast = performHookDyldApi("dyld_program_sdk_at_least", 1, (void**)&orig_dyld_program_sdk_at_least, hook_dyld_program_sdk_at_least);
+        bool hookedSdkVersion = performHookDyldApi("dyld_get_program_sdk_version", 0, (void**)&orig_dyld_get_program_sdk_version, hook_dyld_get_program_sdk_version);
+        if(!hookedSdkAtLeast || !hookedSdkVersion) {
+            if(hookedSdkAtLeast) {
+                void *ignoredOriginal = NULL;
+                performHookDyldApi("dyld_program_sdk_at_least", 1, &ignoredOriginal, orig_dyld_program_sdk_at_least);
+            }
+            if(hookedSdkVersion) {
+                void *ignoredOriginal = NULL;
+                performHookDyldApi("dyld_get_program_sdk_version", 0, &ignoredOriginal, orig_dyld_get_program_sdk_version);
+            }
+            NSLog(@"[LC] SDK version spoofing is unavailable on this iOS version; continuing without it");
+            guestAppSdkVersion = 0;
+            guestAppSdkVersionSet = 0;
+        } else {
+            performOptionalHookDyldApi("dyld_get_program_sdk_version_token", 0, (void**)&orig_dyld_get_program_sdk_version_token, hook_dyld_get_program_sdk_version_token);
         }
     }
     

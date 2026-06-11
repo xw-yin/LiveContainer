@@ -12,23 +12,37 @@ bool LCAddressRangeIsReadable(const void *address, size_t length) {
     }
 
     uintptr_t start = (uintptr_t)address;
-    if(start < 0x4000 || UINTPTR_MAX - start < length - 1) {
-        return false;
-    }
-
-    mach_vm_address_t region = (mach_vm_address_t)start;
-    mach_vm_size_t regionLength = 0;
-    struct vm_region_submap_short_info_64 info;
-    mach_msg_type_number_t infoCount = VM_REGION_SUBMAP_SHORT_INFO_COUNT_64;
-    natural_t depth = 99999;
-    kern_return_t kr = vm_region_recurse_64(mach_task_self(), &region, &regionLength, &depth, (vm_region_recurse_info_t)&info, &infoCount);
-    if(kr != KERN_SUCCESS || !(info.protection & VM_PROT_READ)) {
+    if(start < 0x4000 || length > UINTPTR_MAX - start) {
         return false;
     }
 
     uintptr_t end = start + length;
-    uintptr_t regionEnd = (uintptr_t)region + (uintptr_t)regionLength;
-    return start >= (uintptr_t)region && end <= regionEnd;
+    uintptr_t cursor = start;
+    while(cursor < end) {
+        vm_address_t region = (vm_address_t)cursor;
+        vm_size_t regionLength = 0;
+        struct vm_region_submap_short_info_64 info;
+        mach_msg_type_number_t infoCount = VM_REGION_SUBMAP_SHORT_INFO_COUNT_64;
+        natural_t depth = 0;
+        kern_return_t kr = vm_region_recurse_64(mach_task_self(), &region, &regionLength, &depth, (vm_region_recurse_info_t)&info, &infoCount);
+        if(kr != KERN_SUCCESS || !(info.protection & VM_PROT_READ)) {
+            return false;
+        }
+
+        uintptr_t regionStart = (uintptr_t)region;
+        if(cursor < regionStart || regionLength > UINTPTR_MAX - regionStart) {
+            return false;
+        }
+
+        uintptr_t regionEnd = regionStart + (uintptr_t)regionLength;
+        if(regionEnd <= cursor) {
+            return false;
+        }
+
+        cursor = regionEnd < end ? regionEnd : end;
+    }
+
+    return true;
 }
 
 bool LCReadPointer(const void *address, void **value) {

@@ -1,17 +1,16 @@
 set -eu
 
-rm -rf Payload tmp .zsign_cache dylibify "$scheme.ipa" "$scheme+SideStore.ipa"
+rm -rf Payload tmp .zsign_cache patch_sidestore_executable "$scheme.ipa" "$scheme+SideStore.ipa"
+mkdir -p tmp
 
 # compile local patcher
-clang -o dylibify .github/sidelc/lc_dylibify.c
-chmod +x dylibify
-brew install ldid
+clang -Wall -Wextra -o ./tmp/patch_sidestore_executable ./.github/sidelc/patch_sidestore_executable.c || exit 1
 
 # copy lc to working folder
 cp -R "$archive_path.xcarchive/Products/Applications" Payload
 
 # temporarily move sidestore support framrwork to tmp before zip
-mkdir -p tmp
+
 mv Payload/LiveContainer.app/Frameworks/SideStore.framework ./tmp
 
 zip -r "$scheme.ipa" "Payload" -x "._*" -x ".DS_Store" -x "__MACOSX"
@@ -55,7 +54,7 @@ cd ..
 
 # SideStore
 mv ./tmp/Payload/SideStore.app ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework
-./dylibify ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
+./tmp/patch_sidestore_executable ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore || exit 1
 ldid -S"" ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 cp ./.github/sidelc/LCAppInfo.plist ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/
 

@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <mach/mach.h>
 #include <mach-o/loader.h>
 #include <objc/runtime.h>

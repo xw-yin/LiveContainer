@@ -115,12 +115,33 @@ static CFBundleRef hook_CFBundleGetMainBundle(void) {
     return gOverriddenMainCFBundle;
 }
 
-bool writePointerWithProtection(void **address, void *value, const char *name) {
+static bool getMemoryProtection(const void *address, vm_prot_t *protection) {
+    if(!address || !protection) {
+        return false;
+    }
+
+    vm_address_t region = (vm_address_t)address;
+    vm_size_t regionLength = 0;
+    struct vm_region_submap_short_info_64 info;
+    mach_msg_type_number_t infoCount = VM_REGION_SUBMAP_SHORT_INFO_COUNT_64;
+    natural_t depth = 0;
+    kern_return_t kr = vm_region_recurse_64(mach_task_self(), &region, &regionLength, &depth, (vm_region_recurse_info_t)&info, &infoCount);
+    if(kr != KERN_SUCCESS || (uintptr_t)address < (uintptr_t)region || regionLength == 0) {
+        return false;
+    }
+
+    *protection = info.protection;
+    return true;
+}
+
+static bool writePointerWithProtection(void **address, void *value, const char *name) {
     if(!LCAddressRangeIsReadable(address, sizeof(void *))) {
         NSLog(@"[LC] Cannot overwrite %s: pointer storage is not readable", name);
         return false;
     }
 
+    vm_prot_t originalProtection = 0;
+    bool hasOriginalProtection = getMemoryProtection(address, &originalProtection);
     kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)address, sizeof(void *), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
     if(ret != KERN_SUCCESS) {
         if(!os_tpro_is_supported()) {
@@ -132,7 +153,12 @@ bool writePointerWithProtection(void **address, void *value, const char *name) {
 
     *address = value;
 
-    if(ret != KERN_SUCCESS) {
+    if(ret == KERN_SUCCESS && hasOriginalProtection) {
+        kern_return_t restoreRet = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)address, sizeof(void *), false, originalProtection);
+        if(restoreRet != KERN_SUCCESS) {
+            NSLog(@"[LC] Failed to restore pointer storage protection for %s: %d", name, restoreRet);
+        }
+    } else if(ret != KERN_SUCCESS) {
         os_thread_self_restrict_tpro_to_ro();
     }
 
@@ -220,47 +246,85 @@ bool overwriteMainCFBundle(void) {
 }
 
 bool overwriteMainNSBundle(NSBundle *newBundle) {
-    NSString *oldPath = NSBundle.mainBundle.executablePath;
-    uint32_t *mainBundleImpl = (uint32_t *)method_getImplementation(class_getClassMethod(NSBundle.class, @selector(mainBundle)));
+    NSBundle *oldBundle = NSBundle.mainBundle;
+    Method mainBundleMethod = class_getClassMethod(NSBundle.class, @selector(mainBundle));
+    if(!newBundle || !oldBundle || !mainBundleMethod) {
+        return false;
+    }
 
-    for (int i = 0; i < 20; i++) {
-        void **_MergedGlobals = NULL;
-        for (int j = 1; j <= 4; j++) {
-            _MergedGlobals = (void **)aarch64_emulate_adrp_add(mainBundleImpl[i], mainBundleImpl[i+j], (uint64_t)&mainBundleImpl[i]);
-            if (_MergedGlobals) break;
+    uint32_t *mainBundleImpl = (uint32_t *)method_getImplementation(mainBundleMethod);
+    if(!LCAddressRangeIsReadable(mainBundleImpl, sizeof(uint32_t))) {
+        NSLog(@"[LC] Cannot overwrite NSBundle.mainBundle: implementation is not readable");
+        return false;
+    }
+
+    const int instructionScanCount = 20;
+    for(int i = 0; i < instructionScanCount; i++) {
+        if(!LCAddressRangeIsReadable(&mainBundleImpl[i], sizeof(uint32_t))) {
+            break;
         }
 
-        if (!_MergedGlobals) continue;
+        void **mergedGlobals = NULL;
+        for(int j = 1; j <= 4 && i + j < instructionScanCount; j++) {
+            if(!LCAddressRangeIsReadable(&mainBundleImpl[i + j], sizeof(uint32_t))) {
+                break;
+            }
 
-        // Scan the next few instructions for an ldur instruction (which means we need to subtract 4)
-        bool uses_ldur = false;
-        for (int k = 1; k <= 6; k++) {
-            if ((mainBundleImpl[i+k] & 0xFF000000) == 0xF8000000) {
-                uses_ldur = true;
+            mergedGlobals = (void **)aarch64_emulate_adrp_add(mainBundleImpl[i], mainBundleImpl[i + j], (uint64_t)&mainBundleImpl[i]);
+            if(mergedGlobals) {
                 break;
             }
         }
 
-        if (uses_ldur) {
-            uint64_t ptr = (uint64_t)_MergedGlobals - 4;
-            _MergedGlobals = (void **)ptr;
+        if(!mergedGlobals) {
+            continue;
         }
 
-        if(!LCAddressRangeIsReadable(_MergedGlobals, sizeof(void *) * 20)) continue;
-
-        for (int mgIdx = 0; mgIdx < 20; mgIdx++) {
-            if (_MergedGlobals[mgIdx] == (__bridge void *)NSBundle.mainBundle) {
-                _MergedGlobals[mgIdx] = (__bridge void *)newBundle;
+        // Newer builds can address _MergedGlobals with LDUR from base+4.
+        // If that pattern appears near this ADRP/ADD pair, normalize back to
+        // the start of the pointer array before scanning it.
+        for(int k = 1; k <= 6 && i + k < instructionScanCount; k++) {
+            if(!LCAddressRangeIsReadable(&mainBundleImpl[i + k], sizeof(uint32_t))) {
                 break;
+            }
+            if((mainBundleImpl[i + k] & 0xFFE00C00) == 0xF8400000) {
+                mergedGlobals = (void **)((uintptr_t)mergedGlobals - 4);
+                break;
+            }
+        }
+
+        for(int mgIdx = 0; mgIdx < 20; mgIdx++) {
+            void **slot = &mergedGlobals[mgIdx];
+            void *value = NULL;
+            if(!LCReadPointer(slot, &value) || value != (__bridge void *)oldBundle) {
+                continue;
+            }
+
+            if(writePointerWithProtection(slot, (__bridge void *)newBundle, "NSBundle.mainBundle storage") && NSBundle.mainBundle == newBundle) {
+                return true;
             }
         }
     }
 
-    return ![NSBundle.mainBundle.executablePath isEqualToString:oldPath];
+    return NSBundle.mainBundle == newBundle;
 }
 
+// overwriteExecPath installs this hook, calls _NSGetExecutablePath once, then
+// immediately restores the original dyld API slot during early launch.
 static bool gDidOverwriteExecPath = false;
 static const char *gPendingExecPath = NULL;
+
+static bool dyldConfigPathLooksMainExecutable(const char *path) {
+    if(!path || path[0] != '/') {
+        return false;
+    }
+
+    if(strstr(path, ".dylib") || strstr(path, ".framework/")) {
+        return false;
+    }
+
+    return strstr(path, ".app/") || strstr(path, ".appex/");
+}
 
 int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char* newPath, uint32_t* bufsize) {
     if(!dyldApiInstancePtr) {
@@ -294,7 +358,7 @@ int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char
         for(uint32_t i = 0; i < 16; i++) {
             if(LCAddressRangeIsReadable(dyldConfig + i, sizeof(char *)) &&
                LCAddressRangeIsReadable(dyldConfig[i], sizeof(char)) &&
-               dyldConfig[i][0] == '/') {
+               dyldConfigPathLooksMainExecutable(dyldConfig[i])) {
                 mainExecutablePathPtr = dyldConfig + i;
                 NSLog(@"[LC] Found dyld mainExecutablePath using fallback config index %u", i);
                 break;
@@ -313,17 +377,8 @@ int hook__NSGetExecutablePath_overwriteExecPath(char*** dyldApiInstancePtr, char
         return -1;
     }
 
-    kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)mainExecutablePathPtr, sizeof(mainExecutablePathPtr), false, PROT_READ | PROT_WRITE);
-    if(ret != KERN_SUCCESS) {
-        if(!os_tpro_is_supported()) {
-            NSLog(@"[LC] Cannot overwrite executable path: failed to make dyld config writable: %d", ret);
-            return -1;
-        }
-        os_thread_self_restrict_tpro_to_rw();
-    }
-    *mainExecutablePathPtr = (char *)replacementPath;
-    if(ret != KERN_SUCCESS) {
-        os_thread_self_restrict_tpro_to_ro();
+    if(!writePointerWithProtection((void **)mainExecutablePathPtr, (void *)replacementPath, "dyld mainExecutablePath")) {
+        return -1;
     }
 
     gDidOverwriteExecPath = true;
