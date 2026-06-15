@@ -445,7 +445,7 @@ static bool LCFindDyldApiSlot(uint32_t *baseAddr, uint32_t preferredAdrpOffset, 
         }
     }
 
-    for(uint32_t i = 0; i < 96; i++) {
+    for(uint32_t i = 0; i < 200; i++) {
         if(i == preferredOffsets[0] || i == preferredOffsets[1]) {
             continue;
         }
@@ -503,6 +503,7 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
         NSLog(@"[LC] Refusing to hook %s because the resolved vtable slot is not readable", functionName);
         return false;
     }
+    }
 
     
     kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
@@ -551,7 +552,12 @@ bool initGuestSDKVersionInfo(void) {
         uint64_t offset = 0;
 #if !TARGET_OS_SIMULATOR
         const char* dyldPath = "/usr/lib/dyld";
-        offset = LCFindSymbolOffset(dyldPath, "__ZN5dyld3L11sVersionMapE");
+        if(@available(iOS 27.0, *)) {
+            offset = LCFindSymbolOffset(dyldPath, "__ZN5dyld311sVersionMapE");
+        }
+        if(offset == 0) {
+            offset = LCFindSymbolOffset(dyldPath, "__ZN5dyld3L11sVersionMapE");
+        }
 #else
         void *result = litehook_find_symbol(dyldBase, "__ZN5dyld3L11sVersionMapE");
         if(result) {

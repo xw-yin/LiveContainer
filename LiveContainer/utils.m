@@ -55,13 +55,16 @@ bool LCReadPointer(const void *address, void **value) {
 }
 
 uint64_t aarch64_get_tbnz_jump_address(uint32_t instruction, uint64_t pc) {
-    // Check that this is a tbnz instruction
-    if ((instruction & 0xFF000000) != 0x37000000) {
+    // Matches both tbz (0x36000000) and tbnz (0x37000000)
+    if ((instruction & 0x7E000000) != 0x36000000) {
         return 0;
     }
 
-    uint32_t imm = ((instruction >> 5) & 0xFFFF) * 4;
-    return imm + pc;
+    int32_t imm14 = (instruction >> 5) & 0x3FFF;
+    if (imm14 & 0x2000) { // Sign extend 14-bit signed immediate
+        imm14 |= ~0x3FFF;
+    }
+    return (uint64_t)((int64_t)pc + (imm14 * 4));
 }
 
 // https://github.com/pinauten/PatchfinderUtils/blob/master/Sources/CFastFind/CFastFind.c
