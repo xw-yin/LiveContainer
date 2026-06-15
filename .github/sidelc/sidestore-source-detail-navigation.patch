@@ -158,6 +158,32 @@ index 496c04d..08553f8 100644
 +        return (self.navigationController?.viewControllers.count ?? 0) > 1
 +    }
 +}
+diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
+index 8f8f761..dec09ab 100644
+--- a/AltStore/AppDelegate.swift
++++ b/AltStore/AppDelegate.swift
+@@ -97,7 +97,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+ 
+         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+ 
+         SecureValueTransformer.register()        
+@@ -145,7 +147,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+     {
+         AppManager.shared.update()
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+     }
+     
 diff --git a/AltStore/Components/HeaderContentViewController.swift b/AltStore/Components/HeaderContentViewController.swift
 index cc57393..fcf8f1a 100644
 --- a/AltStore/Components/HeaderContentViewController.swift
@@ -322,6 +348,84 @@ index cc57393..fcf8f1a 100644
          
          self.navigationItem.standardAppearance = barAppearance
          self.navigationItem.scrollEdgeAppearance = barAppearance
+diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
+index 9bcf314..db50c10 100644
+--- a/AltStore/LaunchViewController.swift
++++ b/AltStore/LaunchViewController.swift
+@@ -76,13 +76,17 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+         detectAndImportAccountFile()
+         
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+         guard let pf = fetchPairingFile() else {
+             displayError("Device pairing file not found.")
+             return
+         }
+-        start_minimuxer_threads(pf)
++        DispatchQueue.global().async {
++            self.start_minimuxer_threads(pf)
++        }
+         #endif
+     }
+ 
+@@ -103,8 +107,10 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+ 
+     func displayError(_ msg: String) {
+         print(msg)
+-        let alert = UIAlertController(title: "Error launching SideStore", message: msg, preferredStyle: .alert)
+-        self.present(alert, animated: true)
++        DispatchQueue.main.async {
++            let alert = UIAlertController(title: "Error launching SideStore", message: msg, preferredStyle: .alert)
++            self.present(alert, animated: true)
++        }
+     }
+ 
+     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
+index f98fea5..655a970 100644
+--- a/AltStore/Managing Apps/AppManager.swift	
++++ b/AltStore/Managing Apps/AppManager.swift	
+@@ -46,7 +46,7 @@ class AppManager: ObservableObject
+     private(set) var updatePatronsResult: Result<Void, Error>?
+     
+     @Published
+-    private(set) var updateSourcesResult: Result<Void, Error>? // nil == loading
++    private(set) var updateSourcesResult: Result<Void, Error>? = .success(()) // nil == loading
+     
+     private let operationQueue = OperationQueue()
+     private let serialOperationQueue = OperationQueue()
+@@ -590,7 +590,11 @@ extension AppManager
+     
+     func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
+     {
+-        self.updateSourcesResult = nil
++        let context = DatabaseManager.shared.persistentContainer.viewContext
++        let hasApps = (try? context.count(for: StoreApp.fetchRequest())) ?? 0 > 0
++        if !hasApps {
++            self.updateSourcesResult = nil
++        }
+         
+         self.fetchSources() { (result) in
+             do
+diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
+index 27b3e8c..ab28aeb 100644
+--- a/AltStore/SceneDelegate.swift
++++ b/AltStore/SceneDelegate.swift
+@@ -41,7 +41,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
+         
+         AppManager.shared.update()
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+     }
+ 
 diff --git a/AltStore/Settings/AnisetteServerList.swift b/AltStore/Settings/AnisetteServerList.swift
 index fc54773..2fd3093 100644
 --- a/AltStore/Settings/AnisetteServerList.swift
@@ -728,30 +832,3 @@ index 89de8d7..4ce6293 100644
              self.view.setNeedsLayout()
          }
      }
-+
-+diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
-+index f98fea5..655a970 100644
-+--- a/AltStore/Managing Apps/AppManager.swift	
-++++ b/AltStore/Managing Apps/AppManager.swift	
-+@@ -46,7 +46,7 @@ class AppManager: ObservableObject
-+     private(set) var updatePatronsResult: Result<Void, Error>?
-+     
-+     @Published
-+-    private(set) var updateSourcesResult: Result<Void, Error>? // nil == loading
-++    private(set) var updateSourcesResult: Result<Void, Error>? = .success(()) // nil == loading
-+     
-+     private let operationQueue = OperationQueue()
-+     private let serialOperationQueue = OperationQueue()
-+@@ -590,7 +590,11 @@ extension AppManager
-+     
-+     func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
-+     {
-+-        self.updateSourcesResult = nil
-++        let context = DatabaseManager.shared.persistentContainer.viewContext
-++        let hasApps = (try? context.count(for: StoreApp.fetchRequest())) ?? 0 > 0
-++        if !hasApps {
-++            self.updateSourcesResult = nil
-++        }
-+         
-+         self.fetchSources() { (result) in
-+             do }
