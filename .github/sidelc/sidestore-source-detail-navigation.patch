@@ -1,4 +1,4 @@
-﻿diff --git a/AltStore/App Detail/AppViewController.swift b/AltStore/App Detail/AppViewController.swift
+diff --git a/AltStore/App Detail/AppViewController.swift b/AltStore/App Detail/AppViewController.swift
 index 496c04d..08553f8 100644
 --- a/AltStore/App Detail/AppViewController.swift	
 +++ b/AltStore/App Detail/AppViewController.swift	
@@ -728,3 +728,30 @@ index 89de8d7..4ce6293 100644
              self.view.setNeedsLayout()
          }
      }
++
++diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
++index f98fea5..655a970 100644
++--- a/AltStore/Managing Apps/AppManager.swift	
+++++ b/AltStore/Managing Apps/AppManager.swift	
++@@ -46,7 +46,7 @@ class AppManager: ObservableObject
++     private(set) var updatePatronsResult: Result<Void, Error>?
++     
++     @Published
++-    private(set) var updateSourcesResult: Result<Void, Error>? // nil == loading
+++    private(set) var updateSourcesResult: Result<Void, Error>? = .success(()) // nil == loading
++     
++     private let operationQueue = OperationQueue()
++     private let serialOperationQueue = OperationQueue()
++@@ -590,7 +590,11 @@ extension AppManager
++     
++     func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
++     {
++-        self.updateSourcesResult = nil
+++        let context = DatabaseManager.shared.persistentContainer.viewContext
+++        let hasApps = (try? context.count(for: StoreApp.fetchRequest())) ?? 0 > 0
+++        if !hasApps {
+++            self.updateSourcesResult = nil
+++        }
++         
++         self.fetchSources() { (result) in
++             do }
