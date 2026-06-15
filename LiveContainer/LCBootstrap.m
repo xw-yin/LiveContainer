@@ -114,7 +114,6 @@ static CFBundleRef gOverriddenMainCFBundle = NULL;
 static CFBundleRef hook_CFBundleGetMainBundle(void) {
     return gOverriddenMainCFBundle;
 }
-}
 
 static bool getMemoryProtection(const void *address, vm_prot_t *protection) {
     if(!address || !protection) {

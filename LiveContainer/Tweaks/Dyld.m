@@ -503,7 +503,6 @@ bool performHookDyldApi(const char* functionName, uint32_t adrpOffset, void** or
         NSLog(@"[LC] Refusing to hook %s because the resolved vtable slot is not readable", functionName);
         return false;
     }
-    }
 
     
     kern_return_t ret = builtin_vm_protect(mach_task_self(), (mach_vm_address_t)vtableFunctionPtr, sizeof(uintptr_t), false, PROT_READ | PROT_WRITE | VM_PROT_COPY);
