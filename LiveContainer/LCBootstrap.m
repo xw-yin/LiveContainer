@@ -195,6 +195,18 @@ static void **findMainCFBundleStorage(CFBundleRef currentMainBundle) {
                     return candidate;
                 }
             }
+
+#if !TARGET_OS_SIMULATOR
+            if (@available(iOS 27.0, *)) {
+                bool isTbz = (impl[i] & 0x7F000000) == 0x36000000;
+                if (isTbz && (i + 1 < scanInstructionCount) && LCAddressRangeIsReadable(&impl[i + 1], sizeof(uint32_t))) {
+                    void **candidate = mainCFBundleStorageCandidate((void *)aarch64_emulate_adrp_ldr(impl[i - 1], impl[i + 1], (uint64_t)&impl[i - 1]), currentMainBundle);
+                    if(candidate) {
+                        return candidate;
+                    }
+                }
+            }
+#endif
         }
 
         for (int j = 1; j <= 4; j++) {
