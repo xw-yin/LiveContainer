@@ -1,0 +1,110 @@
+diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
+index 8f8f761..dec09ab 100644
+--- a/AltStore/AppDelegate.swift
++++ b/AltStore/AppDelegate.swift
+@@ -97,7 +97,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+ 
+         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+ 
+         SecureValueTransformer.register()        
+@@ -145,7 +147,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+     {
+         AppManager.shared.update()
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+     }
+     
+diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
+index 9bcf314..09d911c 100644
+--- a/AltStore/LaunchViewController.swift
++++ b/AltStore/LaunchViewController.swift
+@@ -76,7 +76,9 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+         detectAndImportAccountFile()
+         
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            Task.detached {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+         guard let pf = fetchPairingFile() else {
+             displayError("Device pairing file not found.")
+@@ -87,16 +89,18 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+     }
+ 
+     func start_minimuxer_threads(_ pairing_file: String) {
+-        retargetUsbmuxdAddr()
+-        let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
+-        do {
+-            let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
+-            try minimuxerStartWithLogger(pairing_file, documentsDirectory, loggingEnabled)
+-        } catch {
+-            try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
+-            displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR")")
++        Task.detached {
++            retargetUsbmuxdAddr()
++            let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
++            do {
++                let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
++                try minimuxerStartWithLogger(pairing_file, documentsDirectory, loggingEnabled)
++            } catch {
++                try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
++                await self.displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR")")
++            }
++            startAutoMounter(documentsDirectory)
+         }
+-        startAutoMounter(documentsDirectory)
+     }
+ 
+     func fetchPairingFile() -> String? { PairingFileManager.shared.fetchPairingFile(presentingVC: self) }
+diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
+index f98fea5..655a970 100644
+--- a/AltStore/Managing Apps/AppManager.swift	
++++ b/AltStore/Managing Apps/AppManager.swift	
+@@ -46,7 +46,7 @@ class AppManager: ObservableObject
+     private(set) var updatePatronsResult: Result<Void, Error>?
+     
+     @Published
+-    private(set) var updateSourcesResult: Result<Void, Error>? // nil == loading
++    private(set) var updateSourcesResult: Result<Void, Error>? = .success(()) // nil == loading
+     
+     private let operationQueue = OperationQueue()
+     private let serialOperationQueue = OperationQueue()
+@@ -590,7 +590,11 @@ extension AppManager
+     
+     func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
+     {
+-        self.updateSourcesResult = nil
++        let context = DatabaseManager.shared.persistentContainer.viewContext
++        let hasApps = (try? context.count(for: StoreApp.fetchRequest())) ?? 0 > 0
++        if !hasApps {
++            self.updateSourcesResult = nil
++        }
+         
+         self.fetchSources() { (result) in
+             do
+diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
+index 27b3e8c..ab28aeb 100644
+--- a/AltStore/SceneDelegate.swift
++++ b/AltStore/SceneDelegate.swift
+@@ -41,7 +41,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
+         
+         AppManager.shared.update()
+         if UserDefaults.standard.enableEMPforWireguard {
+-            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            DispatchQueue.global().async {
++                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
++            }
+         }
+     }
+ 

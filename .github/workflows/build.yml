@@ -71,6 +71,7 @@ jobs:
           brew install ldid xcbeautify || true
           git clone --depth 1 --branch LiveContainerSupport2 --recurse-submodules --shallow-submodules https://github.com/LiveContainer/SideStore.git SideStoreBuild
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-source-detail-navigation.patch"
+          git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-nonblocking-startup.patch"
           make -C SideStoreBuild build fakesign ipa
           cp SideStoreBuild/SideStore.ipa "$GITHUB_WORKSPACE/SideStore.patched.ipa"
       - name: Create IPA
