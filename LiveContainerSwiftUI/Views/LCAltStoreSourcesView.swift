@@ -231,11 +231,22 @@ final class AltStoreSourcesViewModel: ObservableObject {
         let stored = defaults.array(forKey: defaultsKey) as? [String] ?? []
         let urls = stored.compactMap { URL(string: $0) }
         self.sources = urls.map { SourceItem(url: $0, isLoading: false) }
-        for index in sources.indices {
-            let url = sources[index].url
-            if let data = cachedData(for: url),
-               let cachedSource = try? AltStoreSourceLoader.decode(from: data, baseURL: url) {
-                sources[index].source = cachedSource
+        
+        Task {
+            var loadedSources = [URL: AltStoreSource]()
+            for url in urls {
+                if let data = cachedData(for: url),
+                   let cachedSource = try? AltStoreSourceLoader.decode(from: data, baseURL: url) {
+                    loadedSources[url] = cachedSource
+                }
+            }
+            await MainActor.run {
+                for index in self.sources.indices {
+                    let url = self.sources[index].url
+                    if let cachedSource = loadedSources[url] {
+                        self.sources[index].source = cachedSource
+                    }
+                }
             }
         }
     }
@@ -315,6 +326,15 @@ private extension AltStoreSourcesViewModel {
 }
 
 enum AltStoreSourceLoader {
+    private static let formatterLock = NSLock()
+    private static let isoDateFormatter = ISO8601DateFormatter()
+    private static let shortDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
     static func load(from url: URL) async throws -> (AltStoreSource, Data) {
         let (data, response) = try await URLSession.shared.data(from: url)
         if let httpResponse = response as? HTTPURLResponse,
@@ -334,12 +354,14 @@ enum AltStoreSourceLoader {
         decoder.dateDecodingStrategy = .custom({ decoder in
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            if let isoDate = ISO8601DateFormatter().date(from: rawValue) {
+            
+            formatterLock.lock()
+            defer { formatterLock.unlock() }
+            
+            if let isoDate = isoDateFormatter.date(from: rawValue) {
                 return isoDate
             }
-            let shortFormatter = DateFormatter()
-            shortFormatter.dateFormat = "yyyy-MM-dd"
-            if let shortDate = shortFormatter.date(from: rawValue) {
+            if let shortDate = shortDateFormatter.date(from: rawValue) {
                 return shortDate
             }
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(rawValue)")
