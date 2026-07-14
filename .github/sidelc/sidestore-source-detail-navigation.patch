@@ -1,8 +1,53 @@
+diff --git a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift
+index 0dc744f..7c77bc8 100644
+--- a/AltStore/Components/AppBannerView.swift
++++ b/AltStore/Components/AppBannerView.swift
+@@ -339,6 +339,25 @@ extension AppBannerView
+         let accessibilityLabel = source.name + "\n" + subtitle
+         self.accessibilityLabel = accessibilityLabel
+     }
++    
++    override func layoutSubviews() {
++        super.layoutSubviews()
++        
++        // Round the corners of backgroundEffectView
++        self.backgroundEffectView.layer.cornerRadius = 20
++        self.backgroundEffectView.clipsToBounds = true
++        
++        // Add a delicate translucent border (Glow Border) to backgroundEffectView
++        self.backgroundEffectView.layer.borderColor = UIColor.white.withAlphaComponent(0.12).cgColor
++        self.backgroundEffectView.layer.borderWidth = 1.0
++        
++        // Add a soft drop shadow to the view layer
++        self.layer.shadowColor = UIColor.black.cgColor
++        self.layer.shadowOpacity = 0.22
++        self.layer.shadowOffset = CGSize(width: 0, height: 6)
++        self.layer.shadowRadius = 12
++        self.layer.masksToBounds = false
++    }
+ }
+ 
+ private extension AppBannerView
 diff --git a/AltStore/Components/AppCardCollectionViewCell.swift b/AltStore/Components/AppCardCollectionViewCell.swift
-index 68c5320..156b96f 100644
+index 68c5320..712892d 100644
 --- a/AltStore/Components/AppCardCollectionViewCell.swift
 +++ b/AltStore/Components/AppCardCollectionViewCell.swift
-@@ -187,24 +187,8 @@ private extension AppCardCollectionViewCell
+@@ -136,6 +136,14 @@ class AppCardCollectionViewCell: UICollectionViewCell
+         
+         self.contentView.layer.cornerRadius = self.bannerView.layer.cornerRadius
+     }
++    
++    override var isHighlighted: Bool {
++        didSet {
++            UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.96, y: 0.96) : .identity
++            }, completion: nil)
++        }
++    }
+ }
+ 
+ private extension AppCardCollectionViewCell
+@@ -187,24 +195,8 @@ private extension AppCardCollectionViewCell
              let itemSize = NSCollectionLayoutSize(widthDimension: .estimated(1), heightDimension: .fractionalHeight(1.0))
              let item = NSCollectionLayoutItem(layoutSize: itemSize)
              
@@ -28,6 +73,76 @@ index 68c5320..156b96f 100644
              group.interItemSpacing = .fixed(minimumItemSpacing)
              
              if numberOfVisibleScreenshots < self.screenshots.count
+diff --git a/AltStore/Components/PillButton.swift b/AltStore/Components/PillButton.swift
+index a609909..8c4aa32 100644
+--- a/AltStore/Components/PillButton.swift
++++ b/AltStore/Components/PillButton.swift
+@@ -173,6 +173,31 @@ class PillButton: UIButton
+         self.update()
+     }
+     
++    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
++        super.touchesBegan(touches, with: event)
++        UIView.animate(withDuration: 0.15, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++            self.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
++        }, completion: nil)
++        
++        let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
++        feedbackGenerator.prepare()
++        feedbackGenerator.impactOccurred()
++    }
++    
++    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
++        super.touchesEnded(touches, with: event)
++        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 1.0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++            self.transform = .identity
++        }, completion: nil)
++    }
++    
++    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
++        super.touchesCancelled(touches, with: event)
++        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 1.0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++            self.transform = .identity
++        }, completion: nil)
++    }
++    
+     override func sizeThatFits(_ size: CGSize) -> CGSize
+     {
+         var size = super.sizeThatFits(size)
+diff --git a/AltStore/My Apps/MyAppsComponents.swift b/AltStore/My Apps/MyAppsComponents.swift
+index e7cf82b..902086f 100644
+--- a/AltStore/My Apps/MyAppsComponents.swift	
++++ b/AltStore/My Apps/MyAppsComponents.swift	
+@@ -50,6 +50,14 @@ final class InstalledAppCollectionViewCell: UICollectionViewCell
+         
+         self.deactivateBadge = deactivateBadge
+     }
++    
++    override var isHighlighted: Bool {
++        didSet {
++            UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.96, y: 0.96) : .identity
++            }, completion: nil)
++        }
++    }
+ }
+ 
+ final class InstalledAppsCollectionFooterView: UICollectionReusableView
+@@ -77,6 +85,14 @@ final class NoUpdatesCollectionViewCell: UICollectionViewCell
+         self.button.setTitle("", for: .normal)
+         self.button.setImage(image, for: .normal)
+     }
++    
++    override var isHighlighted: Bool {
++        didSet {
++            UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++                self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.96, y: 0.96) : .identity
++            }, completion: nil)
++        }
++    }
+ }
+ 
+ final class UpdatesCollectionHeaderView: UICollectionReusableView
 diff --git a/AltStore/Settings/AnisetteServerList.swift b/AltStore/Settings/AnisetteServerList.swift
 index 72863b1..8d18567 100644
 --- a/AltStore/Settings/AnisetteServerList.swift
@@ -368,3 +483,32 @@ index 7942263..af804b3 100644
              }
              
              if title != self.navigationBarButton.title(for: .normal) && !self.navigationBarButton.isIndicatingActivity
+diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
+index a40b3b6..e27fadf 100644
+--- a/AltStore/TabBarController.swift
++++ b/AltStore/TabBarController.swift
+@@ -42,6 +42,7 @@ final class TabBarController: UITabBarController
+     override func viewDidLoad() 
+     {
+         super.viewDidLoad()
++        self.delegate = self
+         
+         let browseNavigationController = self.viewControllers![Tab.browse.rawValue] as! UINavigationController
+         browseNavigationController.tabBarItem.image = UIImage(systemName: "bag")
+@@ -113,3 +114,16 @@ private extension TabBarController
+         self.selectedIndex = Tab.settings.rawValue
+     }
+ }
++
++extension TabBarController: UITabBarControllerDelegate
++{
++    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
++        guard let fromView = selectedViewController?.view, let toView = viewController.view else {
++            return true
++        }
++        if fromView != toView {
++            UIView.transition(from: fromView, to: toView, duration: 0.22, options: [.transitionCrossDissolve, .allowUserInteraction], completion: nil)
++        }
++        return true
++    }
++}
