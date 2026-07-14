@@ -244,9 +244,11 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         Button {
                             LCUtils.openSideStore(delegate: self)
                         } label: {
-                            IconImageView(icon: BuiltInSideStoreAppInfo.shared.iconIsDarkIcon(darkModeIcon))
+                            Image("SideStoreBadge")
+                                .resizable()
+                                .renderingMode(.template)
+                                .foregroundColor(SharedModel.isLiquidGlassEnabled ? Color.primary : Color.accentColor)
                                 .frame(width: UIFont.preferredFont(forTextStyle: .body).lineHeight, height: UIFont.preferredFont(forTextStyle: .body).lineHeight)
-
                         }
                     } else {
                         Button("Help", systemImage: "questionmark") {
