@@ -1,0 +1,12 @@
+{
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/MultitaskAppWindow.swift" : {
+    "abi-baseline-json" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI.abi.json",
+    "const-values" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.swiftconstvalues",
+    "dependencies" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.d",
+    "diagnostics" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.dia",
+    "objc-header" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-Swift.h",
+    "swiftdoc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI.swiftdoc",
+    "swiftmodule" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI.swiftmodule",
+    "swiftsourceinfo" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI.swiftsourceinfo"
+  }
+}

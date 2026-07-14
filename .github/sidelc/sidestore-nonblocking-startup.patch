@@ -74,7 +74,7 @@ index 53f7954..83fbfce 100644
      }
  
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
-index 5e33a71..9863dc9 100644
+index 5e33a71..274fa24 100644
 --- a/AltStore/LaunchViewController.swift
 +++ b/AltStore/LaunchViewController.swift
 @@ -233,23 +233,27 @@ extension LaunchViewController {
@@ -120,7 +120,11 @@ index 5e33a71..9863dc9 100644
          WidgetCenter.shared.reloadAllTimelines()
          didFinishLaunching = true
          
-@@ -327,53 +331,132 @@ final class SplashView: UIView {
+@@ -324,56 +328,128 @@ extension LaunchViewController {
+ final class SplashView: UIView {
+     let iconView = UIImageView()
+     let titleLabel = UILabel()
++    private var iconContainer: UIView!
  
      init(frame: CGRect, appName: String) {
          super.init(frame: frame)
@@ -157,6 +161,7 @@ index 5e33a71..9863dc9 100644
 -        container.layer.shadowRadius = 8
          addSubview(container)
 -
++        self.iconContainer = container
 +        
 +        let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
 +        let blurView = UIVisualEffectView(effect: blurEffect)
@@ -210,18 +215,9 @@ index 5e33a71..9863dc9 100644
          titleLabel.translatesAutoresizingMaskIntoConstraints = false
          addSubview(titleLabel)
 +        
-+        // Find container to anchor constraints
-+        guard let container = subviews.first(where: { $0.layer.cornerRadius == 0 && $0 != titleLabel }) else {
-+            NSLayoutConstraint.activate([
-+                titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 350),
-+                titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor)
-+            ])
-+            return
-+        }
-+        
          NSLayoutConstraint.activate([
 -            titleLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 12),
-+            titleLabel.topAnchor.constraint(equalTo: container.bottomAnchor, constant: 24),
++            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 24),
              titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor)
          ])
      }
@@ -297,22 +293,10 @@ index ce219dc..ee4ed97 100644
          self.fetchSources() { (result) in
              do
 diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
-index 1deb8ce..5eb5004 100644
+index 1deb8ce..c8674b3 100644
 --- a/AltStore/SceneDelegate.swift
 +++ b/AltStore/SceneDelegate.swift
-@@ -31,6 +31,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
-         {
-             self.open(context)
-         }
-+        
-+        if let window = self.window
-+        {
-+            window.overrideUserInterfaceStyle = .dark
-+        }
-     }
- 
-     func sceneWillEnterForeground(_ scene: UIScene)
-@@ -46,7 +51,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
+@@ -46,7 +46,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
          
          AppManager.shared.update()
          if UserDefaults.standard.enableEMPforWireguard {

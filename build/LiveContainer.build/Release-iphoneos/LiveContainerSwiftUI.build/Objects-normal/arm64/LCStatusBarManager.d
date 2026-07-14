@@ -1,0 +1,33 @@
+dependencies: \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/Darwin.modulemap \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/LCStatusBarManager.m \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/LCStatusBarManager.h \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/UIKit.framework/Modules/module.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Foundation.framework/Modules/module.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/CoreFoundation.framework/Modules/module.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include/module.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/DarwinFoundation2.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/ObjectiveC.modulemap \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/AppSceneViewController.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/UIKitPrivate+MultitaskSupport.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainer/UIKitPrivate.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainer/FoundationPrivate.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/DerivedSources/LiveContainerSwiftUI-Swift.h \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/Intents.framework/Modules/module.modulemap \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Cryptexes/OS/System/Library/Frameworks/WebKit.framework/Modules/module.modulemap \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/LiveContainerSwiftUI-Bridging-Header.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Models/LCAppInfo.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Utilities/LCUtils.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainer/LCMachOUtils.h \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/DarwinBasic.modulemap \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainer/utils.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../LiveContainer/LCSharedUtils.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Utilities/unarchive.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../MultitaskSupport/AppSceneViewController.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../MultitaskSupport/DecoratedAppSceneViewController.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../MultitaskSupport/LCStatusBarManager.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../MultitaskSupport/PiPManager.h \
+  /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/AVKit.framework/Modules/module.modulemap \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../MultitaskSupport/VirtualWindowsHostView.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/../LiveContainer/FoundationPrivate.h \
+  /Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/VirtualWindowsHostView.h

@@ -1,0 +1,186 @@
+{
+  "" : {
+    "const-values" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.swiftconstvalues",
+    "dependencies" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.d",
+    "diagnostics" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.dia",
+    "emit-module-dependencies" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary-emit-module.dia",
+    "pch" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUI-primary.swiftdeps"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/App/AppDelegate.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/AppDelegate.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/AppDelegate.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/AppDelegate.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/App/LiveContainerSwiftUIApp.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUIApp.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUIApp.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LiveContainerSwiftUIApp.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Models/BuiltInSideStoreAppInfo.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/BuiltInSideStoreAppInfo.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/BuiltInSideStoreAppInfo.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/BuiltInSideStoreAppInfo.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Models/LCAppModel.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppModel.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppModel.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppModel.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Models/LCContainer.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainer.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainer.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainer.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Models/LCStorageManagementModel.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementModel.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementModel.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementModel.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Utilities/LCUtilsExtensions.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCUtilsExtensions.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCUtilsExtensions.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCUtilsExtensions.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Utilities/Shared.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/Shared.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/Shared.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/Shared.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Utilities/ViewExtensions.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewExtensions.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewExtensions.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewExtensions.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/AppSettings/LCAppPreferenceView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppPreferenceView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppPreferenceView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppPreferenceView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/AppSettings/LCAppSettingsView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSettingsView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSettingsView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSettingsView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/AppSettings/LCContainerView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainerView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainerView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCContainerView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/AppSettings/LCSelectContainerView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSelectContainerView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSelectContainerView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSelectContainerView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/LCAppBanner.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppBanner.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppBanner.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppBanner.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/LCAppListView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppListView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppListView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppListView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/LCDownloadView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDownloadView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDownloadView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDownloadView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/LCHelpView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCHelpView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCHelpView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCHelpView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/LCWebView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCWebView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCWebView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCWebView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/Sorting/LCAppSortManager.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSortManager.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSortManager.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAppSortManager.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/AppList/Sorting/LCCustomSortView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCCustomSortView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCCustomSortView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCCustomSortView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/LCAltStoreSourcesView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAltStoreSourcesView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAltStoreSourcesView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCAltStoreSourcesView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/LCTabView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTabView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTabView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTabView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/LCTweaksView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTweaksView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTweaksView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCTweaksView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/DataManagement/LCDataManagementView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDataManagementView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDataManagementView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCDataManagementView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/DataManagement/LCStorageManagementSections.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementSections.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementSections.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementSections.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/DataManagement/LCStorageManagementView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCStorageManagementView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/LCJITLessDiagnoseView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCJITLessDiagnoseView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCJITLessDiagnoseView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCJITLessDiagnoseView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/LCMultiLCManagementView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultiLCManagementView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultiLCManagementView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultiLCManagementView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/LCMultitaskSettingView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultitaskSettingView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultitaskSettingView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCMultitaskSettingView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/LiveContainerSwiftUI/Views/Settings/LCSettingsView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSettingsView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSettingsView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/LCSettingsView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/MultitaskAppWindow.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskAppWindow.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskAppWindow.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskAppWindow.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/MultitaskDockView.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskDockView.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskDockView.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskDockView.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/MultitaskSupport/MultitaskManager.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskManager.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskManager.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/MultitaskManager.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/DerivedSources/IntentDefinitionGenerated/ViewApp/App.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/App.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/App.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/App.o"
+  },
+  "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/DerivedSources/IntentDefinitionGenerated/ViewApp/ViewAppIntent.swift" : {
+    "index-unit-output-path" : "/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewAppIntent.o",
+    "llvm-bc" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewAppIntent.bc",
+    "object" : "/Users/yinxinwang/.gemini/antigravity/scratch/LiveContainer/build/LiveContainer.build/Release-iphoneos/LiveContainerSwiftUI.build/Objects-normal/arm64/ViewAppIntent.o"
+  }
+}

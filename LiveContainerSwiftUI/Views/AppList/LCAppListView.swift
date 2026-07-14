@@ -248,6 +248,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                                 .resizable()
                                 .renderingMode(.template)
                                 .foregroundColor(SharedModel.isLiquidGlassEnabled ? Color.primary : Color.accentColor)
+                                .rotationEffect(.degrees(180))
                                 .frame(width: UIFont.preferredFont(forTextStyle: .body).lineHeight, height: UIFont.preferredFont(forTextStyle: .body).lineHeight)
                         }
                     } else {

@@ -326,15 +326,6 @@ private extension AltStoreSourcesViewModel {
 }
 
 enum AltStoreSourceLoader {
-    private static let formatterLock = NSLock()
-    private static let isoDateFormatter = ISO8601DateFormatter()
-    private static let shortDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
     static func load(from url: URL) async throws -> (AltStoreSource, Data) {
         let (data, response) = try await URLSession.shared.data(from: url)
         if let httpResponse = response as? HTTPURLResponse,
@@ -350,13 +341,15 @@ enum AltStoreSourceLoader {
     }
     
     private static func decodeSource(from data: Data, baseURL: URL) throws -> AltStoreSource {
+        let isoDateFormatter = ISO8601DateFormatter()
+        let shortDateFormatter = DateFormatter()
+        shortDateFormatter.dateFormat = "yyyy-MM-dd"
+        shortDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom({ decoder in
             let container = try decoder.singleValueContainer()
             let rawValue = try container.decode(String.self)
-            
-            formatterLock.lock()
-            defer { formatterLock.unlock() }
             
             if let isoDate = isoDateFormatter.date(from: rawValue) {
                 return isoDate
