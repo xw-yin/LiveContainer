@@ -119,6 +119,11 @@ diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/
 index 9c828b3..61e0712 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
+@@ -387,1 +387,4 @@ final class SettingsViewController: UITableViewController
++        self.navigationItem.title = NSLocalizedString("Settings", comment: "")
++        self.tabBarItem.title = NSLocalizedString("Settings", comment: "")
++        self.localizeSettingsControls(in: self.view)
+         // show nav bar if not shown already
 @@ -1070,1 +1070,11 @@ extension SettingsViewController
 +        if section == .display && indexPath.row == 1 {
 +            let currentLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
@@ -131,6 +136,9 @@ index 9c828b3..61e0712 100644
 +        }
 +        
          if section == .advancedSettings {
+@@ -1108,1 +1118,2 @@ extension SettingsViewController
++        self.localizeSettingsControls(in: cell)
+         return cell
 @@ -1717,7 +1727,11 @@ extension SettingsViewController
              
              
@@ -150,6 +158,19 @@ index 9c828b3..61e0712 100644
  
 +private extension SettingsViewController
 +{
++    func localizeSettingsControls(in view: UIView)
++    {
++        if let label = view as? UILabel, let text = label.text, !text.isEmpty {
++            label.text = NSLocalizedString(text, comment: "")
++        } else if let button = view as? UIButton,
++                  let title = button.title(for: .normal),
++                  !title.isEmpty {
++            button.setTitle(NSLocalizedString(title, comment: ""), for: .normal)
++        }
++
++        view.subviews.forEach { self.localizeSettingsControls(in: $0) }
++    }
++
 +    func showLanguageSelection(from sourceView: UIView?)
 +    {
 +        let currentLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
@@ -485,10 +506,8 @@ index 0000000..350cdfa
 +"Refresh Now" = "立即刷新";
 +"Refreshed Apps" = "已刷新的 App";
 +"REFRESHING APPS" = "正在刷新 App";
-+"Remove “%@” from SideStore?" = "要从 SideStore 移除“%@”吗？";
 +"Remove App Extensions" = "移除 App 扩展";
 +"Remove Source" = "移除来源";
-+"Resign" = "重签";
 +"Retry" = "重试";
 +"Review Permissions" = "查看权限";
 +"Revoke and Refresh Now" = "撤销并立即刷新";
@@ -625,6 +644,60 @@ index 0000000..350cdfa
 +"Your Apple ID has no developer teams?" = "你的 Apple ID 没有开发者团队？";
 +"Your pledge is no longer active. Please renew it to continue using %@ normally." = "你的赞助已失效。请续期以继续正常使用 %@。";
 +"Successfully imported '\(account.email)'!" = "已成功导入“\(account.email)”！";
++"Follow SideStore for updates" = "关注 SideStore 以获取更新";
++"Sign in with Apple ID" = "使用 Apple ID 登录";
++"Name" = "名称";
++"Email" = "邮箱";
++"Type" = "类型";
++"Developers" = "开发者";
++"Support the team" = "支持团队";
++"Background Refresh" = "后台刷新";
++"Disable Idle Timeout" = "停用空闲超时";
++"Allow Siri To Refresh Apps…" = "允许 Siri 刷新 App…";
++"Disable App Limit" = "停用 App 数量限制";
++"How it works" = "工作原理";
++"Health Check" = "健康检查";
++"View Error Log" = "查看错误日志";
++"Clear Data Cache…" = "清除数据缓存…";
++"SideStore Team" = "SideStore 团队";
++"UI Designer" = "界面设计";
++"Asset Designer" = "资源设计";
++"Licenses" = "许可证";
++"Enable Beta Updates" = "启用测试版更新";
++"Beta Updates Track" = "测试版更新渠道";
++"stable" = "稳定版";
++"Send Feedback" = "发送反馈";
++"View Refresh Attempts" = "查看刷新记录";
++"Reset Pairing File" = "重置配对文件";
++"Anisette Servers" = "Anisette 服务器";
++"Cache Management" = "缓存管理";
++"Certificate Management" = "证书管理";
++"Wireless Pairing" = "无线配对";
++"Network Discovery" = "网络发现";
++"Export Resigned Apps" = "导出已重签 App";
++"Enable EMP for wireguard" = "为 WireGuard 启用 EMP";
++"Enable AppId Customization" = "启用 App ID 自定义";
++"Import Account..." = "导入账户…";
++"Export Account..." = "导出账户…";
++"Import Signing Certificate..." = "导入签名证书…";
++"Export Signing Certificate..." = "导出签名证书…";
++"Disable Response Caching" = "停用响应缓存";
++"Enable Verbose Ops Logging" = "启用详细操作日志";
++"Export Database..." = "导出数据库…";
++"Delete Database..." = "删除数据库…";
++"Operations Logging Control" = "操作日志控制";
++"Recreate Database on Next Start" = "下次启动时重建数据库";
++"Minimuxer Console Logging" = "Minimuxer 控制台日志";
++"Minimuxer Status Check" = "Minimuxer 状态检查";
++"Settings" = "设置";
++"Date" = "日期";
++"Could not connect to SideStore." = "无法连接到 SideStore。";
++"Refresh Attempts" = "刷新记录";
++"Software Licenses" = "软件许可证";
++"Support us" = "支持我们";
++"Error Code" = "错误代码";
++"Error Description" = "错误说明";
++"Error Log" = "错误日志";
 diff --git a/AltStore/zh-Hans.lproj/Settings.strings b/AltStore/zh-Hans.lproj/Settings.strings
 new file mode 100644
 --- /dev/null
