@@ -1,0 +1,271 @@
+diff --git a/AltStore.xcodeproj/project.pbxproj b/AltStore.xcodeproj/project.pbxproj
+index 2e461a3..488ca2a 100644
+--- a/AltStore.xcodeproj/project.pbxproj
++++ b/AltStore.xcodeproj/project.pbxproj
+@@ -589,6 +589,7 @@
+ 			hasScannedForEncodings = 0;
+ 			knownRegions = (
+ 				en,
++				"zh-Hans",
+ 				Base,
+ 			);
+ 			mainGroup = BFD247612284B9A500981D42;
+diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
+index fa0d52e..9c04328 100644
+--- a/AltStore/AppDelegate.swift
++++ b/AltStore/AppDelegate.swift
+@@ -13,10 +13,39 @@ import Intents
+ import AltStoreCore
+ import AltSign
+ import CoreData
++import ObjectiveC
+ 
+ 
+ import Nuke
+ 
++private var sideStoreLanguageBundleKey: UInt8 = 0
++
++private final class SideStoreLocalizedBundle: Bundle {
++    override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
++        guard let bundle = objc_getAssociatedObject(self, &sideStoreLanguageBundleKey) as? Bundle else {
++            return super.localizedString(forKey: key, value: value, table: tableName)
++        }
++        return bundle.localizedString(forKey: key, value: value, table: tableName)
++    }
++}
++
++extension Bundle {
++    static func setSideStoreLanguage(_ languageCode: String?) {
++        object_setClass(Bundle.main, SideStoreLocalizedBundle.self)
++
++        let resourceName = languageCode == "en" ? "Base" : languageCode
++        let localizedBundle = resourceName
++            .flatMap { Bundle.main.path(forResource: $0, ofType: "lproj") }
++            .flatMap { Bundle(path: $0) }
++        objc_setAssociatedObject(
++            Bundle.main,
++            &sideStoreLanguageBundleKey,
++            localizedBundle,
++            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
++        )
++    }
++}
++
+ extension UIApplication: LegacyBackgroundFetching {}
+ 
+ extension AppDelegate
+@@ -50,6 +79,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+ 
+     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool
+     {
++        Bundle.setSideStoreLanguage(UserDefaults.standard.string(forKey: "ALTSelectedLanguage"))
++
+         // navigation bar buttons spacing is too much (so hack it to use minimal spacing)
+         // this is swift-5 specific behavior and might change
+         // https://stackoverflow.com/a/64988363/11971304
+diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
+index cfe1435..38568b5 100644
+--- a/AltStore/Settings/Settings.storyboard
++++ b/AltStore/Settings/Settings.storyboard
+@@ -303,7 +303,7 @@
+                                         <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
+                                         <userDefinedRuntimeAttributes>
+                                             <userDefinedRuntimeAttribute type="number" keyPath="style">
+-                                                <integer key="value" value="0"/>
++                                                <integer key="value" value="1"/>
+                                             </userDefinedRuntimeAttribute>
+                                             <userDefinedRuntimeAttribute type="boolean" keyPath="isSelectable" value="YES"/>
+                                         </userDefinedRuntimeAttributes>
+@@ -311,6 +311,38 @@
+                                             <segue destination="1z3-Yk-n8E" kind="show" identifier="" id="7I2-qT-zAU"/>
+                                         </connections>
+                                     </tableViewCell>
++                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" accessoryType="disclosureIndicator" indentationWidth="10" textLabel="Lng-Ti-tle" detailTextLabel="Lng-De-tail" rowHeight="51" style="IBUITableViewCellStyleValue1" id="Lng-Ce-ll1" customClass="InsetGroupTableViewCell" customModule="SideStore" customModuleProvider="target">
++                                        <rect key="frame" x="0.0" y="431.33333206176758" width="402" height="51"/>
++                                        <autoresizingMask key="autoresizingMask"/>
++                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="Lng-Ce-ll1" id="Lng-Co-nt1">
++                                            <rect key="frame" x="0.0" y="0.0" width="370" height="51"/>
++                                            <autoresizingMask key="autoresizingMask"/>
++                                            <subviews>
++                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="Language" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="Lng-Ti-tle">
++                                                    <rect key="frame" x="30" y="15.333333333333334" width="76" height="20.333333333333329"/>
++                                                    <autoresizingMask key="autoresizingMask"/>
++                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
++                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
++                                                    <nil key="highlightedColor"/>
++                                                </label>
++                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" insetsLayoutMarginsFromSafeArea="NO" text="System Default" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" id="Lng-De-tail">
++                                                    <rect key="frame" x="220" y="15.333333333333334" width="120" height="20.333333333333329"/>
++                                                    <autoresizingMask key="autoresizingMask"/>
++                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="15"/>
++                                                    <color key="textColor" white="1" alpha="0.65" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
++                                                    <nil key="highlightedColor"/>
++                                                </label>
++                                            </subviews>
++                                        </tableViewCellContentView>
++                                        <color key="backgroundColor" white="1" alpha="0.14999999999999999" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
++                                        <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
++                                        <userDefinedRuntimeAttributes>
++                                            <userDefinedRuntimeAttribute type="number" keyPath="style">
++                                                <integer key="value" value="3"/>
++                                            </userDefinedRuntimeAttribute>
++                                            <userDefinedRuntimeAttribute type="boolean" keyPath="isSelectable" value="YES"/>
++                                        </userDefinedRuntimeAttributes>
++                                    </tableViewCell>
+                                 </cells>
+                             </tableViewSection>
+                             <tableViewSection headerTitle="" id="2dM-lg-cRI">
+diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
+index 9c828b3..61e0712 100644
+--- a/AltStore/Settings/SettingsViewController.swift
++++ b/AltStore/Settings/SettingsViewController.swift
+@@ -1070,1 +1070,11 @@ extension SettingsViewController
++        if section == .display && indexPath.row == 1 {
++            let currentLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
++            cell.textLabel?.text = NSLocalizedString("Language", comment: "")
++            switch currentLanguage {
++            case "zh-Hans": cell.detailTextLabel?.text = "中文（简体）"
++            case "en": cell.detailTextLabel?.text = "English"
++            default: cell.detailTextLabel?.text = NSLocalizedString("System Default", comment: "")
++            }
++        }
++        
+         if section == .advancedSettings {
+@@ -1717,7 +1727,11 @@ extension SettingsViewController
+             
+             
+         // case .account, .patreon, .display, .instructions, .macDirtyCow: break
+-        case .account, .patreon, .display, .instructions, .betaTesting: break
++        case .display:
++            if indexPath.row == 1 {
++                self.showLanguageSelection(from: tableView.cellForRow(at: indexPath))
++            }
++        case .account, .patreon, .instructions, .betaTesting: break
+         }
+         
+         
+@@ -1726,6 +1740,65 @@ extension SettingsViewController
+     }
+ }
+ 
++private extension SettingsViewController
++{
++    func showLanguageSelection(from sourceView: UIView?)
++    {
++        let currentLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
++        let alert = UIAlertController(
++            title: NSLocalizedString("Language", comment: ""),
++            message: NSLocalizedString("Choose your preferred language:", comment: ""),
++            preferredStyle: .actionSheet
++        )
++
++        let languages: [(title: String, code: String?)] = [
++            (NSLocalizedString("System Default", comment: ""), nil),
++            ("English", "en"),
++            ("中文（简体）", "zh-Hans")
++        ]
++
++        for language in languages {
++            let isSelected = language.code == currentLanguage || (language.code == nil && currentLanguage == nil)
++            let title = isSelected ? "\(language.title) ✓" : language.title
++            alert.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
++                self?.changeLanguage(to: language.code)
++            })
++        }
++        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
++
++        if let popover = alert.popoverPresentationController {
++            popover.sourceView = sourceView ?? self.view
++            popover.sourceRect = sourceView?.bounds ?? CGRect(
++                x: self.view.bounds.midX,
++                y: self.view.bounds.midY,
++                width: 1,
++                height: 1
++            )
++        }
++        self.present(alert, animated: true)
++    }
++
++    func changeLanguage(to languageCode: String?)
++    {
++        if let languageCode {
++            UserDefaults.standard.set(languageCode, forKey: "ALTSelectedLanguage")
++        } else {
++            UserDefaults.standard.removeObject(forKey: "ALTSelectedLanguage")
++        }
++
++        Bundle.setSideStoreLanguage(languageCode)
++
++        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
++              let window = windowScene.windows.first(where: \.isKeyWindow) ?? windowScene.windows.first,
++              let rootViewController = UIStoryboard(name: "Main", bundle: nil).instantiateInitialViewController()
++        else { return }
++
++        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
++            window.rootViewController = rootViewController
++        }
++    }
++}
++
+ extension SettingsViewController: MFMailComposeViewControllerDelegate
+ {
+     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
+new file mode 100644
+index 0000000..350cdfa
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/Localizable.strings
+@@ -0,0 +1,53 @@
++/* Localizable.strings (zh-Hans) */
++
++"Language" = "语言";
++"Choose your preferred language:" = "选择您偏好的语言：";
++"System Default" = "系统默认";
++"Cancel" = "取消";
++
++"DISPLAY" = "外观";
++"Personalize your SideStore experience by choosing an alternate app icon." = "选择您喜欢的图标来自定义 SideStore。";
++
++"Installed" = "已安装";
++"Active" = "活动";
++"Refresh All" = "全部刷新";
++"Refreshing" = "正在刷新...";
++"Inactive" = "未活动";
++"Open" = "打开";
++"Refresh" = "刷新";
++"Resign" = "重签";
++"Activate" = "启用";
++"Deactivate" = "停用";
++"Remove" = "删除";
++"Enable JIT" = "启用 JIT";
++"Back Up" = "备份";
++"Export Backup" = "导出备份";
++"Import Backup" = "导入备份";
++"Restore Backup" = "还原备份";
++"Restore Previous Backup" = "还原上次备份";
++"Remove Custom Icon" = "移除自定义图标";
++"Info" = "信息";
++"Change Icon" = "更换图标";
++"Photos" = "照片";
++
++"Unable to Check for Updates" = "无法检查更新";
++"Start Backup?" = "开始备份吗？";
++"This will replace any previous backups. Please leave SideStore open until the backup is complete." = "这将替换之前的备份。请保持 SideStore 开启，直到备份完成。";
++"Back Up %@" = "备份 %@";
++"Are you sure you want to restore this backup?" = "确定要还原此备份吗？";
++"This will replace all data you currently have in %@." = "这将替换 %@ 中现有的全部数据。";
++"Remove “%@” from SideStore?" = "从 SideStore 中移除“%@”吗？";
++"You must also delete it from the home screen to fully uninstall the app." = "你还需要从主屏幕删除它，才能完全卸载该 App。";
++"This will also erase all backup data for this app." = "这还会清除该 App 的全部备份数据。";
++
++"Failed to find Pairing File!" = "未找到配对文件！";
++"Failed to encode pairingFile!" = "配对文件编码失败！";
++"Failed to initialize callback URL!" = "初始化回调 URL 失败！";
++
++"Pairing File" = "配对文件";
++"The selected pairing file is invalid or not usable. Please select a valid pairing file." = "所选配对文件无效或不可用。请选择有效的配对文件。";
++"Select the pairing file or select \"Help\" for help." = "请选择配对文件，或选择“帮助”获取协助。";
++"Help" = "帮助";
++"Select File" = "选择文件";
++"Invalid Pairing File" = "无效的配对文件";
++"Skip" = "跳过";
