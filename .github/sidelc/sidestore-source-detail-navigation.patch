@@ -1,3 +1,29 @@
+diff --git a/AltStore/App Detail/AppViewController.swift b/AltStore/App Detail/AppViewController.swift
+index 7276e51..df95418 100644
+--- a/AltStore/App Detail/AppViewController.swift	
++++ b/AltStore/App Detail/AppViewController.swift	
+@@ -77,16 +77,16 @@ final class AppViewController: UIViewController
+         
+         self.contentViewControllerShadowView = UIView()
+         self.contentViewControllerShadowView.backgroundColor = .altBackground
+-        self.contentViewControllerShadowView.layer.cornerRadius = 38
++        self.contentViewControllerShadowView.layer.cornerRadius = 28
+         self.contentViewControllerShadowView.layer.shadowColor = UIColor.black.cgColor
+-        self.contentViewControllerShadowView.layer.shadowOffset = CGSize(width: 0, height: -1)
+-        self.contentViewControllerShadowView.layer.shadowRadius = 10
+-        self.contentViewControllerShadowView.layer.shadowOpacity = 0.3
++        self.contentViewControllerShadowView.layer.shadowOffset = CGSize(width: 0, height: -4)
++        self.contentViewControllerShadowView.layer.shadowRadius = 24
++        self.contentViewControllerShadowView.layer.shadowOpacity = 0.16
+         self.contentViewController.view.superview?.insertSubview(self.contentViewControllerShadowView, at: 0)
+         
+         self.contentView.addGestureRecognizer(self.scrollView.panGestureRecognizer)
+         
+-        self.contentViewController.view.layer.cornerRadius = 38
++        self.contentViewController.view.layer.cornerRadius = 28
+         self.contentViewController.view.layer.masksToBounds = true
+         
+         self.contentViewController.tableView.panGestureRecognizer.require(toFail: self.scrollView.panGestureRecognizer)
 diff --git a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift
 index 0dc744f..7c77bc8 100644
 --- a/AltStore/Components/AppBannerView.swift
@@ -73,6 +99,47 @@ index 68c5320..712892d 100644
              group.interItemSpacing = .fixed(minimumItemSpacing)
              
              if numberOfVisibleScreenshots < self.screenshots.count
+diff --git a/AltStore/Components/HeaderContentViewController.swift b/AltStore/Components/HeaderContentViewController.swift
+index 9fb01a0..8a10fc8 100644
+--- a/AltStore/Components/HeaderContentViewController.swift
++++ b/AltStore/Components/HeaderContentViewController.swift
+@@ -117,7 +117,7 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.backgroundImageView.contentMode = .scaleAspectFill
+         self.view.addSubview(self.backgroundImageView)
+         
+-        let blurEffect = UIBlurEffect(style: .regular)
++        let blurEffect = UIBlurEffect(style: .systemThinMaterial)
+         self.backgroundBlurView = UIVisualEffectView(effect: blurEffect)
+         self.view.addSubview(self.backgroundBlurView, pinningEdgesWith: .zero)
+                 
+@@ -153,10 +153,9 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         self.backButton.addTarget(self.navigationController, action: #selector(UINavigationController.popViewController(animated:)), for: .primaryActionTriggered)
+         
+         
+-        // Content View Controller
+         self.contentViewController = self.makeContentViewController()
+         self.contentViewController.view.frame = self.view.bounds
+-        self.contentViewController.view.layer.cornerRadius = 38
++        self.contentViewController.view.layer.cornerRadius = 28
+         self.contentViewController.view.layer.masksToBounds = true
+         
+         self.addChild(self.contentViewController)
+@@ -165,11 +164,11 @@ class HeaderContentViewController<Header: UIView, Content: ScrollableContentView
+         
+         self.contentViewControllerShadowView = UIView()
+         self.contentViewControllerShadowView.backgroundColor = .altBackground
+-        self.contentViewControllerShadowView.layer.cornerRadius = 38
++        self.contentViewControllerShadowView.layer.cornerRadius = 28
+         self.contentViewControllerShadowView.layer.shadowColor = UIColor.black.cgColor
+-        self.contentViewControllerShadowView.layer.shadowOffset = CGSize(width: 0, height: -1)
+-        self.contentViewControllerShadowView.layer.shadowRadius = 10
+-        self.contentViewControllerShadowView.layer.shadowOpacity = 0.3
++        self.contentViewControllerShadowView.layer.shadowOffset = CGSize(width: 0, height: -4)
++        self.contentViewControllerShadowView.layer.shadowRadius = 24
++        self.contentViewControllerShadowView.layer.shadowOpacity = 0.16
+         self.view.insertSubview(self.contentViewControllerShadowView, belowSubview: self.contentViewController.view)
+                 
+         // Add scrollView to front so the scroll indicators are visible, but disable user interaction.
 diff --git a/AltStore/Components/PillButton.swift b/AltStore/Components/PillButton.swift
 index a609909..8c4aa32 100644
 --- a/AltStore/Components/PillButton.swift
@@ -109,6 +176,38 @@ index a609909..8c4aa32 100644
      override func sizeThatFits(_ size: CGSize) -> CGSize
      {
          var size = super.sizeThatFits(size)
+diff --git a/AltStore/Extensions/UIColor+AltStore.swift b/AltStore/Extensions/UIColor+AltStore.swift
+index 476fba1..4b7a681 100644
+--- a/AltStore/Extensions/UIColor+AltStore.swift
++++ b/AltStore/Extensions/UIColor+AltStore.swift
+@@ -21,20 +21,22 @@ extension UIColor
+     private static let saturationBrightnessThreshold = 0.5
+     
+     var adjustedForDisplay: UIColor {
+-        guard self.isTooBright || self.isTooDark else { return self }
+-        
+         return UIColor { traits in
+             var hue: CGFloat = 0
+             var saturation: CGFloat = 0
+             var brightness: CGFloat = 0
+             guard self.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: nil) else { return self }
+             
+-            brightness = min(brightness, UIColor.brightnessMaxThreshold)
++            // Limit saturation to avoid harsh pure colors (HSL harmony)
++            saturation = min(saturation, 0.76)
+             
+             if traits.userInterfaceStyle == .dark
+             {
+-                // Only raise brightness when in dark mode.
+-                brightness = max(brightness, UIColor.brightnessMinThreshold)
++                brightness = max(min(brightness, UIColor.brightnessMaxThreshold), UIColor.brightnessMinThreshold)
++            }
++            else
++            {
++                brightness = max(min(brightness, 0.80), 0.35)
+             }
+             
+             let color = UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: 1.0)
 diff --git a/AltStore/My Apps/MyAppsComponents.swift b/AltStore/My Apps/MyAppsComponents.swift
 index e7cf82b..902086f 100644
 --- a/AltStore/My Apps/MyAppsComponents.swift	
@@ -449,6 +548,32 @@ index 72863b1..8d18567 100644
 -        .navigationTitle("")
      }
  }
+diff --git a/AltStore/Settings/InsetGroupTableViewCell.swift b/AltStore/Settings/InsetGroupTableViewCell.swift
+index 47a4e88..1f0a817 100644
+--- a/AltStore/Settings/InsetGroupTableViewCell.swift
++++ b/AltStore/Settings/InsetGroupTableViewCell.swift
+@@ -47,7 +47,9 @@ final class InsetGroupTableViewCell: UITableViewCell
+         self.addSubview(self.separatorView)
+         
+         self.insetView.layer.masksToBounds = true
+-        self.insetView.layer.cornerRadius = 16
++        self.insetView.layer.cornerRadius = 20
++        self.insetView.layer.borderColor = UIColor.white.withAlphaComponent(0.10).cgColor
++        self.insetView.layer.borderWidth = 1.0
+         
+         // Get the preferred background color from Interface Builder.
+         self.insetView.backgroundColor = self.backgroundColor
+@@ -84,6 +86,10 @@ final class InsetGroupTableViewCell: UITableViewCell
+     {
+         super.setHighlighted(highlighted, animated: animated)
+         
++        UIView.animate(withDuration: 0.2, delay: 0, options: [.beginFromCurrentState, .allowUserInteraction], animations: {
++            self.transform = highlighted ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity
++        }, completion: nil)
++        
+         if animated
+         {
+             UIView.animate(withDuration: 0.4) {
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
 index 82b1622..2572694 100644
 --- a/AltStore/Settings/SettingsViewController.swift
