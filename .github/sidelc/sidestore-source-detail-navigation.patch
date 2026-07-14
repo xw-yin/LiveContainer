@@ -258,8 +258,11 @@ index 82b1622..9295e24 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
---- /dev/null	2026-07-14 17:58:59
-+++ b/AltStore/AltStore/Extensions/Bundle+Localize.swift	2026-07-14 17:55:02
+diff --git a/AltStore/Extensions/Bundle+Localize.swift b/AltStore/Extensions/Bundle+Localize.swift
+new file mode 100644
+index 0000000..9d10bdb
+--- /dev/null
++++ b/AltStore/Extensions/Bundle+Localize.swift
 @@ -0,0 +1,34 @@
 +import Foundation
 +import ObjectiveC
@@ -295,9 +298,12 @@ index 82b1622..9295e24 100644
 +        objc_setAssociatedObject(Bundle.main, &associationKey, bundle, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
 +    }
 +}
---- /dev/null	2026-07-14 17:58:59
-+++ b/AltStore/AltStore/zh-Hans.lproj/Localizable.strings	2026-07-14 17:55:05
-@@ -0,0 +1,53 @@
+diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
+new file mode 100644
+index 0000000..517c33b
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/Localizable.strings
+@@ -0,0 +1,31 @@
 +/* Localizable.strings (zh-Hans) */
 +
 +"Language" = "语言";
@@ -329,25 +335,3 @@ index 82b1622..9295e24 100644
 +"Info" = "信息";
 +"Change Icon" = "更换图标";
 +"Photos" = "相册";
-+
-+"Unable to Check for Updates" = "无法检查更新";
-+"Start Backup?" = "开始备份吗？";
-+"This will replace any previous backups. Please leave SideStore open until the backup is complete." = "这将会替换之前的任何备份。请保持 SideStore 开启直到备份完成。";
-+"Back Up %@" = "备份 %@";
-+"Are you sure you want to restore this backup?" = "您确定要还原该备份吗？";
-+"This will replace all data you currently have in %@." = "这将会替换您当前在 %@ 中的所有数据。";
-+"Remove “%@” from SideStore?" = "从 SideStore 中删除“%@”吗？";
-+"You must also delete it from the home screen to fully uninstall the app." = "您必须在主屏幕上将其删除，以彻底卸载该软件。";
-+"This will also erase all backup data for this app." = "这也会擦除该软件的所有备份数据。";
-+
-+"Failed to find Pairing File!" = "未找到配对文件！";
-+"Failed to encode pairingFile!" = "配对文件编码失败！";
-+"Failed to initialize callback URL!" = "初始化回调 URL 失败！";
-+
-+"Pairing File" = "配对文件";
-+"The selected pairing file is invalid or not usable. Please select a valid pairing file." = "选中的配对文件无效或不可用。请选择有效的配对文件。";
-+"Select the pairing file or select \"Help\" for help." = "请选择配对文件，或者选择“帮助”获取协助。";
-+"Help" = "帮助";
-+"Select File" = "选择文件";
-+"Invalid Pairing File" = "无效的配对文件";
-+"Skip" = "跳过";
