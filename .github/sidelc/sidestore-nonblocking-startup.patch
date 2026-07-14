@@ -1,8 +1,57 @@
+diff --git a/AltStore/AppBootManager.swift b/AltStore/AppBootManager.swift
+index 2311b21..ca31d8a 100644
+--- a/AltStore/AppBootManager.swift
++++ b/AltStore/AppBootManager.swift
+@@ -42,6 +42,7 @@ public final class AppBootManager {
+         try await minimuxerStart(pairingFile, mountPath: FileManager.default.documentsDirectory.absoluteString)
+         await MainActor.run {
+             self.isMinimuxerStarted = true
++            ProxyStatusManager.shared.signalReady()
+         }
+         
+         // Validate the pairing by trying to fetch the UDID
+@@ -111,6 +112,7 @@ public final class AppBootManager {
+         
+         // Await both concurrently (Structured Concurrency awaits them in parallel)
+         _ = await (jitCheck, minimuxerCheck)
++        ProxyStatusManager.shared.signalReady()
+     }
+     
+     private nonisolated func askForNetwork() async {
+@@ -158,3 +160,28 @@ public final class AppBootManager {
+         }
+     }
+ }
++
++public class ProxyStatusManager {
++    public static let shared = ProxyStatusManager()
++    private var isReady = false
++    private var completionHandlers: [() -> Void] = []
++    
++    public func signalReady() {
++        DispatchQueue.main.async {
++            guard !self.isReady else { return }
++            self.isReady = true
++            self.completionHandlers.forEach { $0() }
++            self.completionHandlers.removeAll()
++        }
++    }
++    
++    public func performWhenReady(_ block: @escaping () -> Void) {
++        DispatchQueue.main.async {
++            if self.isReady {
++                block()
++            } else {
++                self.completionHandlers.append(block)
++            }
++        }
++    }
++}
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 8f8f761..dec09ab 100644
+index 53f7954..83fbfce 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
-@@ -97,7 +97,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -115,7 +115,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
  
          // TODO: @mahee96: find if we need to start em_proxy as in altstore?
          if UserDefaults.standard.enableEMPforWireguard {
@@ -13,7 +62,7 @@ index 8f8f761..dec09ab 100644
          }
  
          SecureValueTransformer.register()        
-@@ -145,7 +147,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -163,7 +165,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
      {
          AppManager.shared.update()
          if UserDefaults.standard.enableEMPforWireguard {
@@ -23,55 +72,58 @@ index 8f8f761..dec09ab 100644
 +            }
          }
      }
-     
+ 
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
-index 9bcf314..09d911c 100644
+index 5e33a71..d68c760 100644
 --- a/AltStore/LaunchViewController.swift
 +++ b/AltStore/LaunchViewController.swift
-@@ -76,7 +76,9 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
-         detectAndImportAccountFile()
+@@ -233,23 +233,26 @@ extension LaunchViewController {
+         didFinishLaunching = true
          
-         if UserDefaults.standard.enableEMPforWireguard {
--            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            Task.detached {
-+                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            }
+         AppManager.shared.update()
+-        AppManager.shared.updateAllSources { result in
+-            guard case .failure(let error) = result else { return }
+-            debugLog("Failed to update sources on launch. \(error.localizedDescription)")
+-            
+-            
+-            let errorDesc = ErrorProcessing(.fullError).getDescription(error: error as NSError)
+-            debugLog("Failed to update sources on launch. \(errorDesc)")
+-            
+-            var mode: ToastView.InfoMode = .fullError
+-            if String(describing: error).contains("The Internet connection appears to be offline"){
+-                mode = .localizedDescription    // dont make noise!
++        ProxyStatusManager.shared.performWhenReady { [weak self] in
++            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
++                AppManager.shared.updateAllSources { result in
++                    guard case .failure(let error) = result else { return }
++                    debugLog("Failed to update sources on launch. \(error.localizedDescription)")
++                    
++                    let errorDesc = ErrorProcessing(.fullError).getDescription(error: error as NSError)
++                    debugLog("Failed to update sources on launch. \(errorDesc)")
++                    
++                    var mode: ToastView.InfoMode = .fullError
++                    if String(describing: error).contains("The Internet connection appears to be offline"){
++                        mode = .localizedDescription    // dont make noise!
++                    }
++                    let toastView = ToastView(error: error, mode: mode)
++                    toastView.addTarget(self?.destinationViewController, action: #selector(TabBarController.presentSources), for: .touchUpInside)
++                    toastView.show(in: self?.destinationViewController?.selectedViewController ?? self?.destinationViewController!)
++                }
++                self?.updateKnownSources()
+             }
+-            let toastView = ToastView(error: error, mode: mode)
+-            toastView.addTarget(self.destinationViewController, action: #selector(TabBarController.presentSources), for: .touchUpInside)
+-            toastView.show(in: self.destinationViewController!.selectedViewController ?? self.destinationViewController!)
          }
-         guard let pf = fetchPairingFile() else {
-             displayError("Device pairing file not found.")
-@@ -87,16 +89,18 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
-     }
- 
-     func start_minimuxer_threads(_ pairing_file: String) {
--        retargetUsbmuxdAddr()
--        let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
--        do {
--            let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
--            try minimuxerStartWithLogger(pairing_file, documentsDirectory, loggingEnabled)
--        } catch {
--            try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
--            displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR")")
-+        Task.detached {
-+            retargetUsbmuxdAddr()
-+            let documentsDirectory = FileManager.default.documentsDirectory.absoluteString
-+            do {
-+                let loggingEnabled = UserDefaults.standard.isMinimuxerConsoleLoggingEnabled
-+                try minimuxerStartWithLogger(pairing_file, documentsDirectory, loggingEnabled)
-+            } catch {
-+                try! FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
-+                await self.displayError("minimuxer failed to start, please restart SideStore. \((error as? LocalizedError)?.failureReason ?? "UNKNOWN ERROR")")
-+            }
-+            startAutoMounter(documentsDirectory)
-         }
--        startAutoMounter(documentsDirectory)
-     }
- 
-     func fetchPairingFile() -> String? { PairingFileManager.shared.fetchPairingFile(presentingVC: self) }
+-        updateKnownSources()
+         WidgetCenter.shared.reloadAllTimelines()
+         didFinishLaunching = true
+         
 diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
-index f98fea5..655a970 100644
+index ce219dc..ee4ed97 100644
 --- a/AltStore/Managing Apps/AppManager.swift	
 +++ b/AltStore/Managing Apps/AppManager.swift	
-@@ -46,7 +46,7 @@ class AppManager: ObservableObject
+@@ -48,7 +48,7 @@ class AppManager: ObservableObject
      private(set) var updatePatronsResult: Result<Void, Error>?
      
      @Published
@@ -80,7 +132,7 @@ index f98fea5..655a970 100644
      
      private let operationQueue = OperationQueue()
      private let serialOperationQueue = OperationQueue()
-@@ -590,7 +590,11 @@ extension AppManager
+@@ -602,7 +602,11 @@ extension AppManager
      
      func updateAllSources(completion: @escaping (Result<Void, Error>) -> Void)
      {
@@ -94,10 +146,10 @@ index f98fea5..655a970 100644
          self.fetchSources() { (result) in
              do
 diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
-index 27b3e8c..ab28aeb 100644
+index 1deb8ce..c8674b3 100644
 --- a/AltStore/SceneDelegate.swift
 +++ b/AltStore/SceneDelegate.swift
-@@ -41,7 +41,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
+@@ -46,7 +46,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
          
          AppManager.shared.update()
          if UserDefaults.standard.enableEMPforWireguard {
