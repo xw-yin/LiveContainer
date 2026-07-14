@@ -48,21 +48,10 @@ index 2311b21..ca31d8a 100644
 +    }
 +}
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 53f7954..1fcf928 100644
+index 53f7954..b6bbce2 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
-@@ -50,6 +50,10 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
- 
-     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool
-     {
-+        // Apply saved language preference before any UI is created
-+        let savedLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
-+        Bundle.setLanguage(savedLanguage)
-+        
-         // navigation bar buttons spacing is too much (so hack it to use minimal spacing)
-         // this is swift-5 specific behavior and might change
-         // https://stackoverflow.com/a/64988363/11971304
-@@ -115,7 +119,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -115,7 +115,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
  
          // TODO: @mahee96: find if we need to start em_proxy as in altstore?
          if UserDefaults.standard.enableEMPforWireguard {
@@ -73,7 +62,7 @@ index 53f7954..1fcf928 100644
          }
  
          SecureValueTransformer.register()        
-@@ -163,7 +169,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -163,7 +165,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
      {
          AppManager.shared.update()
          if UserDefaults.standard.enableEMPforWireguard {
