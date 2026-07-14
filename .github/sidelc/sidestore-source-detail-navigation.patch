@@ -121,10 +121,26 @@ index 47a4e88..ad14df9 100644
          }
      }
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 82b1622..9295e24 100644
+index 82b1622..ae971b5 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
-@@ -1058,6 +1058,7 @@ extension SettingsViewController
+@@ -1035,6 +1035,15 @@ extension SettingsViewController
+     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
+     {
+         let section = Section.allCases[indexPath.section]
++
++        // Return automatic height for the injected Language row to avoid out-of-bounds in storyboard static cells
++        if section == .display {
++            let storyboardCount = super.tableView(tableView, numberOfRowsInSection: indexPath.section)
++            if indexPath.row >= storyboardCount {
++                return UITableView.automaticDimension
++            }
++        }
++
+         if section == .advancedSettings {
+             let row = AdvancedSettingsRow.allCases[indexPath.row]
+             if row == .wirelessPair {
+@@ -1058,6 +1067,7 @@ extension SettingsViewController
          case .account: return (self.activeTeam == nil) ? 0 : 3
          case .appRefresh: return AppRefreshRow.allCases.count
          case .advancedSettings: return AdvancedSettingsRow.allCases.count
@@ -132,7 +148,7 @@ index 82b1622..9295e24 100644
          default: return super.tableView(tableView, numberOfRowsInSection: section.rawValue)
          }
      }
-@@ -1065,6 +1066,24 @@ extension SettingsViewController
+@@ -1065,6 +1075,24 @@ extension SettingsViewController
      override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
      {
          let section = Section.allCases[indexPath.section]
