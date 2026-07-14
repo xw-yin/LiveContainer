@@ -72,7 +72,7 @@ jobs:
           git clone --depth 1 --branch LiveContainerSupport3 --recurse-submodules --shallow-submodules https://github.com/LiveContainer/SideStore.git SideStoreBuild
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-source-detail-navigation.patch"
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-nonblocking-startup.patch"
-          git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-language-selection.patch"
+          git -C SideStoreBuild apply --recount "$GITHUB_WORKSPACE/.github/sidelc/sidestore-language-selection.patch"
           make -C SideStoreBuild build fakesign ipa
           cp SideStoreBuild/SideStore.ipa "$GITHUB_WORKSPACE/SideStore.patched.ipa"
       - name: Create IPA
