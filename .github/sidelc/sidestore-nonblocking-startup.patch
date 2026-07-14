@@ -74,10 +74,10 @@ index 53f7954..83fbfce 100644
      }
  
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
-index 5e33a71..d68c760 100644
+index 5e33a71..39365fd 100644
 --- a/AltStore/LaunchViewController.swift
 +++ b/AltStore/LaunchViewController.swift
-@@ -233,23 +233,26 @@ extension LaunchViewController {
+@@ -233,23 +233,27 @@ extension LaunchViewController {
          didFinishLaunching = true
          
          AppManager.shared.update()
@@ -94,6 +94,7 @@ index 5e33a71..d68c760 100644
 -                mode = .localizedDescription    // dont make noise!
 +        ProxyStatusManager.shared.performWhenReady { [weak self] in
 +            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
++                guard let self = self, let destinationVC = self.destinationViewController else { return }
 +                AppManager.shared.updateAllSources { result in
 +                    guard case .failure(let error) = result else { return }
 +                    debugLog("Failed to update sources on launch. \(error.localizedDescription)")
@@ -106,10 +107,10 @@ index 5e33a71..d68c760 100644
 +                        mode = .localizedDescription    // dont make noise!
 +                    }
 +                    let toastView = ToastView(error: error, mode: mode)
-+                    toastView.addTarget(self?.destinationViewController, action: #selector(TabBarController.presentSources), for: .touchUpInside)
-+                    toastView.show(in: self?.destinationViewController?.selectedViewController ?? self?.destinationViewController!)
++                    toastView.addTarget(destinationVC, action: #selector(TabBarController.presentSources), for: .touchUpInside)
++                    toastView.show(in: destinationVC.selectedViewController ?? destinationVC)
 +                }
-+                self?.updateKnownSources()
++                self.updateKnownSources()
              }
 -            let toastView = ToastView(error: error, mode: mode)
 -            toastView.addTarget(self.destinationViewController, action: #selector(TabBarController.presentSources), for: .touchUpInside)
