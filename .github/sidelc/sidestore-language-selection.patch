@@ -11,10 +11,10 @@ index 2e461a3..05db8c5 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 83fbfce..2e6c595 100644
+index 83fbfce..3a16561 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
-@@ -13,10 +13,53 @@ import Intents
+@@ -13,10 +13,62 @@ import Intents
  import AltStoreCore
  import AltSign
  import CoreData
@@ -25,18 +25,27 @@ index 83fbfce..2e6c595 100644
  
 +private var sideStoreLanguageBundleKey: UInt8 = 0
 +
-+private final class SideStoreLocalizedBundle: Bundle {
-+    override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
-+        guard let bundle = objc_getAssociatedObject(self, &sideStoreLanguageBundleKey) as? Bundle else {
-+            return super.localizedString(forKey: key, value: value, table: tableName)
-+        }
-+        return bundle.localizedString(forKey: key, value: value, table: tableName)
-+    }
-+}
-+
 +extension Bundle {
++    private static let swizzleLocalizedString: Void = {
++        let originalSelector = #selector(Bundle.localizedString(forKey:value:table:))
++        let swizzledSelector = #selector(Bundle.custom_localizedString(forKey:value:table:))
++        
++        guard let originalMethod = class_getInstanceMethod(Bundle.self, originalSelector),
++              let swizzledMethod = class_getInstanceMethod(Bundle.self, swizzledSelector) else { return }
++        
++        method_exchangeImplementations(originalMethod, swizzledMethod)
++    }()
++    
++    @objc private func custom_localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
++        if self == Bundle.main,
++           let bundle = objc_getAssociatedObject(self, &sideStoreLanguageBundleKey) as? Bundle {
++            return bundle.custom_localizedString(forKey: key, value: value, table: tableName)
++        }
++        return self.custom_localizedString(forKey: key, value: value, table: tableName)
++    }
++
 +    static func setSideStoreLanguage(_ languageCode: String?) {
-+        object_setClass(Bundle.main, SideStoreLocalizedBundle.self)
++        _ = Bundle.swizzleLocalizedString
 +
 +        var resolvedCode = languageCode
 +        if resolvedCode == nil {
@@ -68,7 +77,7 @@ index 83fbfce..2e6c595 100644
  extension UIApplication: LegacyBackgroundFetching {}
  
  extension AppDelegate
-@@ -48,8 +91,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -48,8 +100,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
      // so the import notification can be posted once the app becomes active.
      private var pendingImportIPAURL: URL?
  
