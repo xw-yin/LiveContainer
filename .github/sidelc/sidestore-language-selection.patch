@@ -11,7 +11,7 @@ index 2e461a3..05db8c5 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 83fbfce..64cb117 100644
+index 83fbfce..2e6c595 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
 @@ -13,10 +13,53 @@ import Intents
@@ -68,11 +68,17 @@ index 83fbfce..64cb117 100644
  extension UIApplication: LegacyBackgroundFetching {}
  
  extension AppDelegate
-@@ -50,6 +93,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -48,8 +91,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+     // so the import notification can be posted once the app becomes active.
+     private var pendingImportIPAURL: URL?
  
++    override init() {
++        super.init()
++        Bundle.setSideStoreLanguage(UserDefaults.standard.string(forKey: "ALTSelectedLanguage"))
++    }
++
      func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool
      {
-+        Bundle.setSideStoreLanguage(UserDefaults.standard.string(forKey: "ALTSelectedLanguage"))
 +
          // navigation bar buttons spacing is too much (so hack it to use minimal spacing)
          // this is swift-5 specific behavior and might change
@@ -260,6 +266,20 @@ index 2572694..c82587e 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
+index 00ee6b0..2de2f29 100644
+--- a/AltStore/Sources/SourcesViewController.swift
++++ b/AltStore/Sources/SourcesViewController.swift
+@@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
+         navigationItem.largeTitleDisplayMode = .automatic
+ 
+         // Set title
+-        navigationItem.title = "Sources"
++        navigationItem.title = NSLocalizedString("Sources", comment: "")
++        self.tabBarItem.title = NSLocalizedString("Sources", comment: "")
+         navigationController?.navigationBar.layoutMargins.left = 20
+         
+         let layout = self.makeLayout()
 diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 new file mode 100644
 index 0000000..e9b8596
@@ -302,10 +322,10 @@ index 0000000..4ab9202
 +"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 0000000..621e1a1
+index 0000000..3dc4bd9
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -0,0 +1,461 @@
+@@ -0,0 +1,462 @@
 +/* Localizable.strings (zh-Hans) */
 +
 +"Language" = "语言";
@@ -767,6 +787,7 @@ index 0000000..621e1a1
 +"Error Code" = "错误代码";
 +"Error Description" = "错误说明";
 +"Error Log" = "错误日志";
++"Sources" = "来源";
 diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
 new file mode 100644
 index 0000000..8d0bc49
