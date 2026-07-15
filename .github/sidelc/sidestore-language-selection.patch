@@ -83,6 +83,36 @@ index 83fbfce..2e6c595 100644
          // navigation bar buttons spacing is too much (so hack it to use minimal spacing)
          // this is swift-5 specific behavior and might change
          // https://stackoverflow.com/a/64988363/11971304
+diff --git a/AltStore/Settings/Error Log/ErrorLogViewController.swift b/AltStore/Settings/Error Log/ErrorLogViewController.swift
+index a19d5e7..7a89a62 100644
+--- a/AltStore/Settings/Error Log/ErrorLogViewController.swift	
++++ b/AltStore/Settings/Error Log/ErrorLogViewController.swift	
+@@ -42,13 +42,24 @@ final class ErrorLogViewController: UITableViewController, QLPreviewControllerDe
+     private var _exportedLogURL: URL?
+     
+     override var preferredStatusBarStyle: UIStatusBarStyle {
+-        return .lightContent
++        if self.traitCollection.userInterfaceStyle == .dark {
++            return .lightContent
++        } else {
++            return .darkContent
++        }
+     }
+     
+     override func viewDidLoad()
+     {
+         super.viewDidLoad()
+         
++        let appearance = UINavigationBarAppearance()
++        appearance.configureWithDefaultBackground()
++        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
++        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
++        self.navigationItem.standardAppearance = appearance
++        self.navigationItem.scrollEdgeAppearance = appearance
++        
+         self.tableView.dataSource = self.dataSource
+         self.dataSource.contentView = self.tableView
+         self.tableView.prefetchDataSource = self.dataSource
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
 index cfe1435..1692c7f 100644
 --- a/AltStore/Settings/Settings.storyboard
@@ -136,7 +166,7 @@ index cfe1435..1692c7f 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 2572694..c82587e 100644
+index 2572694..7e15055 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
 @@ -384,6 +384,9 @@ final class SettingsViewController: UITableViewController
@@ -149,7 +179,7 @@ index 2572694..c82587e 100644
          // show nav bar if not shown already
          self.navigationController?.setNavigationBarHidden(false, animated: animated)
          
-@@ -1067,6 +1070,16 @@ extension SettingsViewController
+@@ -1067,6 +1070,20 @@ extension SettingsViewController
          let section = Section.allCases[indexPath.section]
          let cell = super.tableView(tableView, cellForRowAt: indexPath)
          
@@ -161,12 +191,16 @@ index 2572694..c82587e 100644
 +            case "en": cell.detailTextLabel?.text = "English"
 +            default: cell.detailTextLabel?.text = NSLocalizedString("System Default", comment: "")
 +            }
++            cell.accessoryType = .none
++            let chevron = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: UIImage.SymbolConfiguration(scale: .large)))
++            chevron.tintColor = .white
++            cell.accessoryView = chevron
 +        }
 +        
          if section == .advancedSettings {
              let row = AdvancedSettingsRow.allCases[indexPath.row]
              if row == .wirelessPair {
-@@ -1105,6 +1118,7 @@ extension SettingsViewController
+@@ -1105,6 +1122,7 @@ extension SettingsViewController
          }
          
          
@@ -174,7 +208,7 @@ index 2572694..c82587e 100644
          return cell
      }
      
-@@ -1717,7 +1731,11 @@ extension SettingsViewController
+@@ -1717,7 +1735,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -187,7 +221,7 @@ index 2572694..c82587e 100644
          }
          
          
-@@ -1726,6 +1744,78 @@ extension SettingsViewController
+@@ -1726,6 +1748,78 @@ extension SettingsViewController
      }
  }
  
