@@ -1,5 +1,5 @@
 diff --git a/AltStore.xcodeproj/project.pbxproj b/AltStore.xcodeproj/project.pbxproj
-index 2e461a3..488ca2a 100644
+index 2e461a3..05db8c5 100644
 --- a/AltStore.xcodeproj/project.pbxproj
 +++ b/AltStore.xcodeproj/project.pbxproj
 @@ -589,6 +589,7 @@
@@ -11,10 +11,10 @@ index 2e461a3..488ca2a 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index fa0d52e..9c04328 100644
+index 83fbfce..64cb117 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
-@@ -13,10 +13,39 @@ import Intents
+@@ -13,10 +13,53 @@ import Intents
  import AltStoreCore
  import AltSign
  import CoreData
@@ -38,7 +38,21 @@ index fa0d52e..9c04328 100644
 +    static func setSideStoreLanguage(_ languageCode: String?) {
 +        object_setClass(Bundle.main, SideStoreLocalizedBundle.self)
 +
-+        let resourceName = languageCode == "en" ? "Base" : languageCode
++        var resolvedCode = languageCode
++        if resolvedCode == nil {
++            for preferred in Locale.preferredLanguages {
++                let lower = preferred.lowercased()
++                if lower.hasPrefix("zh") {
++                    resolvedCode = "zh-Hans"
++                    break
++                } else if lower.hasPrefix("en") {
++                    resolvedCode = "en"
++                    break
++                }
++            }
++        }
++
++        let resourceName = resolvedCode == "en" ? "Base" : resolvedCode
 +        let localizedBundle = resourceName
 +            .flatMap { Bundle.main.path(forResource: $0, ofType: "lproj") }
 +            .flatMap { Bundle(path: $0) }
@@ -54,7 +68,7 @@ index fa0d52e..9c04328 100644
  extension UIApplication: LegacyBackgroundFetching {}
  
  extension AppDelegate
-@@ -50,6 +79,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -50,6 +93,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
  
      func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool
      {
@@ -64,7 +78,7 @@ index fa0d52e..9c04328 100644
          // this is swift-5 specific behavior and might change
          // https://stackoverflow.com/a/64988363/11971304
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
-index cfe1435..38568b5 100644
+index cfe1435..1692c7f 100644
 --- a/AltStore/Settings/Settings.storyboard
 +++ b/AltStore/Settings/Settings.storyboard
 @@ -303,7 +303,7 @@
@@ -116,15 +130,23 @@ index cfe1435..38568b5 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 9c828b3..61e0712 100644
+index 2572694..c82587e 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
-@@ -387,1 +387,4 @@ final class SettingsViewController: UITableViewController
+@@ -384,6 +384,9 @@ final class SettingsViewController: UITableViewController
+     {
+         super.viewWillAppear(animated)
+         
 +        self.navigationItem.title = NSLocalizedString("Settings", comment: "")
 +        self.tabBarItem.title = NSLocalizedString("Settings", comment: "")
 +        self.localizeSettingsControls(in: self.view)
          // show nav bar if not shown already
-@@ -1070,1 +1070,11 @@ extension SettingsViewController
+         self.navigationController?.setNavigationBarHidden(false, animated: animated)
+         
+@@ -1067,6 +1070,16 @@ extension SettingsViewController
+         let section = Section.allCases[indexPath.section]
+         let cell = super.tableView(tableView, cellForRowAt: indexPath)
+         
 +        if section == .display && indexPath.row == 1 {
 +            let currentLanguage = UserDefaults.standard.string(forKey: "ALTSelectedLanguage")
 +            cell.textLabel?.text = NSLocalizedString("Language", comment: "")
@@ -136,10 +158,17 @@ index 9c828b3..61e0712 100644
 +        }
 +        
          if section == .advancedSettings {
-@@ -1108,1 +1118,2 @@ extension SettingsViewController
+             let row = AdvancedSettingsRow.allCases[indexPath.row]
+             if row == .wirelessPair {
+@@ -1105,6 +1118,7 @@ extension SettingsViewController
+         }
+         
+         
 +        self.localizeSettingsControls(in: cell)
          return cell
-@@ -1717,7 +1727,11 @@ extension SettingsViewController
+     }
+     
+@@ -1717,7 +1731,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -152,7 +181,7 @@ index 9c828b3..61e0712 100644
          }
          
          
-@@ -1726,6 +1740,65 @@ extension SettingsViewController
+@@ -1726,6 +1744,78 @@ extension SettingsViewController
      }
  }
  
@@ -231,12 +260,52 @@ index 9c828b3..61e0712 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
+new file mode 100644
+index 0000000..e9b8596
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
+@@ -0,0 +1 @@
++"DTd-Yu-HXr.text" = "SideStore 团队";
+diff --git a/AltStore/zh-Hans.lproj/Authentication.strings b/AltStore/zh-Hans.lproj/Authentication.strings
+new file mode 100644
+index 0000000..2864559
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/Authentication.strings
+@@ -0,0 +1,20 @@
++"EI2-V3-zQZ.text" = "欢迎使用 SideStore。";
++"SNU-tv-8Au.text" = "使用 Apple ID 登录以开始使用。";
++"59N-O1-6bM.text" = "APPLE ID";
++"DBu-vt-hlo.placeholder" = "name@email.com";
++"Ava-XY-7vs.text" = "密码";
++"p9U-0q-Kn8.text" = "为什么需要这些信息？";
++"nDc-Zs-wnK.title" = "关闭";
++"XKD-XH-eB0.text" = "启动 SideStore";
++"6HP-Xh-sAH.text" = "让 SideStore 在设备后台保持运行。";
++"esj-pD-D4A.text" = "连接 Wi-Fi 和 VPN";
++"4rk-ge-FSj.text" = "启用 LocalDevVPN，随时随地使用 SideStore。";
++"JeJ-bk-UCA.text" = "下载 App";
++"M7T-9j-uyt.text" = "直接从 SideStore 浏览和下载 App。";
++"nvb-Aq-sYa.text" = "App 自动刷新";
++"HU5-Hv-E3d.text" = "连接 SideStore VPN 时，App 会在后台刷新。";
++"bCq-Jq-gf1.title" = "工作原理";
++"5nk-NR-jtV.title" = "刷新 SideStore";
++"6ip-34-gmM.text" = "团队 1";
++"knk-Wf-PKf.text" = "说明";
++"qxJ-Go-OPq.title" = "选择团队";
+diff --git a/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
+new file mode 100644
+index 0000000..4ab9202
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
+@@ -0,0 +1 @@
++"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 0000000..350cdfa
+index 0000000..621e1a1
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,461 @@
 +/* Localizable.strings (zh-Hans) */
 +
 +"Language" = "语言";
@@ -698,11 +767,33 @@ index 0000000..350cdfa
 +"Error Code" = "错误代码";
 +"Error Description" = "错误说明";
 +"Error Log" = "错误日志";
+diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
+new file mode 100644
+index 0000000..8d0bc49
+--- /dev/null
++++ b/AltStore/zh-Hans.lproj/Main.strings
+@@ -0,0 +1,15 @@
++"pUx-6k-rtr.title" = "浏览";
++"dj7-G8-GFv.text" = "权限";
++"sWo-Y8-aF6.title" = "App";
++"OZm-Le-7oJ.title" = "设置";
++"ZxL-Ws-lJO.title" = "新闻";
++"Uwh-Bg-Ymq.title" = "浏览";
++"4gT-9u-k7y.title" = "我的 App";
++"z04-yg-x1t.text" = "没有可用更新";
++"LLv-8I-6Of.text" = "5/10 个 App ID";
++"zLJ-Cg-ijh.title" = "我的 App";
++"y1A-Nm-mw7.title" = "App ID";
++"83Z-Ih-nOW.text" = "App ID 说明";
++"Zna-7n-kBz.text" = "10 个 App ID";
++"3Co-uv-Fhb.title" = "App ID";
++"fVN-ed-uO1.title" = "新闻";
 diff --git a/AltStore/zh-Hans.lproj/Settings.strings b/AltStore/zh-Hans.lproj/Settings.strings
 new file mode 100644
+index 0000000..a277a73
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Settings.strings
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,63 @@
 +"XFa-MY-7cV.text" = "关注 SideStore 以获取更新";
 +"5u7-mb-jJj.text" = "版本 0.6.0";
 +"7lu-Yk-87t.text" = "使用 Apple ID 登录";
@@ -766,91 +857,38 @@ new file mode 100644
 +"R5a-wv-xHd.text" = "错误代码";
 +"1df-ri-hKN.text" = "错误说明";
 +"a1p-3W-bSi.title" = "错误日志";
-diff --git a/AltStore/zh-Hans.lproj/Authentication.strings b/AltStore/zh-Hans.lproj/Authentication.strings
+diff --git a/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 new file mode 100644
+index 0000000..3e25ac4
 --- /dev/null
-+++ b/AltStore/zh-Hans.lproj/Authentication.strings
-@@ -0,0 +1,25 @@
-+"EI2-V3-zQZ.text" = "欢迎使用 SideStore。";
-+"SNU-tv-8Au.text" = "使用 Apple ID 登录以开始使用。";
-+"59N-O1-6bM.text" = "APPLE ID";
-+"DBu-vt-hlo.placeholder" = "name@email.com";
-+"Ava-XY-7vs.text" = "密码";
-+"p9U-0q-Kn8.text" = "为什么需要这些信息？";
-+"nDc-Zs-wnK.title" = "关闭";
-+"XKD-XH-eB0.text" = "启动 SideStore";
-+"6HP-Xh-sAH.text" = "让 SideStore 在设备后台保持运行。";
-+"esj-pD-D4A.text" = "连接 Wi-Fi 和 VPN";
-+"4rk-ge-FSj.text" = "启用 LocalDevVPN，随时随地使用 SideStore。";
-+"JeJ-bk-UCA.text" = "下载 App";
-+"M7T-9j-uyt.text" = "直接从 SideStore 浏览和下载 App。";
-+"nvb-Aq-sYa.text" = "App 自动刷新";
-+"HU5-Hv-E3d.text" = "连接 SideStore VPN 时，App 会在后台刷新。";
-+"bCq-Jq-gf1.title" = "工作原理";
-+"5nk-NR-jtV.title" = "刷新 SideStore";
-+"6ip-34-gmM.text" = "团队 1";
-+"knk-Wf-PKf.text" = "说明";
-+"qxJ-Go-OPq.title" = "选择团队";
-diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
++++ b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
+@@ -0,0 +1,2 @@
++"rLj-Ff-ZTt.text" = "账户";
++"eet-Hi-RU4.text" = "说明";
+diff --git a/AltStore/zh-Hans.lproj/SourceHeaderView.strings b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
 new file mode 100644
+index 0000000..663dfce
 --- /dev/null
-+++ b/AltStore/zh-Hans.lproj/Main.strings
-@@ -0,0 +1,19 @@
-+"pUx-6k-rtr.title" = "浏览";
-+"dj7-G8-GFv.text" = "权限";
-+"sWo-Y8-aF6.title" = "App";
-+"OZm-Le-7oJ.title" = "设置";
-+"ZxL-Ws-lJO.title" = "新闻";
-+"Uwh-Bg-Ymq.title" = "浏览";
-+"4gT-9u-k7y.title" = "我的 App";
-+"z04-yg-x1t.text" = "没有可用更新";
-+"LLv-8I-6Of.text" = "5/10 个 App ID";
-+"zLJ-Cg-ijh.title" = "我的 App";
-+"y1A-Nm-mw7.title" = "App ID";
-+"83Z-Ih-nOW.text" = "App ID 说明";
-+"Zna-7n-kBz.text" = "10 个 App ID";
-+"3Co-uv-Fhb.title" = "App ID";
-+"fVN-ed-uO1.title" = "新闻";
++++ b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
+@@ -0,0 +1,2 @@
++"FsG-Wm-6xP.text" = "来源名称";
++"IUL-qI-QAg.text" = "副标题";
 diff --git a/AltStore/zh-Hans.lproj/Sources.strings b/AltStore/zh-Hans.lproj/Sources.strings
 new file mode 100644
+index 0000000..346d95e
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Sources.strings
-@@ -0,0 +1,7 @@
+@@ -0,0 +1,6 @@
 +"xPv-dc-X4v.title" = "来源";
 +"rUb-ON-AON.title" = "所有 App";
 +"FGB-cd-Vkd.title" = "所有新闻";
 +"Wm7-1O-FkD.title" = "来源";
 +"Noh-fc-wch.title" = "来源";
 +"v46-dC-g7e.title" = "添加来源";
-diff --git a/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
-new file mode 100644
---- /dev/null
-+++ b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
-@@ -0,0 +1,2 @@
-+"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 new file mode 100644
+index 0000000..f338081
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
-@@ -0,0 +1,2 @@
+@@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
-diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
-new file mode 100644
---- /dev/null
-+++ b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
-@@ -0,0 +1,4 @@
-+"DTd-Yu-HXr.text" = "SideStore 团队";
-diff --git a/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
-new file mode 100644
---- /dev/null
-+++ b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
-@@ -0,0 +1,3 @@
-+"rLj-Ff-ZTt.text" = "账户";
-+"eet-Hi-RU4.text" = "说明";
-diff --git a/AltStore/zh-Hans.lproj/SourceHeaderView.strings b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
-new file mode 100644
---- /dev/null
-+++ b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
-@@ -0,0 +1,3 @@
-+"FsG-Wm-6xP.text" = "来源名称";
-+"IUL-qI-QAg.text" = "副标题";
