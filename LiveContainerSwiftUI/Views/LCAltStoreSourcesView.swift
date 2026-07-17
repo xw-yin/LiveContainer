@@ -232,10 +232,11 @@ final class AltStoreSourcesViewModel: ObservableObject {
         let urls = stored.compactMap { URL(string: $0) }
         self.sources = urls.map { SourceItem(url: $0, isLoading: false) }
         
-        Task {
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
             var loadedSources = [URL: AltStoreSource]()
             for url in urls {
-                if let data = cachedData(for: url),
+                if let data = self.cachedData(for: url),
                    let cachedSource = try? AltStoreSourceLoader.decode(from: data, baseURL: url) {
                     loadedSources[url] = cachedSource
                 }
@@ -275,12 +276,12 @@ final class AltStoreSourcesViewModel: ObservableObject {
 }
 
 private extension AltStoreSourcesViewModel {
-    func cachedData(for url: URL) -> Data? {
+    nonisolated func cachedData(for url: URL) -> Data? {
         guard let fileURL = cacheFileURL(for: url) else { return nil }
         return try? Data(contentsOf: fileURL)
     }
     
-    func storeCache(_ data: Data, for url: URL) {
+    nonisolated func storeCache(_ data: Data, for url: URL) {
         guard let fileURL = cacheFileURL(for: url) else { return }
         do {
             try data.write(to: fileURL, options: .atomic)
@@ -289,13 +290,13 @@ private extension AltStoreSourcesViewModel {
         }
     }
     
-    func cacheFileURL(for url: URL) -> URL? {
+    nonisolated func cacheFileURL(for url: URL) -> URL? {
         guard let directory = ensureCacheDirectory() else { return nil }
         let fileName = cacheFileName(for: url)
         return directory.appendingPathComponent(fileName)
     }
     
-    func ensureCacheDirectory() -> URL? {
+    nonisolated func ensureCacheDirectory() -> URL? {
         guard let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
         let directory = caches.appendingPathComponent(cacheDirectoryName, isDirectory: true)
         if !FileManager.default.fileExists(atPath: directory.path) {
@@ -308,14 +309,14 @@ private extension AltStoreSourcesViewModel {
         return directory
     }
     
-    func cacheFileName(for url: URL) -> String {
+    nonisolated func cacheFileName(for url: URL) -> String {
         let data = Data(url.absoluteString.utf8)
         let digest = SHA256.hash(data: data)
         let hex = digest.map { String(format: "%02x", $0) }.joined()
         return "\(hex).json"
     }
     
-    func removeCache(for url: URL) {
+    nonisolated func removeCache(for url: URL) {
         guard let fileURL = cacheFileURL(for: url) else { return }
         do {
             try FileManager.default.removeItem(at: fileURL)
@@ -365,7 +366,7 @@ enum AltStoreSourceLoader {
             throw NSError(domain: "AltStoreSource", code: 0, userInfo: [NSLocalizedDescriptionKey: "lc.sources.error.malformed".loc])
         }
         let apps = (response.apps ?? []).compactMap { appResponse in
-            buildApp(from: appResponse, baseURL: baseURL, fallbackTint: response.tintColor)
+            buildApp(from: appResponse, baseURL: baseURL, fallbackTint: response.tintColor, isoFormatter: isoDateFormatter, shortFormatter: shortDateFormatter)
         }
         return AltStoreSource(
             name: name,
@@ -380,14 +381,14 @@ enum AltStoreSourceLoader {
         )
     }
     
-    private static func buildApp(from response: AltStoreSourceAppResponse, baseURL: URL, fallbackTint: String?) -> AltStoreSourceApp? {
+    private static func buildApp(from response: AltStoreSourceAppResponse, baseURL: URL, fallbackTint: String?, isoFormatter: ISO8601DateFormatter, shortFormatter: DateFormatter) -> AltStoreSourceApp? {
         guard let name = response.name,
               let bundleIdentifier = response.bundleIdentifier else {
             return nil
         }
         
-        let versions = buildVersions(from: response, baseURL: baseURL)
-        let latest = versions.first ?? buildLegacyVersion(from: response, baseURL: baseURL)
+        let versions = buildVersions(from: response, baseURL: baseURL, isoFormatter: isoFormatter, shortFormatter: shortFormatter)
+        let latest = versions.first ?? buildLegacyVersion(from: response, baseURL: baseURL, isoFormatter: isoFormatter, shortFormatter: shortFormatter)
         
         return AltStoreSourceApp(
             name: name,
@@ -404,7 +405,7 @@ enum AltStoreSourceLoader {
         )
     }
     
-    private static func buildVersions(from response: AltStoreSourceAppResponse, baseURL: URL) -> [AltStoreSourceAppVersion] {
+    private static func buildVersions(from response: AltStoreSourceAppResponse, baseURL: URL, isoFormatter: ISO8601DateFormatter, shortFormatter: DateFormatter) -> [AltStoreSourceAppVersion] {
         guard let versions = response.versions else { return [] }
         return versions.compactMap { version in
             guard let versionString = version.version,
@@ -415,7 +416,7 @@ enum AltStoreSourceLoader {
             return AltStoreSourceAppVersion(
                 version: versionString,
                 buildVersion: version.buildVersion,
-                releaseDate: parseDate(version.date),
+                releaseDate: parseDate(version.date, isoFormatter: isoFormatter, shortFormatter: shortFormatter),
                 localizedDescription: version.localizedDescription,
                 downloadURL: downloadURL,
                 size: version.size
@@ -423,7 +424,7 @@ enum AltStoreSourceLoader {
         }
     }
     
-    private static func buildLegacyVersion(from response: AltStoreSourceAppResponse, baseURL: URL) -> AltStoreSourceAppVersion? {
+    private static func buildLegacyVersion(from response: AltStoreSourceAppResponse, baseURL: URL, isoFormatter: ISO8601DateFormatter, shortFormatter: DateFormatter) -> AltStoreSourceAppVersion? {
         guard let versionString = response.version,
               let downloadURLString = response.downloadURL,
               let downloadURL = url(for: downloadURLString, baseURL: baseURL) else {
@@ -432,20 +433,18 @@ enum AltStoreSourceLoader {
         return AltStoreSourceAppVersion(
             version: versionString,
             buildVersion: nil,
-            releaseDate: parseDate(response.versionDate),
+            releaseDate: parseDate(response.versionDate, isoFormatter: isoFormatter, shortFormatter: shortFormatter),
             localizedDescription: response.versionDescription ?? response.localizedDescription,
             downloadURL: downloadURL,
             size: nil
         )
     }
     
-    private static func parseDate(_ value: String?) -> Date? {
+    private static func parseDate(_ value: String?, isoFormatter: ISO8601DateFormatter, shortFormatter: DateFormatter) -> Date? {
         guard let value else { return nil }
-        if let isoDate = ISO8601DateFormatter().date(from: value) {
+        if let isoDate = isoFormatter.date(from: value) {
             return isoDate
         }
-        let shortFormatter = DateFormatter()
-        shortFormatter.dateFormat = "yyyy-MM-dd"
         return shortFormatter.date(from: value)
     }
     
