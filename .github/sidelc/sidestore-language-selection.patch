@@ -993,3 +993,17 @@ index 0000000..f338081
 +++ b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
+diff --git a/AltStore/Info.plist b/AltStore/Info.plist
+index 1e5f951..8e9834b 100644
+--- a/AltStore/Info.plist
++++ b/AltStore/Info.plist
+@@ -253,6 +253,8 @@
+ 	<key>UISupportedInterfaceOrientations</key>
+ 	<array>
+ 		<string>UIInterfaceOrientationPortrait</string>
++		<string>UIInterfaceOrientationLandscapeLeft</string>
++		<string>UIInterfaceOrientationLandscapeRight</string>
+ 	</array>
+ 	<key>UISupportedInterfaceOrientations~ipad</key>
+ 	<array>
+
