@@ -59,13 +59,6 @@ jobs:
           filetype_parameter: ${{ steps.filetype_parameter.outputs.filetype_parameter }}
           file_to_build: ${{ steps.file_to_build.outputs.file_to_build }}
         run: xcodebuild archive -archivePath "$archive_path" -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -sdk iphoneos -arch arm64 -configuration Release | xcpretty && exit ${PIPESTATUS[0]}
-      - name: Tar Build Artifact
-        run: tar -cvf "$archive_path.xcarchive.tar" "$archive_path.xcarchive"
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.archive_path }}.xcarchive.tar
-          path: ${{ env.archive_path }}.xcarchive.tar
       - name: Build Patched SideStore
         run: |
           brew install ldid xcbeautify || true
@@ -86,12 +79,14 @@ jobs:
         with:
           name: ${{ env.scheme }}.ipa
           path: ${{ env.scheme }}.ipa
+          retention-days: 1
       
       - name: Upload LiveContainer+SideStore
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.scheme }}+SideStore.ipa
           path: ${{ env.scheme }}+SideStore.ipa
+          retention-days: 1
 
   release__nightly:
     name: Nightly Release
