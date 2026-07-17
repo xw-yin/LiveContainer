@@ -588,7 +588,7 @@ index 7942263..af804b3 100644
              
              if title != self.navigationBarButton.title(for: .normal) && !self.navigationBarButton.isIndicatingActivity
 diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
-index a40b3b6..e27fadf 100644
+index a40b3b6..94428dd 100644
 --- a/AltStore/TabBarController.swift
 +++ b/AltStore/TabBarController.swift
 @@ -42,6 +42,7 @@ final class TabBarController: UITabBarController
@@ -611,7 +611,7 @@ index a40b3b6..e27fadf 100644
 +            return true
 +        }
 +        if fromView != toView {
-+            UIView.transition(from: fromView, to: toView, duration: 0.22, options: [.transitionCrossDissolve, .allowUserInteraction], completion: nil)
++            UIView.transition(with: self.view, duration: 0.22, options: [.transitionCrossDissolve, .allowUserInteraction], animations: nil, completion: nil)
 +        }
 +        return true
 +    }
