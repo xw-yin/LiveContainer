@@ -47,32 +47,6 @@ index 2311b21..ca31d8a 100644
 +        }
 +    }
 +}
-diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 53f7954..b6bbce2 100644
---- a/AltStore/AppDelegate.swift
-+++ b/AltStore/AppDelegate.swift
-@@ -115,7 +115,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
- 
-         // TODO: @mahee96: find if we need to start em_proxy as in altstore?
-         if UserDefaults.standard.enableEMPforWireguard {
--            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            DispatchQueue.global().async {
-+                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            }
-         }
- 
-         SecureValueTransformer.register()        
-@@ -163,7 +165,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
-     {
-         AppManager.shared.update()
-         if UserDefaults.standard.enableEMPforWireguard {
--            startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            DispatchQueue.global().async {
-+                startEMProxy(bind_addr: AppConstants.Proxy.serverURL)
-+            }
-         }
-     }
- 
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
 index 5e33a71..274fa24 100644
 --- a/AltStore/LaunchViewController.swift
