@@ -116,13 +116,15 @@ index 53f7954..b1691fa 100644
      }
  
 diff --git a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift
-index 7c77bc8..4d35c89 100644
+index 7c77bc8..3e74252 100644
 --- a/AltStore/Components/AppBannerView.swift
 +++ b/AltStore/Components/AppBannerView.swift
-@@ -93,6 +93,8 @@ class AppBannerView: RSTNibView
+@@ -93,6 +93,10 @@ class AppBannerView: RSTNibView
      
      private func initialize()
      {
++        self.titleLabel.adjustsFontSizeToFitWidth = false
++        self.titleLabel.lineBreakMode = .byTruncatingTail
 +        self.titleLabel.adjustsFontSizeToFitWidth = false
 +        self.titleLabel.lineBreakMode = .byTruncatingTail
          self.accessibilityView.accessibilityTraits.formUnion(.button)
@@ -154,6 +156,31 @@ index 274fa24..28c9507 100644
              return toastView.show(in: self)
          } catch {
              let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
+diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
+index 7eeec62..c9637e9 100644
+--- a/AltStore/News/NewsViewController.swift
++++ b/AltStore/News/NewsViewController.swift
+@@ -446,13 +446,17 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+             return previousSize
+         }
+         
++        self.prototypeCell.frame.size.width = collectionView.bounds.width
++        self.prototypeCell.layoutIfNeeded()
++        
+         let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
+-        NSLayoutConstraint.activate([widthConstraint])
+-        defer { NSLayoutConstraint.deactivate([widthConstraint]) }
++        widthConstraint.isActive = true
++        defer { widthConstraint.isActive = false }
+         
+         self.dataSource.cellConfigurationHandler(self.prototypeCell, item, indexPath)
+         
+-        let size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
++        var size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
++        size.width = collectionView.bounds.width
+         self.cachedCellSizes[globallyUniqueID] = size
+         return size
+     }
 diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
 index 085fb61..40365a6 100644
 --- a/AltStore/Operations/AuthenticationOperation.swift
@@ -210,6 +237,24 @@ index a19d5e7..7a89a62 100644
          self.tableView.dataSource = self.dataSource
          self.dataSource.contentView = self.tableView
          self.tableView.prefetchDataSource = self.dataSource
+diff --git a/AltStore/Settings/InsetGroupTableViewCell.swift b/AltStore/Settings/InsetGroupTableViewCell.swift
+index ad14df9..4ae3583 100644
+--- a/AltStore/Settings/InsetGroupTableViewCell.swift
++++ b/AltStore/Settings/InsetGroupTableViewCell.swift
+@@ -106,11 +106,11 @@ private extension InsetGroupTableViewCell
+             
+         case .top:
+             self.insetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+-            self.separatorView.isHidden = false
++            self.separatorView.isHidden = true
+             
+         case .middle:
+             self.insetView.layer.maskedCorners = []
+-            self.separatorView.isHidden = false
++            self.separatorView.isHidden = true
+             
+         case .bottom:
+             self.insetView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
 index cfe1435..1692c7f 100644
 --- a/AltStore/Settings/Settings.storyboard
@@ -455,6 +500,32 @@ index 00ee6b0..2de2f29 100644
          navigationController?.navigationBar.layoutMargins.left = 20
          
          let layout = self.makeLayout()
+diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
+index 94428dd..f36e050 100644
+--- a/AltStore/TabBarController.swift
++++ b/AltStore/TabBarController.swift
+@@ -49,6 +49,21 @@ final class TabBarController: UITabBarController
+         
+         let sourcesNavigationController = self.viewControllers![Tab.sources.rawValue] as! UINavigationController
+         self.sourcesViewController = sourcesNavigationController.viewControllers.first as? SourcesViewController
++        
++        if let vcs = self.viewControllers {
++            let tabTitles = [
++                Tab.news.rawValue: NSLocalizedString("News", comment: ""),
++                Tab.sources.rawValue: NSLocalizedString("Sources", comment: ""),
++                Tab.browse.rawValue: NSLocalizedString("Browse", comment: ""),
++                Tab.myApps.rawValue: NSLocalizedString("My Apps", comment: ""),
++                Tab.settings.rawValue: NSLocalizedString("Settings", comment: "")
++            ]
++            for (index, title) in tabTitles {
++                if index < vcs.count {
++                    vcs[index].tabBarItem.title = title
++                }
++            }
++        }
+     }
+     
+     override func viewDidAppear(_ animated: Bool)
 diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 new file mode 100644
 index 0000000..e9b8596
@@ -497,10 +568,10 @@ index 0000000..4ab9202
 +"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 0000000..e5c5011
+index 0000000..afe1170
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -0,0 +1,464 @@
+@@ -0,0 +1,468 @@
 +/* Localizable.strings (zh-Hans) */
 +
 +"Language" = "语言";
@@ -965,6 +1036,10 @@ index 0000000..e5c5011
 +"Sources" = "来源";
 +
 +"Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n\nPlease note that these builds are experimental and may be unstable or break unexpectedly." = "选择加入测试版测试，以获取定期更新和即将发布版本的早期预览。\n\n请注意，这些版本是实验性的，可能会不稳定或意外崩溃。";
++
++"News" = "新闻";
++
++"My Apps" = "我的 App";
 diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
 new file mode 100644
 index 0000000..8d0bc49
@@ -1091,13 +1166,52 @@ index 0000000..f338081
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
 diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-index b63a603..0feaceb 100644
+index b63a603..cc5a1ed 100644
 --- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 +++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-@@ -42,6 +42,45 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
+@@ -42,6 +42,84 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
          guard let operations = rst_operations else { return }
          rst_operations = nil
          
++        // Check for conflicts to prevent UIKit crashes
++        var hasConflict = false
++        var deleted = Set<IndexPath>()
++        var inserted = Set<IndexPath>()
++        var movedSource = Set<IndexPath>()
++        var movedDest = Set<IndexPath>()
++        
++        for change in operations {
++            if change.sectionIndex == RSTUnknownSectionIndex {
++                switch change.type {
++                case .insert:
++                    if let ip = change.destinationIndexPath {
++                        if inserted.contains(ip) || movedDest.contains(ip) { hasConflict = true; break }
++                        inserted.insert(ip)
++                    }
++                case .delete:
++                    if let ip = change.currentIndexPath {
++                        if deleted.contains(ip) || movedSource.contains(ip) { hasConflict = true; break }
++                        deleted.insert(ip)
++                    }
++                case .move:
++                    if let src = change.currentIndexPath, let dest = change.destinationIndexPath {
++                        if movedSource.contains(src) || deleted.contains(src) { hasConflict = true; break }
++                        if movedDest.contains(dest) || inserted.contains(dest) { hasConflict = true; break }
++                        movedSource.insert(src)
++                        movedDest.insert(dest)
++                    }
++                default:
++                    break
++                }
++            }
++            if hasConflict { break }
++        }
++        
++        if hasConflict {
++            self.reloadData()
++            return
++        }
++        
 +        // Check for conflicts to prevent UIKit crashes
 +        var hasConflict = false
 +        var deleted = Set<IndexPath>()
