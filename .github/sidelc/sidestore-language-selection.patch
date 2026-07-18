@@ -154,15 +154,34 @@ index 274fa24..28c9507 100644
              return toastView.show(in: self)
          } catch {
              let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
+diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
+index eb7535e..6269af5 100644
+--- a/AltStore/News/NewsCollectionViewCell.swift
++++ b/AltStore/News/NewsCollectionViewCell.swift
+@@ -22,7 +22,11 @@ final class NewsCollectionViewCell: UICollectionViewCell
+         let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .title2).bolded()
+         self.titleLabel.font = UIFont(descriptor: descriptor, size: 0.0)
+         
+-        self.contentView.preservesSuperviewLayoutMargins = true
++        self.contentView.preservesSuperviewLayoutMargins = false
++        self.insetsLayoutMarginsFromSafeArea = false
++        self.contentView.insetsLayoutMarginsFromSafeArea = false
++        self.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
++        self.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
+         
+         self.contentBackgroundView.layer.cornerRadius = 30
+         self.contentBackgroundView.clipsToBounds = true
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..c9637e9 100644
+index 7eeec62..6dc20b8 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -446,13 +446,17 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -446,13 +446,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
 +        self.prototypeCell.frame.size.width = collectionView.bounds.width
++        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
++        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
 +        self.prototypeCell.layoutIfNeeded()
 +        
          let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
