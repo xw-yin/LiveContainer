@@ -116,15 +116,13 @@ index 53f7954..b1691fa 100644
      }
  
 diff --git a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift
-index 7c77bc8..3e74252 100644
+index 7c77bc8..4d35c89 100644
 --- a/AltStore/Components/AppBannerView.swift
 +++ b/AltStore/Components/AppBannerView.swift
-@@ -93,6 +93,10 @@ class AppBannerView: RSTNibView
+@@ -93,6 +93,8 @@ class AppBannerView: RSTNibView
      
      private func initialize()
      {
-+        self.titleLabel.adjustsFontSizeToFitWidth = false
-+        self.titleLabel.lineBreakMode = .byTruncatingTail
 +        self.titleLabel.adjustsFontSizeToFitWidth = false
 +        self.titleLabel.lineBreakMode = .byTruncatingTail
          self.accessibilityView.accessibilityTraits.formUnion(.button)
@@ -308,18 +306,10 @@ index cfe1435..1692c7f 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 82b1622..50d0472 100644
+index 82b1622..466e8d4 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
-@@ -211,6 +211,7 @@ final class SettingsViewController: UITableViewController
-     override func viewDidLoad()
-     {
-         super.viewDidLoad()
-+        self.tableView.separatorColor = .clear
-         
-         // --- iOS 26 fix ---
-         if #available(iOS 26.0, *) {
-@@ -293,7 +294,7 @@ final class SettingsViewController: UITableViewController
+@@ -293,7 +293,7 @@ final class SettingsViewController: UITableViewController
              let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
              Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
              Keychain.shared.signingCertificatePassword = account.certpass
@@ -328,7 +318,7 @@ index 82b1622..50d0472 100644
              return toastView.show(in: self)
          } catch {
              let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
-@@ -384,6 +385,9 @@ final class SettingsViewController: UITableViewController
+@@ -384,6 +384,9 @@ final class SettingsViewController: UITableViewController
      {
          super.viewWillAppear(animated)
          
@@ -338,7 +328,7 @@ index 82b1622..50d0472 100644
          // show nav bar if not shown already
          self.navigationController?.setNavigationBarHidden(false, animated: animated)
          
-@@ -1067,6 +1071,20 @@ extension SettingsViewController
+@@ -1067,6 +1070,20 @@ extension SettingsViewController
          let section = Section.allCases[indexPath.section]
          let cell = super.tableView(tableView, cellForRowAt: indexPath)
          
@@ -359,7 +349,7 @@ index 82b1622..50d0472 100644
          if section == .advancedSettings {
              let row = AdvancedSettingsRow.allCases[indexPath.row]
              if row == .wirelessPair {
-@@ -1105,6 +1123,7 @@ extension SettingsViewController
+@@ -1105,6 +1122,7 @@ extension SettingsViewController
          }
          
          
@@ -367,7 +357,7 @@ index 82b1622..50d0472 100644
          return cell
      }
      
-@@ -1439,6 +1458,13 @@ extension SettingsViewController
+@@ -1439,6 +1457,13 @@ extension SettingsViewController
                  })
                  
                  let vc = UIHostingController(rootView: anisetteServersView)
@@ -381,7 +371,7 @@ index 82b1622..50d0472 100644
                  self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
  
              case .certificateManagement:
-@@ -1710,7 +1736,11 @@ extension SettingsViewController
+@@ -1710,7 +1735,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -394,7 +384,7 @@ index 82b1622..50d0472 100644
          }
          
          
-@@ -1719,6 +1749,78 @@ extension SettingsViewController
+@@ -1719,6 +1748,78 @@ extension SettingsViewController
      }
  }
  
@@ -568,7 +558,7 @@ index 0000000..4ab9202
 +"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 0000000..afe1170
+index 0000000..7bce5d5
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
 @@ -0,0 +1,468 @@
@@ -1035,11 +1025,11 @@ index 0000000..afe1170
 +"Error Log" = "错误日志";
 +"Sources" = "来源";
 +
-+"Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n\nPlease note that these builds are experimental and may be unstable or break unexpectedly." = "选择加入测试版测试，以获取定期更新和即将发布版本的早期预览。\n\n请注意，这些版本是实验性的，可能会不稳定或意外崩溃。";
-+
 +"News" = "新闻";
 +
 +"My Apps" = "我的 App";
++
++"Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n\nPlease note that these builds are experimental and may be unstable or break unexpectedly." = "选择加入测试版测试，以获取定期更新 and 早期预览。\n\n请注意，这些版本是实验性的，可能会不稳定或意外崩溃。";
 diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
 new file mode 100644
 index 0000000..8d0bc49
@@ -1166,52 +1156,13 @@ index 0000000..f338081
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
 diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-index b63a603..cc5a1ed 100644
+index b63a603..0feaceb 100644
 --- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 +++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-@@ -42,6 +42,84 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
+@@ -42,6 +42,45 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
          guard let operations = rst_operations else { return }
          rst_operations = nil
          
-+        // Check for conflicts to prevent UIKit crashes
-+        var hasConflict = false
-+        var deleted = Set<IndexPath>()
-+        var inserted = Set<IndexPath>()
-+        var movedSource = Set<IndexPath>()
-+        var movedDest = Set<IndexPath>()
-+        
-+        for change in operations {
-+            if change.sectionIndex == RSTUnknownSectionIndex {
-+                switch change.type {
-+                case .insert:
-+                    if let ip = change.destinationIndexPath {
-+                        if inserted.contains(ip) || movedDest.contains(ip) { hasConflict = true; break }
-+                        inserted.insert(ip)
-+                    }
-+                case .delete:
-+                    if let ip = change.currentIndexPath {
-+                        if deleted.contains(ip) || movedSource.contains(ip) { hasConflict = true; break }
-+                        deleted.insert(ip)
-+                    }
-+                case .move:
-+                    if let src = change.currentIndexPath, let dest = change.destinationIndexPath {
-+                        if movedSource.contains(src) || deleted.contains(src) { hasConflict = true; break }
-+                        if movedDest.contains(dest) || inserted.contains(dest) { hasConflict = true; break }
-+                        movedSource.insert(src)
-+                        movedDest.insert(dest)
-+                    }
-+                default:
-+                    break
-+                }
-+            }
-+            if hasConflict { break }
-+        }
-+        
-+        if hasConflict {
-+            self.reloadData()
-+            return
-+        }
-+        
 +        // Check for conflicts to prevent UIKit crashes
 +        var hasConflict = false
 +        var deleted = Set<IndexPath>()
