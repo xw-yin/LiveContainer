@@ -1232,45 +1232,83 @@ index 00000000..f338081c
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
 diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-index b63a603f..0feacebf 100644
+index b63a603f..b7c6d32a 100644
 --- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 +++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-@@ -42,6 +42,45 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
+@@ -42,6 +42,83 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
          guard let operations = rst_operations else { return }
          rst_operations = nil
          
 +        // Check for conflicts to prevent UIKit crashes
 +        var hasConflict = false
-+        var deleted = Set<IndexPath>()
-+        var inserted = Set<IndexPath>()
-+        var movedSource = Set<IndexPath>()
-+        var movedDest = Set<IndexPath>()
++        
++        var deletedSections = Set<Int>()
++        var insertedSections = Set<Int>()
++        var hasSectionChanges = false
++        var hasItemChanges = false
++        
++        var deletedItems = Set<IndexPath>()
++        var insertedItems = Set<IndexPath>()
++        var updatedItems = Set<IndexPath>()
++        var movedItems = Set<IndexPath>()
 +        
 +        for change in operations {
-+            if change.sectionIndex == RSTUnknownSectionIndex {
-+                switch change.type {
-+                case .insert:
-+                    if let ip = change.destinationIndexPath {
-+                        if inserted.contains(ip) || movedDest.contains(ip) { hasConflict = true; break }
-+                        inserted.insert(ip)
++            if change.sectionIndex != RSTUnknownSectionIndex {
++                hasSectionChanges = true
++                if change.type == .delete {
++                    deletedSections.insert(change.sectionIndex)
++                } else if change.type == .insert {
++                    insertedSections.insert(change.sectionIndex)
++                }
++            } else {
++                hasItemChanges = true
++                
++                if change.type == .delete, let ip = change.currentIndexPath {
++                    if deletedItems.contains(ip) || movedItems.contains(ip) || updatedItems.contains(ip) {
++                        hasConflict = true
++                        break
 +                    }
-+                case .delete:
-+                    if let ip = change.currentIndexPath {
-+                        if deleted.contains(ip) || movedSource.contains(ip) { hasConflict = true; break }
-+                        deleted.insert(ip)
++                    deletedItems.insert(ip)
++                } else if change.type == .insert, let ip = change.destinationIndexPath {
++                    if insertedItems.contains(ip) || movedItems.contains(ip) {
++                        hasConflict = true
++                        break
 +                    }
-+                case .move:
-+                    if let src = change.currentIndexPath, let dest = change.destinationIndexPath {
-+                        if movedSource.contains(src) || deleted.contains(src) { hasConflict = true; break }
-+                        if movedDest.contains(dest) || inserted.contains(dest) { hasConflict = true; break }
-+                        movedSource.insert(src)
-+                        movedDest.insert(dest)
++                    insertedItems.insert(ip)
++                } else if change.type == .update, let ip = change.currentIndexPath {
++                    if updatedItems.contains(ip) || deletedItems.contains(ip) || movedItems.contains(ip) {
++                        hasConflict = true
++                        break
 +                    }
-+                default:
++                    updatedItems.insert(ip)
++                } else if change.type == .move, let src = change.currentIndexPath, let dest = change.destinationIndexPath {
++                    if movedItems.contains(src) || deletedItems.contains(src) || updatedItems.contains(src) {
++                        hasConflict = true
++                        break
++                    }
++                    if movedItems.contains(dest) || insertedItems.contains(dest) {
++                        hasConflict = true
++                        break
++                    }
++                    movedItems.insert(src)
++                    movedItems.insert(dest)
++                }
++            }
++        }
++        
++        // Conflict if we have both section changes and item changes in the same batch
++        if hasSectionChanges && hasItemChanges {
++            hasConflict = true
++        }
++        
++        // Conflict if an item change falls inside a deleted or inserted section
++        if !hasConflict {
++            for ip in deletedItems.union(insertedItems).union(updatedItems).union(movedItems) {
++                if deletedSections.contains(ip.section) || insertedSections.contains(ip.section) {
++                    hasConflict = true
 +                    break
 +                }
 +            }
-+            if hasConflict { break }
 +        }
 +        
 +        if hasConflict {
