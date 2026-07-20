@@ -72,14 +72,13 @@ jobs:
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
           grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
-          grep -Fq 'lastLayoutMargins' SideStoreBuild/AltStore/News/NewsViewController.swift
+          grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'section.contentInsets' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'contentInsetsReference = .safeArea' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'layoutSection.contentInsets' SideStoreBuild/AltStore/Sources/AddSourceViewController.swift
-          grep -Fq 'footerView.systemLayoutSizeFitting' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
-          grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
+          grep -Fq 'autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"' SideStoreBuild/AltStore/Settings/Settings.storyboard
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
           make -C SideStoreBuild build fakesign ipa

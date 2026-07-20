@@ -183,19 +183,10 @@ index eb7535e..0992a35 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..1698955 100644
+index 7eeec62..403d4d9 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -54,6 +54,8 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
-     
-     // Cache
-     private var cachedCellSizes = [String: CGSize]()
-+    private var lastLayoutWidth: CGFloat = 0
-+    private var lastLayoutMargins = UIEdgeInsets.zero
-     private var cancellables = Set<AnyCancellable>()
-     
-     init?(source: Source?, coder: NSCoder)
-@@ -135,6 +137,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -135,6 +135,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.update()
      }
      
@@ -207,56 +198,24 @@ index 7eeec62..1698955 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,10 +153,48 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +151,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
 +    
-+    override func viewDidLayoutSubviews()
-+    {
-+        super.viewDidLayoutSubviews()
-+
-+        self.updateLayoutIfNeeded()
-+    }
-+
-+    override func viewSafeAreaInsetsDidChange()
-+    {
-+        super.viewSafeAreaInsetsDidChange()
-+        self.updateLayoutIfNeeded()
-+    }
-+
 +    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
 +    {
 +        super.viewWillTransition(to: size, with: coordinator)
 +
 +        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-+            self?.updateLayoutIfNeeded(force: true)
++            self?.cachedCellSizes.removeAll()
++            self?.collectionView.collectionViewLayout.invalidateLayout()
 +        }
 +    }
  }
  
  private extension NewsViewController
- {
-+    func updateLayoutIfNeeded(force: Bool = false)
-+    {
-+        let width = self.collectionView.bounds.width
-+        let layoutMargins = self.view.layoutMargins
-+        let widthChanged = abs(width - self.lastLayoutWidth) > 1.0
-+        let marginsChanged = layoutMargins != self.lastLayoutMargins
-+        guard width > 0, force || widthChanged || marginsChanged else { return }
-+
-+        self.lastLayoutWidth = width
-+        self.lastLayoutMargins = layoutMargins
-+        self.cachedCellSizes.removeAll()
-+        self.collectionView.collectionViewLayout.invalidateLayout()
-+        self.collectionView.visibleCells.forEach { $0.setNeedsLayout() }
-+        self.collectionView.layoutIfNeeded()
-+    }
-+
-     func preparePipeline()
-     {
-         AppManager.shared.$updateSourcesResult
-@@ -174,6 +219,8 @@ private extension NewsViewController
+@@ -174,6 +189,8 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -265,7 +224,7 @@ index 7eeec62..1698955 100644
              cell.contentView.layoutMargins.left = self.view.layoutMargins.left
              cell.contentView.layoutMargins.right = self.view.layoutMargins.right
              
-@@ -183,15 +230,21 @@ private extension NewsViewController
+@@ -183,15 +200,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -287,7 +246,16 @@ index 7eeec62..1698955 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -446,13 +499,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +463,28 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+     {        
+         let item = self.dataSource.item(at: indexPath)
+         let globallyUniqueID = item.globallyUniqueID ?? item.identifier
++        let layoutWidth = Int(collectionView.bounds.width.rounded())
++        let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"
+         
+-        if let previousSize = self.cachedCellSizes[globallyUniqueID]
++        if let previousSize = self.cachedCellSizes[cacheKey]
+         {
              return previousSize
          }
          
@@ -305,12 +273,14 @@ index 7eeec62..1698955 100644
          self.dataSource.cellConfigurationHandler(self.prototypeCell, item, indexPath)
          
 -        let size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+-        self.cachedCellSizes[globallyUniqueID] = size
 +        var size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
 +        size.width = collectionView.bounds.width
-         self.cachedCellSizes[globallyUniqueID] = size
++        self.cachedCellSizes[cacheKey] = size
          return size
      }
-@@ -467,7 +526,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+     
+@@ -467,7 +498,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -346,9 +316,18 @@ index 589958b..bd7106f 100644
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
-index 6cd51ef..2fcaf83 100644
+index 6cd51ef..686074e 100644
 --- a/AltStore/Settings/Settings.storyboard
 +++ b/AltStore/Settings/Settings.storyboard
+@@ -23,7 +23,7 @@
+                         <color key="separatorColor" white="1" alpha="0.25" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                         <stackView key="tableFooterView" opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalCentering" alignment="center" spacing="15" id="48g-cT-stR">
+                             <rect key="frame" x="0.0" y="2571.3333282470703" width="402" height="125"/>
+-                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
++                            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                             <subviews>
+                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="900" text="Follow SideStore for updates" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="XFa-MY-7cV">
+                                     <rect key="frame" x="91.666666666666671" y="0.0" width="218.66666666666663" height="20.333333333333332"/>
 @@ -303,7 +303,7 @@
                                          <edgeInsets key="layoutMargins" top="8" left="30" bottom="8" right="30"/>
                                          <userDefinedRuntimeAttributes>
@@ -398,18 +377,10 @@ index 6cd51ef..2fcaf83 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 9e8a94a..eaac178 100644
+index 9e8a94a..47e90a9 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
-@@ -124,6 +124,7 @@ final class SettingsViewController: UITableViewController
- 
-     private var debugGestureCounter = 0
-     private weak var debugGestureTimer: Timer?
-+    private var lastLayoutWidth: CGFloat = 0
-     
-     @IBOutlet private var accountNameLabel: UILabel!
-     @IBOutlet private var accountEmailLabel: UILabel!
-@@ -297,7 +298,7 @@ final class SettingsViewController: UITableViewController
+@@ -297,7 +297,7 @@ final class SettingsViewController: UITableViewController
              let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
              Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
              Keychain.shared.signingCertificatePassword = account.certpass
@@ -418,7 +389,7 @@ index 9e8a94a..eaac178 100644
              return toastView.show(in: self)
          } catch {
              let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
-@@ -388,11 +389,35 @@ final class SettingsViewController: UITableViewController
+@@ -388,12 +388,15 @@ final class SettingsViewController: UITableViewController
      {
          super.viewWillAppear(animated)
          
@@ -430,72 +401,20 @@ index 9e8a94a..eaac178 100644
          
          self.update()
      }
+-    
 +
-+    override func viewDidLayoutSubviews()
-+    {
-+        super.viewDidLayoutSubviews()
-+        self.updateLayoutIfNeeded()
-+    }
-+
-+    override func viewSafeAreaInsetsDidChange()
-+    {
-+        super.viewSafeAreaInsetsDidChange()
-+        self.updateLayoutIfNeeded()
-+    }
-+
-+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
-+    {
-+        super.viewWillTransition(to: size, with: coordinator)
-+
-+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-+            self?.updateLayoutIfNeeded(force: true)
-+        }
-+    }
-     
      override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
          if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" {
-@@ -421,6 +446,40 @@ final class SettingsViewController: UITableViewController
+             let controller = segue.destination
+@@ -421,7 +424,6 @@ final class SettingsViewController: UITableViewController
  
  private extension SettingsViewController
  {
-+    func updateLayoutIfNeeded(force: Bool = false)
-+    {
-+        let width = self.tableView.bounds.width
-+        guard width > 0, force || abs(width - self.lastLayoutWidth) > 1.0 else { return }
-+
-+        self.lastLayoutWidth = width
-+
-+        if let footerView = self.tableView.tableFooterView
-+        {
-+            var frame = footerView.frame
-+            frame.size.width = width
-+            footerView.frame = frame
-+            footerView.setNeedsLayout()
-+            footerView.layoutIfNeeded()
-+
-+            let fittingSize = CGSize(width: width, height: UIView.layoutFittingCompressedSize.height)
-+            let height = footerView.systemLayoutSizeFitting(
-+                fittingSize,
-+                withHorizontalFittingPriority: .required,
-+                verticalFittingPriority: .fittingSizeLevel
-+            ).height
-+            if height > 0, abs(frame.height - height) > 1.0
-+            {
-+                frame.size.height = height
-+                footerView.frame = frame
-+                self.tableView.tableFooterView = footerView
-+            }
-+        }
-+
-+        self.tableView.beginUpdates()
-+        self.tableView.endUpdates()
-+        self.tableView.visibleCells.forEach { $0.setNeedsLayout() }
-+        self.tableView.layoutIfNeeded()
-+    }
-     
+-    
      private func getVersionLabel() -> String {
          let buildInfo = BuildInfo()
-@@ -1089,6 +1148,20 @@ extension SettingsViewController
+         
+@@ -1089,6 +1091,20 @@ extension SettingsViewController
          let section = Section.allCases[indexPath.section]
          let cell = super.tableView(tableView, cellForRowAt: indexPath)
          
@@ -516,7 +435,7 @@ index 9e8a94a..eaac178 100644
          if section == .advancedSettings {
              let row = AdvancedSettingsRow.allCases[indexPath.row]
              if row == .wirelessPair {
-@@ -1127,8 +1200,14 @@ extension SettingsViewController
+@@ -1127,8 +1143,14 @@ extension SettingsViewController
          }
          
          
@@ -531,7 +450,7 @@ index 9e8a94a..eaac178 100644
      
      override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView?
      {
-@@ -1461,6 +1540,13 @@ extension SettingsViewController
+@@ -1461,6 +1483,13 @@ extension SettingsViewController
                  })
                  
                  let vc = UIHostingController(rootView: anisetteServersView)
@@ -545,7 +464,7 @@ index 9e8a94a..eaac178 100644
                  self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
  
              case .certificateManagement:
-@@ -1732,7 +1818,11 @@ extension SettingsViewController
+@@ -1732,7 +1761,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -558,7 +477,7 @@ index 9e8a94a..eaac178 100644
          }
          
          
-@@ -1741,6 +1831,81 @@ extension SettingsViewController
+@@ -1741,6 +1774,81 @@ extension SettingsViewController
      }
  }
  
@@ -700,19 +619,10 @@ index e1b3f2c..070a9cc 100644
          self.layer.cornerRadius = 22
          
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0..12d0be1 100644
+index 00ee6b0..02bbc3b 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
-@@ -39,6 +39,8 @@ final class SourcesViewController: UICollectionViewController
-     private var placeholderView: RSTPlaceholderView!
-     private var placeholderViewButton: UIButton!
-     private var placeholderViewCenterYConstraint: NSLayoutConstraint!
-+    private var lastLayoutWidth: CGFloat = 0
-+    private var lastSafeAreaInsets = UIEdgeInsets.zero
-     
-     override func viewDidLoad()
-     {
-@@ -49,7 +51,8 @@ final class SourcesViewController: UICollectionViewController
+@@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
          navigationItem.largeTitleDisplayMode = .automatic
  
          // Set title
@@ -722,57 +632,32 @@ index 00ee6b0..12d0be1 100644
          navigationController?.navigationBar.layoutMargins.left = 20
          
          let layout = self.makeLayout()
-@@ -118,6 +121,8 @@ final class SourcesViewController: UICollectionViewController
+@@ -118,7 +119,7 @@ final class SourcesViewController: UICollectionViewController
      override func viewDidLayoutSubviews() 
      {
          super.viewDidLayoutSubviews()
+-        
 +
-+        self.updateLayoutIfNeeded()
-         
          // Vertically center placeholder view in gap below first item.
          
-@@ -132,10 +137,40 @@ final class SourcesViewController: UICollectionViewController
+         let indexPath = IndexPath(item: 0, section: 0)
+@@ -132,6 +133,15 @@ final class SourcesViewController: UICollectionViewController
              self.placeholderViewCenterYConstraint.constant = constant
          }
      }
-+
-+    override func viewSafeAreaInsetsDidChange()
-+    {
-+        super.viewSafeAreaInsetsDidChange()
-+        self.updateLayoutIfNeeded()
-+    }
 +
 +    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
 +    {
 +        super.viewWillTransition(to: size, with: coordinator)
 +
 +        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-+            self?.updateLayoutIfNeeded(force: true)
++            self?.collectionView.collectionViewLayout.invalidateLayout()
 +        }
 +    }
  }
  
  private extension SourcesViewController
- {
-+    func updateLayoutIfNeeded(force: Bool = false)
-+    {
-+        let width = self.collectionView.bounds.width
-+        let safeAreaInsets = self.view.safeAreaInsets
-+        let widthChanged = abs(width - self.lastLayoutWidth) > 1.0
-+        let safeAreaChanged = safeAreaInsets != self.lastSafeAreaInsets
-+        guard width > 0, force || widthChanged || safeAreaChanged else { return }
-+
-+        self.lastLayoutWidth = width
-+        self.lastSafeAreaInsets = safeAreaInsets
-+        self.collectionView.setCollectionViewLayout(self.makeLayout(), animated: false)
-+        self.collectionView.visibleCells.forEach { $0.setNeedsLayout() }
-+        self.collectionView.layoutIfNeeded()
-+    }
-+
-     func makeLayout() -> UICollectionViewCompositionalLayout
-     {
-         var configuration = UICollectionLayoutListConfiguration(appearance: .grouped)
-@@ -180,7 +215,14 @@ private extension SourcesViewController
+@@ -180,7 +190,14 @@ private extension SourcesViewController
              return config
          }
          
@@ -788,7 +673,7 @@ index 00ee6b0..12d0be1 100644
          return layout
      }
      
-@@ -207,8 +249,6 @@ private extension SourcesViewController
+@@ -207,8 +224,6 @@ private extension SourcesViewController
              let cell = cell as! AppBannerCollectionViewCell
              cell.layoutMargins.top = 5
              cell.layoutMargins.bottom = 5
