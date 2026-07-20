@@ -193,10 +193,38 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..8656da60 100644
+index 7eeec623..69afd14f 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -187,11 +187,17 @@ private extension NewsViewController
+@@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+     
+     // Cache
+     private var cachedCellSizes = [String: CGSize]()
++    private var lastLayoutWidth: CGFloat = 0
+     private var cancellables = Set<AnyCancellable>()
+     
+     init?(source: Source?, coder: NSCoder)
+@@ -146,6 +147,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+             self.collectionView.contentInset.bottom = 20
+         }
+     }
++    
++    override func viewDidLayoutSubviews()
++    {
++        super.viewDidLayoutSubviews()
++        
++        let width = self.collectionView.bounds.width
++        if width != self.lastLayoutWidth && width > 0
++        {
++            self.lastLayoutWidth = width
++            self.cachedCellSizes.removeAll()
++            self.collectionView.collectionViewLayout.invalidateLayout()
++        }
++    }
+ }
+ 
+ private extension NewsViewController
+@@ -187,11 +201,17 @@ private extension NewsViewController
              {
                  cell.imageView.isIndicatingActivity = true
                  cell.imageView.isHidden = false
@@ -214,7 +242,7 @@ index 7eeec623..8656da60 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -446,13 +452,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -446,13 +466,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
@@ -237,6 +265,15 @@ index 7eeec623..8656da60 100644
          self.cachedCellSizes[globallyUniqueID] = size
          return size
      }
+@@ -467,7 +493,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+         
+         if item.storeApp != nil
+         {
+-            return CGSize(width: 88, height: 88)
++            return CGSize(width: collectionView.bounds.width, height: 88)
+         }
+         else
+         {
 diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
 index 085fb616..40365a6c 100644
 --- a/AltStore/Operations/AuthenticationOperation.swift
