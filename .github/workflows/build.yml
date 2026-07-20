@@ -78,7 +78,8 @@ jobs:
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
           make -C SideStoreBuild build fakesign ipa
-          unzip -l SideStoreBuild/SideStore.ipa | grep -Fq 'zh-Hans.lproj/Settings.strings'
+          unzip -l SideStoreBuild/SideStore.ipa > /tmp/SideStore.ipa.contents
+          grep -Fq 'zh-Hans.lproj/Settings.strings' /tmp/SideStore.ipa.contents
           unzip -p SideStoreBuild/SideStore.ipa Payload/SideStore.app/SideStore > /tmp/PatchedSideStore
           strings /tmp/PatchedSideStore > /tmp/PatchedSideStore.strings
           grep -Fq 'AppleLanguages' /tmp/PatchedSideStore.strings
