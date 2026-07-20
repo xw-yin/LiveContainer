@@ -208,7 +208,7 @@ index 476fba1..8f78e76 100644
              
              if traits.userInterfaceStyle == .dark
 diff --git a/AltStore/My Apps/MyAppsComponents.swift b/AltStore/My Apps/MyAppsComponents.swift
-index e7cf82b..6dc6b6d 100644
+index e7cf82b..902086f 100644
 --- a/AltStore/My Apps/MyAppsComponents.swift	
 +++ b/AltStore/My Apps/MyAppsComponents.swift	
 @@ -50,6 +50,14 @@ final class InstalledAppCollectionViewCell: UICollectionViewCell
@@ -241,15 +241,6 @@ index e7cf82b..6dc6b6d 100644
  }
  
  final class UpdatesCollectionHeaderView: UICollectionReusableView
-@@ -91,7 +107,7 @@ final class UpdatesCollectionHeaderView: UICollectionReusableView
-         self.button.setTitle(">", for: .normal)
-         self.addSubview(self.button)
-         
--        NSLayoutConstraint.activate([self.button.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -20),
-+        NSLayoutConstraint.activate([self.button.trailingAnchor.constraint(equalTo: self.layoutMarginsGuide.trailingAnchor),
-                                      self.button.topAnchor.constraint(equalTo: self.topAnchor),
-                                      self.button.widthAnchor.constraint(equalToConstant: 50),
-                                      self.button.heightAnchor.constraint(equalToConstant: 26)])
 diff --git a/AltStore/Settings/AnisetteServerList.swift b/AltStore/Settings/AnisetteServerList.swift
 index 72863b1..8d18567 100644
 --- a/AltStore/Settings/AnisetteServerList.swift
