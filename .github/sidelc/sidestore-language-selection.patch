@@ -166,7 +166,7 @@ index 00000000..b2537866
 +         } catch {
 +             let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e7..6269af5f 100644
+index eb7535e7..0992a356 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
 @@ -22,7 +22,11 @@ final class NewsCollectionViewCell: UICollectionViewCell
@@ -182,11 +182,39 @@ index eb7535e7..6269af5f 100644
          
          self.contentBackgroundView.layer.cornerRadius = 30
          self.contentBackgroundView.clipsToBounds = true
+@@ -30,4 +34,9 @@ final class NewsCollectionViewCell: UICollectionViewCell
+         self.imageView.layer.cornerRadius = 30
+         self.imageView.clipsToBounds = true
+     }
++    
++    override func layoutSubviews() {
++        super.layoutSubviews()
++        self.contentView.frame = self.bounds
++    }
+ }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..6dc20b8c 100644
+index 7eeec623..8656da60 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -446,13 +446,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -187,11 +187,17 @@ private extension NewsViewController
+             {
+                 cell.imageView.isIndicatingActivity = true
+                 cell.imageView.isHidden = false
++                if let aspectConstraint = cell.imageView.constraints.first(where: { $0.firstAttribute == .width && $0.secondAttribute == .height }) {
++                    aspectConstraint.isActive = true
++                }
+             }
+             else
+             {
+                 cell.imageView.isIndicatingActivity = false
+                 cell.imageView.isHidden = true
++                if let aspectConstraint = cell.imageView.constraints.first(where: { $0.firstAttribute == .width && $0.secondAttribute == .height }) {
++                    aspectConstraint.isActive = false
++                }
+             }
+             
+             cell.isAccessibilityElement = true
+@@ -446,13 +452,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
