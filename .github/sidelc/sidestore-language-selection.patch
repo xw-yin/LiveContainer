@@ -221,36 +221,6 @@ index 589958bd..bd7106f0 100644
          
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
-diff --git a/AltStore/Settings/Error Log/ErrorLogViewController.swift b/AltStore/Settings/Error Log/ErrorLogViewController.swift
-index a19d5e74..7a89a626 100644
---- a/AltStore/Settings/Error Log/ErrorLogViewController.swift	
-+++ b/AltStore/Settings/Error Log/ErrorLogViewController.swift	
-@@ -42,13 +42,24 @@ final class ErrorLogViewController: UITableViewController, QLPreviewControllerDe
-     private var _exportedLogURL: URL?
-     
-     override var preferredStatusBarStyle: UIStatusBarStyle {
--        return .lightContent
-+        if self.traitCollection.userInterfaceStyle == .dark {
-+            return .lightContent
-+        } else {
-+            return .darkContent
-+        }
-     }
-     
-     override func viewDidLoad()
-     {
-         super.viewDidLoad()
-         
-+        let appearance = UINavigationBarAppearance()
-+        appearance.configureWithDefaultBackground()
-+        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
-+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
-+        self.navigationItem.standardAppearance = appearance
-+        self.navigationItem.scrollEdgeAppearance = appearance
-+        
-         self.tableView.dataSource = self.dataSource
-         self.dataSource.contentView = self.tableView
-         self.tableView.prefetchDataSource = self.dataSource
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
 index 6cd51eff..2fcaf83f 100644
 --- a/AltStore/Settings/Settings.storyboard
@@ -538,3 +508,17 @@ index b63a603f..0feacebf 100644
          var postMoveUpdateChanges = [RSTCellContentChange]()
          for change in operations {
              if change.type == .move, let destinationIndexPath = change.destinationIndexPath {
+diff --git a/Dependencies/AltSign b/Dependencies/AltSign
+index 55ba33ca..bf8db82b 160000
+--- a/Dependencies/AltSign
++++ b/Dependencies/AltSign
+@@ -1 +1 @@
+-Subproject commit 55ba33ca500831279c3c702132a7515063029ed2
++Subproject commit bf8db82b172cedd1933d7c2bf3e2460bdfdb5adb
+diff --git a/Dependencies/minimuxer b/Dependencies/minimuxer
+index 059d895c..c1a5ad23 160000
+--- a/Dependencies/minimuxer
++++ b/Dependencies/minimuxer
+@@ -1 +1 @@
+-Subproject commit 059d895cbefcd77f21382bd8d178c6b503e80b9c
++Subproject commit c1a5ad2316f894dc70dd8899f02348769b714192

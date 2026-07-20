@@ -1,5 +1,5 @@
 diff --git a/AltStore/AppBootManager.swift b/AltStore/AppBootManager.swift
-index 2311b21..ca31d8a 100644
+index 2311b21d..ca31d8ab 100644
 --- a/AltStore/AppBootManager.swift
 +++ b/AltStore/AppBootManager.swift
 @@ -42,6 +42,7 @@ public final class AppBootManager {
@@ -48,9 +48,18 @@ index 2311b21..ca31d8a 100644
 +    }
 +}
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
-index 5e33a71..274fa24 100644
+index 5e33a718..28c95075 100644
 --- a/AltStore/LaunchViewController.swift
 +++ b/AltStore/LaunchViewController.swift
+@@ -190,7 +190,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+             let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+             Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
+             Keychain.shared.signingCertificatePassword = account.certpass
+-            let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
++            let toastView = ToastView(text: String(format: NSLocalizedString("Successfully imported '%@'!", comment: ""), account.email), detailText: "SideStore should be fully operational!")
+             return toastView.show(in: self)
+         } catch {
+             let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
 @@ -233,23 +233,27 @@ extension LaunchViewController {
          didFinishLaunching = true
          
@@ -241,7 +250,7 @@ index 5e33a71..274fa24 100644
  
  
 diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
-index ce219dc..ee4ed97 100644
+index cb2f6cf9..04c366ac 100644
 --- a/AltStore/Managing Apps/AppManager.swift	
 +++ b/AltStore/Managing Apps/AppManager.swift	
 @@ -48,7 +48,7 @@ class AppManager: ObservableObject
@@ -267,7 +276,7 @@ index ce219dc..ee4ed97 100644
          self.fetchSources() { (result) in
              do
 diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
-index 1deb8ce..c8674b3 100644
+index 47d9eaf5..7dc4d2ba 100644
 --- a/AltStore/SceneDelegate.swift
 +++ b/AltStore/SceneDelegate.swift
 @@ -46,7 +46,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
