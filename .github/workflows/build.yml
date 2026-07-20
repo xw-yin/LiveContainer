@@ -1,8 +1,9 @@
 name: Xcode - Build
 
-on: 
+on:
   push:
-  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs: 
       release__nightly:
