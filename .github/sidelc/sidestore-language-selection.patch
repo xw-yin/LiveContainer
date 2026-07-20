@@ -193,7 +193,7 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..c8f00efb 100644
+index 7eeec623..c2fb1bef 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -243,7 +243,16 @@ index 7eeec623..c8f00efb 100644
  }
  
  private extension NewsViewController
-@@ -183,15 +209,21 @@ private extension NewsViewController
+@@ -174,6 +200,8 @@ private extension NewsViewController
+             guard let self else { return }
+             
+             let cell = cell as! NewsCollectionViewCell
++            cell.layoutMargins.left = self.view.layoutMargins.left
++            cell.layoutMargins.right = self.view.layoutMargins.right
+             cell.contentView.layoutMargins.left = self.view.layoutMargins.left
+             cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+             
+@@ -183,15 +211,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -265,13 +274,13 @@ index 7eeec623..c8f00efb 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -446,13 +478,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -446,13 +480,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
 +        self.prototypeCell.frame.size.width = collectionView.bounds.width
-+        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-+        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
++        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: self.view.layoutMargins.left, bottom: 0, right: self.view.layoutMargins.right)
++        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: self.view.layoutMargins.left, bottom: 0, right: self.view.layoutMargins.right)
 +        self.prototypeCell.layoutIfNeeded()
 +        
          let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
@@ -288,7 +297,7 @@ index 7eeec623..c8f00efb 100644
          self.cachedCellSizes[globallyUniqueID] = size
          return size
      }
-@@ -467,7 +505,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +507,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -1118,10 +1127,10 @@ index 00000000..8d0bc490
 +"fVN-ed-uO1.title" = "新闻";
 diff --git a/AltStore/zh-Hans.lproj/Settings.strings b/AltStore/zh-Hans.lproj/Settings.strings
 new file mode 100644
-index 00000000..a277a739
+index 00000000..6d39a0b8
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Settings.strings
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,65 @@
 +"XFa-MY-7cV.text" = "关注 SideStore 以获取更新";
 +"5u7-mb-jJj.text" = "版本 0.6.0";
 +"7lu-Yk-87t.text" = "使用 Apple ID 登录";
@@ -1185,6 +1194,8 @@ index 00000000..a277a739
 +"R5a-wv-xHd.text" = "错误代码";
 +"1df-ri-hKN.text" = "错误说明";
 +"a1p-3W-bSi.title" = "错误日志";
++"Fq5-2u-Lge.text" = "启用 App 扩展自定义";
++
 diff --git a/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 new file mode 100644
 index 00000000..3e25ac44

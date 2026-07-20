@@ -611,17 +611,10 @@ index 063361dc..009c03f3 100644
              
              if title != self.navigationBarButton.title(for: .normal) && !self.navigationBarButton.isIndicatingActivity
 diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
-index a40b3b65..f36e0509 100644
+index a40b3b65..fb3798c8 100644
 --- a/AltStore/TabBarController.swift
 +++ b/AltStore/TabBarController.swift
-@@ -42,12 +42,28 @@ final class TabBarController: UITabBarController
-     override func viewDidLoad() 
-     {
-         super.viewDidLoad()
-+        self.delegate = self
-         
-         let browseNavigationController = self.viewControllers![Tab.browse.rawValue] as! UINavigationController
-         browseNavigationController.tabBarItem.image = UIImage(systemName: "bag")
+@@ -48,6 +48,21 @@ final class TabBarController: UITabBarController
          
          let sourcesNavigationController = self.viewControllers![Tab.sources.rawValue] as! UINavigationController
          self.sourcesViewController = sourcesNavigationController.viewControllers.first as? SourcesViewController
@@ -643,20 +636,9 @@ index a40b3b65..f36e0509 100644
      }
      
      override func viewDidAppear(_ animated: Bool)
-@@ -113,3 +129,16 @@ private extension TabBarController
+@@ -113,3 +128,5 @@ private extension TabBarController
          self.selectedIndex = Tab.settings.rawValue
      }
  }
 +
-+extension TabBarController: UITabBarControllerDelegate
-+{
-+    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
-+        guard let fromView = selectedViewController?.view, let toView = viewController.view else {
-+            return true
-+        }
-+        if fromView != toView {
-+            UIView.transition(with: self.view, duration: 0.22, options: [.transitionCrossDissolve, .allowUserInteraction], animations: nil, completion: nil)
-+        }
-+        return true
-+    }
-+}
++
