@@ -193,7 +193,7 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..69afd14f 100644
+index 7eeec623..5d70e613 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -204,14 +204,13 @@ index 7eeec623..69afd14f 100644
      private var cancellables = Set<AnyCancellable>()
      
      init?(source: Source?, coder: NSCoder)
-@@ -146,6 +147,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
-             self.collectionView.contentInset.bottom = 20
-         }
+@@ -135,6 +136,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+         self.update()
      }
-+    
-+    override func viewDidLayoutSubviews()
+     
++    override func viewWillAppear(_ animated: Bool)
 +    {
-+        super.viewDidLayoutSubviews()
++        super.viewWillAppear(animated)
 +        
 +        let width = self.collectionView.bounds.width
 +        if width != self.lastLayoutWidth && width > 0
@@ -221,28 +220,52 @@ index 7eeec623..69afd14f 100644
 +            self.collectionView.collectionViewLayout.invalidateLayout()
 +        }
 +    }
++
+     override func viewWillLayoutSubviews()
+     {
+         super.viewWillLayoutSubviews()
+@@ -146,6 +160,18 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+             self.collectionView.contentInset.bottom = 20
+         }
+     }
++    
++    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
++    {
++        super.viewWillTransition(to: size, with: coordinator)
++        
++        coordinator.animate(alongsideTransition: { _ in
++            self.lastLayoutWidth = size.width
++            self.cachedCellSizes.removeAll()
++            self.collectionView.collectionViewLayout.invalidateLayout()
++            self.collectionView.reloadData()
++        }, completion: nil)
++    }
  }
  
  private extension NewsViewController
-@@ -187,11 +201,17 @@ private extension NewsViewController
+@@ -183,15 +209,21 @@ private extension NewsViewController
+             
+             cell.imageView.image = nil
+             
++            let aspectConstraint = cell.imageView.constraints.first(where: {
++                ($0.firstAttribute == .width && $0.secondAttribute == .height) ||
++                ($0.firstAttribute == .height && $0.secondAttribute == .width)
++            })
+             if newsItem.imageURL != nil
              {
                  cell.imageView.isIndicatingActivity = true
                  cell.imageView.isHidden = false
-+                if let aspectConstraint = cell.imageView.constraints.first(where: { $0.firstAttribute == .width && $0.secondAttribute == .height }) {
-+                    aspectConstraint.isActive = true
-+                }
++                aspectConstraint?.isActive = true
              }
              else
              {
                  cell.imageView.isIndicatingActivity = false
                  cell.imageView.isHidden = true
-+                if let aspectConstraint = cell.imageView.constraints.first(where: { $0.firstAttribute == .width && $0.secondAttribute == .height }) {
-+                    aspectConstraint.isActive = false
-+                }
++                aspectConstraint?.isActive = false
              }
              
              cell.isAccessibilityElement = true
-@@ -446,13 +466,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -446,13 +478,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
@@ -265,7 +288,7 @@ index 7eeec623..69afd14f 100644
          self.cachedCellSizes[globallyUniqueID] = size
          return size
      }
-@@ -467,7 +493,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +505,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
