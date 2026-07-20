@@ -77,8 +77,12 @@ jobs:
           grep -Fq 'section.contentInsets' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'contentInsetsReference = .safeArea' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
+          grep -Fq 'setCollectionViewLayout(self.makeLayout(), animated: false)' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
+          grep -Fq 'cell.contentView.preservesSuperviewLayoutMargins = false' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'layoutSection.contentInsets' SideStoreBuild/AltStore/Sources/AddSourceViewController.swift
           grep -Fq 'autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"' SideStoreBuild/AltStore/Settings/Settings.storyboard
+          grep -Fq 'self.contentView.layoutMargins = self.layoutMargins' SideStoreBuild/AltStore/Settings/InsetGroupTableViewCell.swift
+          grep -Fq 'self.contentView.layoutMargins = UIEdgeInsets(top: 8, left: 30, bottom: 8, right: 30)' SideStoreBuild/AltStore/Settings/SettingsHeaderFooterView.swift
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
           make -C SideStoreBuild build fakesign ipa

@@ -183,7 +183,7 @@ index eb7535e..0992a35 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..403d4d9 100644
+index 7eeec62..d7f09a2 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -135,6 +135,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -215,16 +215,16 @@ index 7eeec62..403d4d9 100644
  }
  
  private extension NewsViewController
-@@ -174,6 +189,8 @@ private extension NewsViewController
+@@ -174,8 +189,6 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
-+            cell.layoutMargins.left = self.view.layoutMargins.left
-+            cell.layoutMargins.right = self.view.layoutMargins.right
-             cell.contentView.layoutMargins.left = self.view.layoutMargins.left
-             cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+-            cell.contentView.layoutMargins.left = self.view.layoutMargins.left
+-            cell.contentView.layoutMargins.right = self.view.layoutMargins.right
              
-@@ -183,15 +200,21 @@ private extension NewsViewController
+             cell.titleLabel.text = newsItem.title
+             cell.captionLabel.text = newsItem.caption
+@@ -183,15 +196,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -246,7 +246,7 @@ index 7eeec62..403d4d9 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -440,20 +463,28 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +459,28 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
@@ -260,8 +260,8 @@ index 7eeec62..403d4d9 100644
          }
          
 +        self.prototypeCell.frame.size.width = collectionView.bounds.width
-+        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: self.view.layoutMargins.left, bottom: 0, right: self.view.layoutMargins.right)
-+        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: self.view.layoutMargins.left, bottom: 0, right: self.view.layoutMargins.right)
++        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
++        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
 +        self.prototypeCell.layoutIfNeeded()
 +        
          let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
@@ -280,7 +280,7 @@ index 7eeec62..403d4d9 100644
          return size
      }
      
-@@ -467,7 +498,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +494,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -376,6 +376,24 @@ index 6cd51ef..686074e 100644
                                  </cells>
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
+diff --git a/AltStore/Settings/SettingsHeaderFooterView.swift b/AltStore/Settings/SettingsHeaderFooterView.swift
+index 511dda8..61f0972 100644
+--- a/AltStore/Settings/SettingsHeaderFooterView.swift
++++ b/AltStore/Settings/SettingsHeaderFooterView.swift
+@@ -21,8 +21,11 @@ final class SettingsHeaderFooterView: UITableViewHeaderFooterView
+     {
+         super.awakeFromNib()
+         
+-        self.contentView.layoutMargins = .zero
+-        self.contentView.preservesSuperviewLayoutMargins = true
++        self.preservesSuperviewLayoutMargins = false
++        self.contentView.preservesSuperviewLayoutMargins = false
++        self.insetsLayoutMarginsFromSafeArea = false
++        self.contentView.insetsLayoutMarginsFromSafeArea = false
++        self.contentView.layoutMargins = UIEdgeInsets(top: 8, left: 30, bottom: 8, right: 30)
+         
+         self.stackView.translatesAutoresizingMaskIntoConstraints = false
+         self.contentView.addSubview(self.stackView)
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
 index 9e8a94a..47e90a9 100644
 --- a/AltStore/Settings/SettingsViewController.swift
@@ -619,7 +637,7 @@ index e1b3f2c..070a9cc 100644
          self.layer.cornerRadius = 22
          
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0..02bbc3b 100644
+index 00ee6b0..05f8982 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
 @@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
@@ -641,7 +659,7 @@ index 00ee6b0..02bbc3b 100644
          // Vertically center placeholder view in gap below first item.
          
          let indexPath = IndexPath(item: 0, section: 0)
-@@ -132,6 +133,15 @@ final class SourcesViewController: UICollectionViewController
+@@ -132,6 +133,16 @@ final class SourcesViewController: UICollectionViewController
              self.placeholderViewCenterYConstraint.constant = constant
          }
      }
@@ -651,13 +669,14 @@ index 00ee6b0..02bbc3b 100644
 +        super.viewWillTransition(to: size, with: coordinator)
 +
 +        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
-+            self?.collectionView.collectionViewLayout.invalidateLayout()
++            guard let self else { return }
++            self.collectionView.setCollectionViewLayout(self.makeLayout(), animated: false)
 +        }
 +    }
  }
  
  private extension SourcesViewController
-@@ -180,7 +190,14 @@ private extension SourcesViewController
+@@ -180,7 +191,14 @@ private extension SourcesViewController
              return config
          }
          
@@ -673,12 +692,20 @@ index 00ee6b0..02bbc3b 100644
          return layout
      }
      
-@@ -207,8 +224,6 @@ private extension SourcesViewController
+@@ -205,10 +223,12 @@ private extension SourcesViewController
+             guard let self else { return }
+                         
              let cell = cell as! AppBannerCollectionViewCell
-             cell.layoutMargins.top = 5
-             cell.layoutMargins.bottom = 5
+-            cell.layoutMargins.top = 5
+-            cell.layoutMargins.bottom = 5
 -            cell.layoutMargins.left = self.view.layoutMargins.left
 -            cell.layoutMargins.right = self.view.layoutMargins.right
++            cell.preservesSuperviewLayoutMargins = false
++            cell.contentView.preservesSuperviewLayoutMargins = false
++            cell.insetsLayoutMarginsFromSafeArea = false
++            cell.contentView.insetsLayoutMarginsFromSafeArea = false
++            cell.layoutMargins = UIEdgeInsets(top: 5, left: 0, bottom: 5, right: 0)
++            cell.contentView.layoutMargins = UIEdgeInsets(top: 5, left: 0, bottom: 5, right: 0)
              
              cell.bannerView.configure(for: source)
              
