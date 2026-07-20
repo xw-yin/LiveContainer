@@ -65,13 +65,23 @@ jobs:
           git clone --depth 1 --branch LiveContainerSupport --recurse-submodules --shallow-submodules https://github.com/LiveContainer/SideStore.git SideStoreBuild
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-source-detail-navigation.patch"
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-nonblocking-startup.patch"
-          git -C SideStoreBuild apply --recount "$GITHUB_WORKSPACE/.github/sidelc/sidestore-language-selection.patch"
+          git -C SideStoreBuild apply --index --recount "$GITHUB_WORKSPACE/.github/sidelc/sidestore-language-selection.patch"
+          git -C SideStoreBuild submodule update --init --recursive --depth 1
+          test "$(git -C SideStoreBuild/Dependencies/AltSign rev-parse HEAD)" = "bf8db82b172cedd1933d7c2bf3e2460bdfdb5adb"
+          test "$(git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD)" = "c1a5ad2316f894dc70dd8899f02348769b714192"
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
+          grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
           grep -Fq 'lastLayoutMargins' SideStoreBuild/AltStore/News/NewsViewController.swift
+          grep -Fq 'section.contentInsets' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
+          grep -Fq 'layoutSection.contentInsets' SideStoreBuild/AltStore/Sources/AddSourceViewController.swift
+          grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
           make -C SideStoreBuild build fakesign ipa
           unzip -l SideStoreBuild/SideStore.ipa | grep -Fq 'zh-Hans.lproj/Settings.strings'
+          unzip -p SideStoreBuild/SideStore.ipa Payload/SideStore.app/SideStore > /tmp/PatchedSideStore
+          strings /tmp/PatchedSideStore > /tmp/PatchedSideStore.strings
+          grep -Fq 'AppleLanguages' /tmp/PatchedSideStore.strings
           cp SideStoreBuild/SideStore.ipa "$GITHUB_WORKSPACE/SideStore.patched.ipa"
       - name: Create IPA
         env:

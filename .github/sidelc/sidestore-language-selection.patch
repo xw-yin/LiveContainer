@@ -1,5 +1,5 @@
 diff --git a/AltStore.xcodeproj/project.pbxproj b/AltStore.xcodeproj/project.pbxproj
-index 2e461a39..05db8c59 100644
+index 2e461a3..05db8c5 100644
 --- a/AltStore.xcodeproj/project.pbxproj
 +++ b/AltStore.xcodeproj/project.pbxproj
 @@ -589,6 +589,7 @@
@@ -11,10 +11,10 @@ index 2e461a39..05db8c59 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 237219d3..a33c2ec9 100644
+index 237219d..fa71d76 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
-@@ -13,10 +13,68 @@ import Intents
+@@ -13,10 +13,90 @@ import Intents
  import AltStoreCore
  import AltSign
  import CoreData
@@ -37,8 +37,9 @@ index 237219d3..a33c2ec9 100644
 +    }()
 +    
 +    @objc private func custom_localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
-+        if self == Bundle.main,
-+           let bundle = objc_getAssociatedObject(self, &sideStoreLanguageBundleKey) as? Bundle {
++        let isSideStoreBundle = self == Bundle.main || self.bundlePath.lowercased().contains("sidestore")
++        if isSideStoreBundle,
++           let bundle = objc_getAssociatedObject(Bundle.main, &sideStoreLanguageBundleKey) as? Bundle {
 +            return bundle.custom_localizedString(forKey: key, value: value, table: tableName)
 +        }
 +        return self.custom_localizedString(forKey: key, value: value, table: tableName)
@@ -90,13 +91,21 @@ index 237219d3..a33c2ec9 100644
 +            localizedBundle,
 +            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
 +        )
++        if let sideStoreBundle {
++            objc_setAssociatedObject(
++                sideStoreBundle,
++                &sideStoreLanguageBundleKey,
++                localizedBundle,
++                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
++            )
++        }
 +    }
 +}
 +
  extension UIApplication: LegacyBackgroundFetching {}
  
  extension AppDelegate
-@@ -60,8 +118,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -60,8 +140,14 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
      // so the import notification can be posted once the app becomes active.
      private var pendingImportIPAURL: URL?
  
@@ -111,7 +120,7 @@ index 237219d3..a33c2ec9 100644
          // navigation bar buttons spacing is too much (so hack it to use minimal spacing)
          // this is swift-5 specific behavior and might change
          // https://stackoverflow.com/a/64988363/11971304
-@@ -127,7 +191,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -127,7 +213,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
  
          // TODO: @mahee96: find if we need to start em_proxy as in altstore?
          if UserDefaults.standard.enableEMPforWireguard {
@@ -122,7 +131,7 @@ index 237219d3..a33c2ec9 100644
          }
  
          SecureValueTransformer.register()        
-@@ -175,7 +241,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
+@@ -175,7 +263,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
      {
          AppManager.shared.update()
          if UserDefaults.standard.enableEMPforWireguard {
@@ -134,7 +143,7 @@ index 237219d3..a33c2ec9 100644
      }
  
 diff --git a/AltStore/Info.plist b/AltStore/Info.plist
-index 8ee1025f..62b7073d 100644
+index 8ee1025..62b7073 100644
 --- a/AltStore/Info.plist
 +++ b/AltStore/Info.plist
 @@ -255,6 +255,8 @@
@@ -147,7 +156,7 @@ index 8ee1025f..62b7073d 100644
  	<key>UISupportedInterfaceOrientations~ipad</key>
  	<array>
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e7..0992a356 100644
+index eb7535e..0992a35 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
 @@ -22,7 +22,11 @@ final class NewsCollectionViewCell: UICollectionViewCell
@@ -174,7 +183,7 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..c3424895 100644
+index 7eeec62..eb7b39b 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,8 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -186,7 +195,7 @@ index 7eeec623..c3424895 100644
      private var cancellables = Set<AnyCancellable>()
      
      init?(source: Source?, coder: NSCoder)
-@@ -135,6 +136,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -135,6 +137,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.update()
      }
      
@@ -198,7 +207,7 @@ index 7eeec623..c3424895 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +152,24 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +153,24 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
@@ -287,7 +296,7 @@ index 7eeec623..c3424895 100644
          else
          {
 diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
-index 085fb616..40365a6c 100644
+index 085fb61..40365a6 100644
 --- a/AltStore/Operations/AuthenticationOperation.swift
 +++ b/AltStore/Operations/AuthenticationOperation.swift
 @@ -669,7 +669,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?,
@@ -300,7 +309,7 @@ index 085fb616..40365a6c 100644
              let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
                  if teamType == .free {
 diff --git a/AltStore/Operations/RemoveAppExtensionsOperation.swift b/AltStore/Operations/RemoveAppExtensionsOperation.swift
-index 589958bd..bd7106f0 100644
+index 589958b..bd7106f 100644
 --- a/AltStore/Operations/RemoveAppExtensionsOperation.swift
 +++ b/AltStore/Operations/RemoveAppExtensionsOperation.swift
 @@ -122,7 +122,7 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
@@ -313,7 +322,7 @@ index 589958bd..bd7106f0 100644
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
-index 6cd51eff..2fcaf83f 100644
+index 6cd51ef..2fcaf83 100644
 --- a/AltStore/Settings/Settings.storyboard
 +++ b/AltStore/Settings/Settings.storyboard
 @@ -303,7 +303,7 @@
@@ -365,7 +374,7 @@ index 6cd51eff..2fcaf83f 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 9e8a94a9..03d2659c 100644
+index 9e8a94a..8d3c3de 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
 @@ -297,7 +297,7 @@ final class SettingsViewController: UITableViewController
@@ -408,15 +417,22 @@ index 9e8a94a9..03d2659c 100644
          if section == .advancedSettings {
              let row = AdvancedSettingsRow.allCases[indexPath.row]
              if row == .wirelessPair {
-@@ -1127,6 +1144,7 @@ extension SettingsViewController
+@@ -1127,8 +1144,14 @@ extension SettingsViewController
          }
          
          
 +        self.localizeSettingsControls(in: cell)
          return cell
      }
++
++    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath)
++    {
++        self.localizeSettingsControls(in: cell)
++    }
      
-@@ -1461,6 +1479,13 @@ extension SettingsViewController
+     override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView?
+     {
+@@ -1461,6 +1484,13 @@ extension SettingsViewController
                  })
                  
                  let vc = UIHostingController(rootView: anisetteServersView)
@@ -430,7 +446,7 @@ index 9e8a94a9..03d2659c 100644
                  self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
  
              case .certificateManagement:
-@@ -1732,7 +1757,11 @@ extension SettingsViewController
+@@ -1732,7 +1762,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -443,7 +459,7 @@ index 9e8a94a9..03d2659c 100644
          }
          
          
-@@ -1741,6 +1770,78 @@ extension SettingsViewController
+@@ -1741,6 +1775,81 @@ extension SettingsViewController
      }
  }
  
@@ -502,9 +518,12 @@ index 9e8a94a9..03d2659c 100644
 +    {
 +        if let languageCode {
 +            UserDefaults.standard.set(languageCode, forKey: "ALTSelectedLanguage")
++            UserDefaults.standard.set([languageCode], forKey: "AppleLanguages")
 +        } else {
 +            UserDefaults.standard.removeObject(forKey: "ALTSelectedLanguage")
++            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
 +        }
++        UserDefaults.standard.synchronize()
 +
 +        Bundle.setSideStoreLanguage(languageCode)
 +
@@ -523,20 +542,53 @@ index 9e8a94a9..03d2659c 100644
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
 diff --git a/AltStore/Sources/AddSourceViewController.swift b/AltStore/Sources/AddSourceViewController.swift
-index c9be9e13..cd8b66bb 100644
+index c9be9e1..2e56307 100644
 --- a/AltStore/Sources/AddSourceViewController.swift
 +++ b/AltStore/Sources/AddSourceViewController.swift
-@@ -584,6 +584,8 @@ private extension AddSourceViewController
+@@ -137,6 +137,7 @@ private extension AddSourceViewController
+                 let layoutSection = NSCollectionLayoutSection(group: group)
+                 layoutSection.interGroupSpacing = 10
+                 layoutSection.boundarySupplementaryItems = [headerItem]
++                layoutSection.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+                 return layoutSection
+                 
+             case .preview:
+@@ -165,6 +166,7 @@ private extension AddSourceViewController
+                 }
+                 
+                 let layoutSection = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)
++                layoutSection.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+                 return layoutSection
+                 
+             case .recommended:
+@@ -183,6 +185,7 @@ private extension AddSourceViewController
+                 }
+                 
+                 let layoutSection = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)
++                layoutSection.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+                 return layoutSection
+             }
+         }, configuration: layoutConfig)
+@@ -209,8 +212,6 @@ private extension AddSourceViewController
+             guard let self else { return }
+             
+             let cell = cell as! AddSourceTextFieldCell
+-            cell.contentView.layoutMargins.left = self.view.layoutMargins.left
+-            cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+             
+             cell.textField.delegate = self
+             
+@@ -582,8 +583,6 @@ private extension AddSourceViewController
+         cell.bannerView.style = .source
+         cell.layoutMargins.top = 5
          cell.layoutMargins.bottom = 5
-         cell.layoutMargins.left = self.view.layoutMargins.left
-         cell.layoutMargins.right = self.view.layoutMargins.right
-+        cell.contentView.layoutMargins.left = self.view.layoutMargins.left
-+        cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+-        cell.layoutMargins.left = self.view.layoutMargins.left
+-        cell.layoutMargins.right = self.view.layoutMargins.right
          cell.contentView.backgroundColor = .altBackground
          
          cell.bannerView.configure(for: source)
 diff --git a/AltStore/Sources/Components/SourceHeaderView.swift b/AltStore/Sources/Components/SourceHeaderView.swift
-index e1b3f2cd..070a9cce 100644
+index e1b3f2c..070a9cc 100644
 --- a/AltStore/Sources/Components/SourceHeaderView.swift
 +++ b/AltStore/Sources/Components/SourceHeaderView.swift
 @@ -40,6 +40,8 @@ class SourceHeaderView: RSTNibView
@@ -549,7 +601,7 @@ index e1b3f2cd..070a9cce 100644
          self.layer.cornerRadius = 22
          
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0a..bff28f38 100644
+index 00ee6b0..55104cd 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
 @@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
@@ -562,25 +614,38 @@ index 00ee6b0a..bff28f38 100644
          navigationController?.navigationBar.layoutMargins.left = 20
          
          let layout = self.makeLayout()
-@@ -209,6 +210,8 @@ private extension SourcesViewController
+@@ -180,7 +181,11 @@ private extension SourcesViewController
+             return config
+         }
+         
+-        let layout = UICollectionViewCompositionalLayout.list(using: configuration)
++        let layout = UICollectionViewCompositionalLayout { _, layoutEnvironment in
++            let section = NSCollectionLayoutSection.list(using: configuration, layoutEnvironment: layoutEnvironment)
++            section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
++            return section
++        }
+         return layout
+     }
+     
+@@ -207,8 +212,6 @@ private extension SourcesViewController
+             let cell = cell as! AppBannerCollectionViewCell
+             cell.layoutMargins.top = 5
              cell.layoutMargins.bottom = 5
-             cell.layoutMargins.left = self.view.layoutMargins.left
-             cell.layoutMargins.right = self.view.layoutMargins.right
-+            cell.contentView.layoutMargins.left = self.view.layoutMargins.left
-+            cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+-            cell.layoutMargins.left = self.view.layoutMargins.left
+-            cell.layoutMargins.right = self.view.layoutMargins.right
              
              cell.bannerView.configure(for: source)
              
 diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 new file mode 100644
-index 00000000..e9b8596c
+index 0000000..e9b8596
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 @@ -0,0 +1 @@
 +"DTd-Yu-HXr.text" = "SideStore 团队";
 diff --git a/AltStore/zh-Hans.lproj/Authentication.strings b/AltStore/zh-Hans.lproj/Authentication.strings
 new file mode 100644
-index 00000000..28645594
+index 0000000..2864559
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Authentication.strings
 @@ -0,0 +1,20 @@
@@ -606,17 +671,17 @@ index 00000000..28645594
 +"qxJ-Go-OPq.title" = "选择团队";
 diff --git a/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
 new file mode 100644
-index 00000000..4ab92021
+index 0000000..4ab9202
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
 @@ -0,0 +1 @@
 +"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 00000000..7bce5d51
+index 0000000..50627f5
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -0,0 +1,468 @@
+@@ -0,0 +1,469 @@
 +/* Localizable.strings (zh-Hans) */
 +
 +"Language" = "语言";
@@ -1057,6 +1122,7 @@ index 00000000..7bce5d51
 +"Export Resigned Apps" = "导出已重签 App";
 +"Enable EMP for wireguard" = "为 WireGuard 启用 EMP";
 +"Enable AppId Customization" = "启用 App ID 自定义";
++"Enable AppExtns Customization" = "启用 App 扩展自定义";
 +"Import Account..." = "导入账户…";
 +"Export Account..." = "导出账户…";
 +"Import Signing Certificate..." = "导入签名证书…";
@@ -1087,7 +1153,7 @@ index 00000000..7bce5d51
 +"Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n\nPlease note that these builds are experimental and may be unstable or break unexpectedly." = "选择加入测试版测试，以获取定期更新 and 早期预览。\n\n请注意，这些版本是实验性的，可能会不稳定或意外崩溃。";
 diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
 new file mode 100644
-index 00000000..8d0bc490
+index 0000000..8d0bc49
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Main.strings
 @@ -0,0 +1,15 @@
@@ -1108,7 +1174,7 @@ index 00000000..8d0bc490
 +"fVN-ed-uO1.title" = "新闻";
 diff --git a/AltStore/zh-Hans.lproj/Settings.strings b/AltStore/zh-Hans.lproj/Settings.strings
 new file mode 100644
-index 00000000..6d39a0b8
+index 0000000..6d39a0b
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Settings.strings
 @@ -0,0 +1,65 @@
@@ -1179,7 +1245,7 @@ index 00000000..6d39a0b8
 +
 diff --git a/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 new file mode 100644
-index 00000000..3e25ac44
+index 0000000..3e25ac4
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 @@ -0,0 +1,2 @@
@@ -1187,7 +1253,7 @@ index 00000000..3e25ac44
 +"eet-Hi-RU4.text" = "说明";
 diff --git a/AltStore/zh-Hans.lproj/SourceHeaderView.strings b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
 new file mode 100644
-index 00000000..663dfced
+index 0000000..663dfce
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
 @@ -0,0 +1,2 @@
@@ -1195,7 +1261,7 @@ index 00000000..663dfced
 +"IUL-qI-QAg.text" = "副标题";
 diff --git a/AltStore/zh-Hans.lproj/Sources.strings b/AltStore/zh-Hans.lproj/Sources.strings
 new file mode 100644
-index 00000000..346d95ee
+index 0000000..346d95e
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Sources.strings
 @@ -0,0 +1,6 @@
@@ -1207,13 +1273,13 @@ index 00000000..346d95ee
 +"v46-dC-g7e.title" = "添加来源";
 diff --git a/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 new file mode 100644
-index 00000000..f338081c
+index 0000000..f338081
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
 diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-index b63a603f..b7c6d32a 100644
+index b63a603..b7c6d32 100644
 --- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 +++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 @@ -42,6 +42,83 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
