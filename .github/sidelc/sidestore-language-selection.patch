@@ -193,7 +193,7 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..c2fb1bef 100644
+index 7eeec623..c3424895 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -204,46 +204,45 @@ index 7eeec623..c2fb1bef 100644
      private var cancellables = Set<AnyCancellable>()
      
      init?(source: Source?, coder: NSCoder)
-@@ -135,6 +136,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -135,6 +136,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.update()
      }
      
 +    override func viewWillAppear(_ animated: Bool)
 +    {
 +        super.viewWillAppear(animated)
-+        
-+        let width = self.collectionView.bounds.width
-+        if width != self.lastLayoutWidth && width > 0
-+        {
-+            self.lastLayoutWidth = width
-+            self.cachedCellSizes.removeAll()
-+            self.collectionView.collectionViewLayout.invalidateLayout()
-+        }
 +    }
 +
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +160,18 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +152,25 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
 +    
-+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
++    override func viewDidLayoutSubviews()
 +    {
-+        super.viewWillTransition(to: size, with: coordinator)
++        super.viewDidLayoutSubviews()
 +        
-+        coordinator.animate(alongsideTransition: { _ in
-+            self.lastLayoutWidth = size.width
++        let width = self.collectionView.bounds.width
++        if abs(width - self.lastLayoutWidth) > 1.0 && width > 0
++        {
++            self.lastLayoutWidth = width
 +            self.cachedCellSizes.removeAll()
 +            self.collectionView.collectionViewLayout.invalidateLayout()
 +            self.collectionView.reloadData()
-+        }, completion: nil)
++        }
++    }
++    
++    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
++    {
++        super.viewWillTransition(to: size, with: coordinator)
 +    }
  }
  
  private extension NewsViewController
-@@ -174,6 +200,8 @@ private extension NewsViewController
+@@ -174,6 +199,8 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -252,7 +251,7 @@ index 7eeec623..c2fb1bef 100644
              cell.contentView.layoutMargins.left = self.view.layoutMargins.left
              cell.contentView.layoutMargins.right = self.view.layoutMargins.right
              
-@@ -183,15 +211,21 @@ private extension NewsViewController
+@@ -183,15 +210,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -274,7 +273,7 @@ index 7eeec623..c2fb1bef 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -446,13 +480,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -446,13 +479,19 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
              return previousSize
          }
          
@@ -297,7 +296,7 @@ index 7eeec623..c2fb1bef 100644
          self.cachedCellSizes[globallyUniqueID] = size
          return size
      }
-@@ -467,7 +507,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +506,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -563,6 +562,19 @@ index 9e8a94a9..03d2659c 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/Sources/AddSourceViewController.swift b/AltStore/Sources/AddSourceViewController.swift
+index c9be9e13..cd8b66bb 100644
+--- a/AltStore/Sources/AddSourceViewController.swift
++++ b/AltStore/Sources/AddSourceViewController.swift
+@@ -584,6 +584,8 @@ private extension AddSourceViewController
+         cell.layoutMargins.bottom = 5
+         cell.layoutMargins.left = self.view.layoutMargins.left
+         cell.layoutMargins.right = self.view.layoutMargins.right
++        cell.contentView.layoutMargins.left = self.view.layoutMargins.left
++        cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+         cell.contentView.backgroundColor = .altBackground
+         
+         cell.bannerView.configure(for: source)
 diff --git a/AltStore/Sources/Components/SourceHeaderView.swift b/AltStore/Sources/Components/SourceHeaderView.swift
 index e1b3f2cd..070a9cce 100644
 --- a/AltStore/Sources/Components/SourceHeaderView.swift
@@ -577,7 +589,7 @@ index e1b3f2cd..070a9cce 100644
          self.layer.cornerRadius = 22
          
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0a..2de2f296 100644
+index 00ee6b0a..bff28f38 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
 @@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
@@ -590,6 +602,15 @@ index 00ee6b0a..2de2f296 100644
          navigationController?.navigationBar.layoutMargins.left = 20
          
          let layout = self.makeLayout()
+@@ -209,6 +210,8 @@ private extension SourcesViewController
+             cell.layoutMargins.bottom = 5
+             cell.layoutMargins.left = self.view.layoutMargins.left
+             cell.layoutMargins.right = self.view.layoutMargins.right
++            cell.contentView.layoutMargins.left = self.view.layoutMargins.left
++            cell.contentView.layoutMargins.right = self.view.layoutMargins.right
+             
+             cell.bannerView.configure(for: source)
+             
 diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 new file mode 100644
 index 00000000..e9b8596c
