@@ -193,7 +193,7 @@ index eb7535e7..0992a356 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec623..5d70e613 100644
+index 7eeec623..c8f00efb 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -255,13 +255,13 @@ index 7eeec623..5d70e613 100644
              {
                  cell.imageView.isIndicatingActivity = true
                  cell.imageView.isHidden = false
-+                aspectConstraint?.isActive = true
++                aspectConstraint?.priority = UILayoutPriority(999)
              }
              else
              {
                  cell.imageView.isIndicatingActivity = false
                  cell.imageView.isHidden = true
-+                aspectConstraint?.isActive = false
++                aspectConstraint?.priority = UILayoutPriority(250)
              }
              
              cell.isAccessibilityElement = true
