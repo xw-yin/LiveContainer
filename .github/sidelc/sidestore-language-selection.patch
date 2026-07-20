@@ -155,8 +155,204 @@ index 8ee1025..62b7073 100644
  	</array>
  	<key>UISupportedInterfaceOrientations~ipad</key>
  	<array>
+diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
+index aa29e53..f28719a 100644
+--- a/AltStore/My Apps/MyAppsViewController.swift	
++++ b/AltStore/My Apps/MyAppsViewController.swift	
+@@ -75,6 +75,11 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
+     override func viewDidLoad()
+     {
+         super.viewDidLoad()
++
++        if let layout = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout
++        {
++            layout.sectionInsetReference = .fromSafeArea
++        }
+         
+         // Allows us to intercept delegate callbacks.
+         self.updatesDataSource.fetchedResultsController.delegate = self
+@@ -137,6 +142,16 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
+         
+         _viewDidAppear = true
+     }
++
++    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
++    {
++        super.viewWillTransition(to: size, with: coordinator)
++
++        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
++            self?.cachedUpdateSizes.removeAll()
++            self?.collectionView.collectionViewLayout.invalidateLayout()
++        }
++    }
+     
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?)
+     {
+@@ -209,8 +224,7 @@ private extension MyAppsViewController
+         dynamicDataSource.cellIdentifierHandler = { _ in "NoUpdatesCell" }
+         dynamicDataSource.dynamicCellConfigurationHandler = { (cell, indexPath) in
+             let cell = cell as! NoUpdatesCollectionViewCell
+-            cell.layoutMargins.left = self.view.layoutMargins.left
+-            cell.layoutMargins.right = self.view.layoutMargins.right
++            self.configureCardMargins(for: cell)
+             
+             cell.blurView.layer.cornerRadius = 20
+             cell.blurView.layer.masksToBounds = true
+@@ -248,8 +262,7 @@ private extension MyAppsViewController
+             guard let app = installedApp.storeApp, let latestSupportedVersion = app.latestSupportedVersion else { return }
+             
+             let cell = cell as! UpdateCollectionViewCell
+-            cell.layoutMargins.left = self.view.layoutMargins.left
+-            cell.layoutMargins.right = self.view.layoutMargins.right
++            self.configureCardMargins(for: cell)
+             
+             cell.tintColor = app.tintColor ?? .altPrimary
+             cell.versionDescriptionTextView.maximumNumberOfLines = 3
+@@ -352,8 +365,7 @@ private extension MyAppsViewController
+             let tintColor = installedApp.storeApp?.tintColor ?? .altPrimary
+             
+             let cell = cell as! InstalledAppCollectionViewCell
+-            cell.layoutMargins.left = self.view.layoutMargins.left
+-            cell.layoutMargins.right = self.view.layoutMargins.right
++            self.configureCardMargins(for: cell)
+             cell.tintColor = tintColor
+             
+             cell.deactivateBadge?.isHidden = false
+@@ -487,8 +499,7 @@ private extension MyAppsViewController
+             let tintColor = installedApp.storeApp?.tintColor ?? .altPrimary
+             
+             let cell = cell as! InstalledAppCollectionViewCell
+-            cell.layoutMargins.left = self.view.layoutMargins.left
+-            cell.layoutMargins.right = self.view.layoutMargins.right
++            self.configureCardMargins(for: cell)
+             cell.tintColor = UIColor.gray
+             
+             if cell.bundleIdentifier != installedApp.bundleIdentifier
+@@ -1755,8 +1766,10 @@ extension MyAppsViewController
+             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "ActiveAppsHeader", for: indexPath) as! InstalledAppsCollectionHeaderView
+             
+             UIView.performWithoutAnimation {
+-                headerView.layoutMargins.left = self.view.layoutMargins.left
+-                headerView.layoutMargins.right = self.view.layoutMargins.right
++                headerView.preservesSuperviewLayoutMargins = false
++                headerView.insetsLayoutMarginsFromSafeArea = false
++                headerView.layoutMargins.left = 0
++                headerView.layoutMargins.right = 0
+                 
+                 if UserDefaults.standard.activeAppsLimit == nil || UserDefaults.standard.isAppLimitDisabled
+                 {
+@@ -1793,8 +1806,10 @@ extension MyAppsViewController
+             let headerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "InactiveAppsHeader", for: indexPath) as! InstalledAppsCollectionHeaderView
+             
+             UIView.performWithoutAnimation {
+-                headerView.layoutMargins.left = self.view.layoutMargins.left
+-                headerView.layoutMargins.right = self.view.layoutMargins.right
++                headerView.preservesSuperviewLayoutMargins = false
++                headerView.insetsLayoutMarginsFromSafeArea = false
++                headerView.layoutMargins.left = 0
++                headerView.layoutMargins.right = 0
+                 
+                 headerView.textLabel.text = NSLocalizedString("Inactive", comment: "")
+                 headerView.button.setTitle(nil, for: .normal)
+@@ -2139,31 +2154,34 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
+         switch section
+         {
+         case .noUpdates:
+-            let size = CGSize(width: collectionView.bounds.width, height: 44)
++            let size = CGSize(width: self.cardContentWidth(in: collectionView), height: 44)
+             return size
+             
+         case .updates:
+             let item = self.dataSource.item(at: indexPath)
+             
+-            if let previousHeight = self.cachedUpdateSizes[item.bundleIdentifier]
++            let contentWidth = self.cardContentWidth(in: collectionView)
++            let cacheKey = "\(item.bundleIdentifier)-\(Int(contentWidth.rounded()))"
++            if let previousHeight = self.cachedUpdateSizes[cacheKey]
+             {
+                 return previousHeight
+             }
+             
+             // Manually change cell's width to prevent conflicting with UIView-Encapsulated-Layout-Width constraints.
+-            self.prototypeUpdateCell.frame.size.width = collectionView.bounds.width
++            self.prototypeUpdateCell.frame.size.width = contentWidth
+             
+             self.dataSource.cellConfigurationHandler(self.prototypeUpdateCell, item, indexPath)
+             
+-            let size = self.prototypeUpdateCell.systemLayoutSizeFitting(CGSize(width: collectionView.frame.width, height: UIView.layoutFittingCompressedSize.height),
++            var size = self.prototypeUpdateCell.systemLayoutSizeFitting(CGSize(width: contentWidth, height: UIView.layoutFittingCompressedSize.height),
+                                                                         withHorizontalFittingPriority: .required, // Width is fixed
+                                                                         verticalFittingPriority: .fittingSizeLevel) // Height can be as large as needed
+             
+-            self.cachedUpdateSizes[item.bundleIdentifier] = size
++            size.width = contentWidth
++            self.cachedUpdateSizes[cacheKey] = size
+             return size
+             
+         case .activeApps, .inactiveApps:
+-            return CGSize(width: collectionView.bounds.width, height: 88)
++            return CGSize(width: self.cardContentWidth(in: collectionView), height: 88)
+         }
+     }
+     
+@@ -2175,11 +2193,11 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
+         case .noUpdates: return .zero
+         case .updates:
+             let height: CGFloat = (self.updatesDataSource.fetchedResultsController.fetchedObjects?.count ?? 0 > maximumCollapsedUpdatesCount) ? 26 : 0
+-            return CGSize(width: collectionView.bounds.width, height: height)
++            return CGSize(width: self.cardContentWidth(in: collectionView), height: height)
+             
+-        case .activeApps: return CGSize(width: collectionView.bounds.width, height: 29)
++        case .activeApps: return CGSize(width: self.cardContentWidth(in: collectionView), height: 29)
+         case .inactiveApps where self.inactiveAppsDataSource.itemCount == 0: return .zero
+-        case .inactiveApps: return CGSize(width: collectionView.bounds.width, height: 29)
++        case .inactiveApps: return CGSize(width: self.cardContentWidth(in: collectionView), height: 29)
+         }
+     }
+     
+@@ -2201,7 +2219,7 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
+ 
+             // NOTE: double dequeue of cell has been discontinued
+             // TODO: Using harcoded value until this is fixed
+-            return CGSize(width: collectionView.bounds.width, height: 60.5)
++            return CGSize(width: self.cardContentWidth(in: collectionView), height: 60.5)
+         }
+         
+         switch section
+@@ -2224,11 +2242,30 @@ extension MyAppsViewController: UICollectionViewDelegateFlowLayout
+         {
+         case .noUpdates where self.updatesDataSource.itemCount != 0: return .zero
+         case .updates where self.updatesDataSource.itemCount == 0: return .zero
+-        default: return UIEdgeInsets(top: 12, left: 0, bottom: 20, right: 0)
++        default: return UIEdgeInsets(top: 12, left: 16, bottom: 20, right: 16)
+         }
+     }
+ }
+ 
++private extension MyAppsViewController
++{
++    func cardContentWidth(in collectionView: UICollectionView) -> CGFloat
++    {
++        let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right
++        return max(1, collectionView.bounds.width - safeAreaWidth - 32)
++    }
++
++    func configureCardMargins(for cell: UICollectionViewCell)
++    {
++        cell.preservesSuperviewLayoutMargins = false
++        cell.contentView.preservesSuperviewLayoutMargins = false
++        cell.insetsLayoutMarginsFromSafeArea = false
++        cell.contentView.insetsLayoutMarginsFromSafeArea = false
++        cell.layoutMargins = .zero
++        cell.contentView.layoutMargins = .zero
++    }
++}
++
+ extension MyAppsViewController: UICollectionViewDragDelegate
+ {
+     func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem]
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e..0992a35 100644
+index eb7535e..f4c874c 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
 @@ -22,7 +22,11 @@ final class NewsCollectionViewCell: UICollectionViewCell
@@ -167,8 +363,8 @@ index eb7535e..0992a35 100644
 +        self.contentView.preservesSuperviewLayoutMargins = false
 +        self.insetsLayoutMarginsFromSafeArea = false
 +        self.contentView.insetsLayoutMarginsFromSafeArea = false
-+        self.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-+        self.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
++        self.layoutMargins = .zero
++        self.contentView.layoutMargins = .zero
          
          self.contentBackgroundView.layer.cornerRadius = 30
          self.contentBackgroundView.clipsToBounds = true
@@ -183,10 +379,24 @@ index eb7535e..0992a35 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..d7f09a2 100644
+index 7eeec62..3850cbc 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -135,6 +135,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -82,6 +82,13 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+         super.viewDidLoad()
+         
+         self.collectionView.backgroundColor = .altBackground
++
++        if let layout = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout
++        {
++            layout.sectionInsetReference = .fromSafeArea
++            layout.sectionInset.left = 16
++            layout.sectionInset.right = 16
++        }
+         
+         self.prototypeCell = NewsCollectionViewCell.instantiate(with: NewsCollectionViewCell.nib)
+         self.prototypeCell.contentView.translatesAutoresizingMaskIntoConstraints = false
+@@ -135,6 +142,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.update()
      }
      
@@ -198,7 +408,7 @@ index 7eeec62..d7f09a2 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +151,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +158,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
@@ -215,7 +425,7 @@ index 7eeec62..d7f09a2 100644
  }
  
  private extension NewsViewController
-@@ -174,8 +189,6 @@ private extension NewsViewController
+@@ -174,8 +196,6 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -224,7 +434,7 @@ index 7eeec62..d7f09a2 100644
              
              cell.titleLabel.text = newsItem.title
              cell.captionLabel.text = newsItem.caption
-@@ -183,15 +196,21 @@ private extension NewsViewController
+@@ -183,15 +203,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -246,11 +456,23 @@ index 7eeec62..d7f09a2 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -440,20 +459,28 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -416,8 +442,8 @@ extension NewsViewController
+         let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner", for: indexPath) as! AppBannerFooterView
+         guard let storeApp = item.storeApp else { return footerView }
+         
+-        footerView.layoutMargins.left = self.view.layoutMargins.left
+-        footerView.layoutMargins.right = self.view.layoutMargins.right
++        footerView.layoutMargins.left = 0
++        footerView.layoutMargins.right = 0
+         
+         footerView.bannerView.button.isIndicatingActivity = false
+         footerView.bannerView.configure(for: storeApp)
+@@ -440,20 +466,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
-+        let layoutWidth = Int(collectionView.bounds.width.rounded())
++        let contentWidth = self.cardContentWidth(in: collectionView)
++        let layoutWidth = Int(contentWidth.rounded())
 +        let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"
          
 -        if let previousSize = self.cachedCellSizes[globallyUniqueID]
@@ -259,14 +481,15 @@ index 7eeec62..d7f09a2 100644
              return previousSize
          }
          
-+        self.prototypeCell.frame.size.width = collectionView.bounds.width
-+        self.prototypeCell.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-+        self.prototypeCell.contentView.layoutMargins = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-+        self.prototypeCell.layoutIfNeeded()
-+        
-         let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
+-        let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: collectionView.bounds.width)
 -        NSLayoutConstraint.activate([widthConstraint])
 -        defer { NSLayoutConstraint.deactivate([widthConstraint]) }
++        self.prototypeCell.frame.size.width = contentWidth
++        self.prototypeCell.layoutMargins = .zero
++        self.prototypeCell.contentView.layoutMargins = .zero
++        self.prototypeCell.layoutIfNeeded()
++        
++        let widthConstraint = self.prototypeCell.contentView.widthAnchor.constraint(equalToConstant: contentWidth)
 +        widthConstraint.isActive = true
 +        defer { widthConstraint.isActive = false }
          
@@ -275,20 +498,42 @@ index 7eeec62..d7f09a2 100644
 -        let size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
 -        self.cachedCellSizes[globallyUniqueID] = size
 +        var size = self.prototypeCell.contentView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
-+        size.width = collectionView.bounds.width
++        size.width = contentWidth
 +        self.cachedCellSizes[cacheKey] = size
          return size
      }
      
-@@ -467,7 +494,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +502,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
 -            return CGSize(width: 88, height: 88)
-+            return CGSize(width: collectionView.bounds.width, height: 88)
++            return CGSize(width: self.cardContentWidth(in: collectionView), height: 88)
          }
          else
          {
+@@ -477,7 +512,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+     
+     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets
+     {
+-        var insets = UIEdgeInsets(top: 30, left: 0, bottom: 13, right: 0)
++        var insets = UIEdgeInsets(top: 30, left: 16, bottom: 13, right: 16)
+         
+         if section == 0
+         {
+@@ -486,6 +521,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+         
+         return insets
+     }
++
++    private func cardContentWidth(in collectionView: UICollectionView) -> CGFloat
++    {
++        let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right
++        return max(1, collectionView.bounds.width - safeAreaWidth - 32)
++    }
+ }
+ 
+ extension NewsViewController: UIViewControllerPreviewingDelegate
 diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
 index 085fb61..40365a6 100644
 --- a/AltStore/Operations/AuthenticationOperation.swift
@@ -377,7 +622,7 @@ index 6cd51ef..686074e 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsHeaderFooterView.swift b/AltStore/Settings/SettingsHeaderFooterView.swift
-index 511dda8..61f0972 100644
+index 511dda8..3a5a542 100644
 --- a/AltStore/Settings/SettingsHeaderFooterView.swift
 +++ b/AltStore/Settings/SettingsHeaderFooterView.swift
 @@ -21,8 +21,11 @@ final class SettingsHeaderFooterView: UITableViewHeaderFooterView
@@ -390,10 +635,31 @@ index 511dda8..61f0972 100644
 +        self.contentView.preservesSuperviewLayoutMargins = false
 +        self.insetsLayoutMarginsFromSafeArea = false
 +        self.contentView.insetsLayoutMarginsFromSafeArea = false
-+        self.contentView.layoutMargins = UIEdgeInsets(top: 8, left: 30, bottom: 8, right: 30)
++        self.updateContentMargins()
          
          self.stackView.translatesAutoresizingMaskIntoConstraints = false
          self.contentView.addSubview(self.stackView)
+@@ -32,4 +35,20 @@ final class SettingsHeaderFooterView: UITableViewHeaderFooterView
+                                      self.stackView.topAnchor.constraint(equalTo: self.contentView.layoutMarginsGuide.topAnchor),
+                                      self.stackView.bottomAnchor.constraint(equalTo: self.contentView.layoutMarginsGuide.bottomAnchor)])
+     }
++
++    override func safeAreaInsetsDidChange()
++    {
++        super.safeAreaInsetsDidChange()
++        self.updateContentMargins()
++    }
++
++    private func updateContentMargins()
++    {
++        self.contentView.layoutMargins = UIEdgeInsets(
++            top: 8,
++            left: self.safeAreaInsets.left + 30,
++            bottom: 8,
++            right: self.safeAreaInsets.right + 30
++        )
++    }
+ }
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
 index 9e8a94a..47e90a9 100644
 --- a/AltStore/Settings/SettingsViewController.swift
