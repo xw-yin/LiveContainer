@@ -1,5 +1,5 @@
 diff --git a/AltStore.xcodeproj/project.pbxproj b/AltStore.xcodeproj/project.pbxproj
-index 2e461a3..05db8c5 100644
+index 2e461a39..05db8c59 100644
 --- a/AltStore.xcodeproj/project.pbxproj
 +++ b/AltStore.xcodeproj/project.pbxproj
 @@ -589,6 +589,7 @@
@@ -11,7 +11,7 @@ index 2e461a3..05db8c5 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 53f7954..b1691fa 100644
+index 53f79540..b1691fa5 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
 @@ -13,10 +13,63 @@ import Intents
@@ -115,8 +115,262 @@ index 53f7954..b1691fa 100644
          }
      }
  
+diff --git a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift
+index 0dc744f0..4d35c89c 100644
+--- a/AltStore/Components/AppBannerView.swift
++++ b/AltStore/Components/AppBannerView.swift
+@@ -93,6 +93,8 @@ class AppBannerView: RSTNibView
+     
+     private func initialize()
+     {
++        self.titleLabel.adjustsFontSizeToFitWidth = false
++        self.titleLabel.lineBreakMode = .byTruncatingTail
+         self.accessibilityView.accessibilityTraits.formUnion(.button)
+         
+         self.isAccessibilityElement = false
+@@ -339,6 +341,25 @@ extension AppBannerView
+         let accessibilityLabel = source.name + "\n" + subtitle
+         self.accessibilityLabel = accessibilityLabel
+     }
++    
++    override func layoutSubviews() {
++        super.layoutSubviews()
++        
++        // Round the corners of backgroundEffectView
++        self.backgroundEffectView.layer.cornerRadius = 20
++        self.backgroundEffectView.clipsToBounds = true
++        
++        // Add a delicate translucent border (Glow Border) to backgroundEffectView
++        self.backgroundEffectView.layer.borderColor = UIColor.white.withAlphaComponent(0.12).cgColor
++        self.backgroundEffectView.layer.borderWidth = 1.0
++        
++        // Add a soft drop shadow to the view layer
++        self.layer.shadowColor = UIColor.black.cgColor
++        self.layer.shadowOpacity = 0.22
++        self.layer.shadowOffset = CGSize(width: 0, height: 6)
++        self.layer.shadowRadius = 12
++        self.layer.masksToBounds = false
++    }
+ }
+ 
+ private extension AppBannerView
+diff --git a/AltStore/Info.plist b/AltStore/Info.plist
+index 1e5f9519..10a7243d 100644
+--- a/AltStore/Info.plist
++++ b/AltStore/Info.plist
+@@ -255,6 +255,8 @@
+ 	<key>UISupportedInterfaceOrientations</key>
+ 	<array>
+ 		<string>UIInterfaceOrientationPortrait</string>
++		<string>UIInterfaceOrientationLandscapeLeft</string>
++		<string>UIInterfaceOrientationLandscapeRight</string>
+ 	</array>
+ 	<key>UISupportedInterfaceOrientations~ipad</key>
+ 	<array>
+diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
+index 5e33a718..28c95075 100644
+--- a/AltStore/LaunchViewController.swift
++++ b/AltStore/LaunchViewController.swift
+@@ -190,7 +190,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
+             let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
+             Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
+             Keychain.shared.signingCertificatePassword = account.certpass
+-            let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
++            let toastView = ToastView(text: String(format: NSLocalizedString("Successfully imported '%@'!", comment: ""), account.email), detailText: "SideStore should be fully operational!")
+             return toastView.show(in: self)
+         } catch {
+             let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
+@@ -233,23 +233,27 @@ extension LaunchViewController {
+         didFinishLaunching = true
+         
+         AppManager.shared.update()
+-        AppManager.shared.updateAllSources { result in
+-            guard case .failure(let error) = result else { return }
+-            debugLog("Failed to update sources on launch. \(error.localizedDescription)")
+-            
+-            
+-            let errorDesc = ErrorProcessing(.fullError).getDescription(error: error as NSError)
+-            debugLog("Failed to update sources on launch. \(errorDesc)")
+-            
+-            var mode: ToastView.InfoMode = .fullError
+-            if String(describing: error).contains("The Internet connection appears to be offline"){
+-                mode = .localizedDescription    // dont make noise!
++        ProxyStatusManager.shared.performWhenReady { [weak self] in
++            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
++                guard let self = self, let destinationVC = self.destinationViewController else { return }
++                AppManager.shared.updateAllSources { result in
++                    guard case .failure(let error) = result else { return }
++                    debugLog("Failed to update sources on launch. \(error.localizedDescription)")
++                    
++                    let errorDesc = ErrorProcessing(.fullError).getDescription(error: error as NSError)
++                    debugLog("Failed to update sources on launch. \(errorDesc)")
++                    
++                    var mode: ToastView.InfoMode = .fullError
++                    if String(describing: error).contains("The Internet connection appears to be offline"){
++                        mode = .localizedDescription    // dont make noise!
++                    }
++                    let toastView = ToastView(error: error, mode: mode)
++                    toastView.addTarget(destinationVC, action: #selector(TabBarController.presentSources), for: .touchUpInside)
++                    toastView.show(in: destinationVC.selectedViewController ?? destinationVC)
++                }
++                self.updateKnownSources()
+             }
+-            let toastView = ToastView(error: error, mode: mode)
+-            toastView.addTarget(self.destinationViewController, action: #selector(TabBarController.presentSources), for: .touchUpInside)
+-            toastView.show(in: self.destinationViewController!.selectedViewController ?? self.destinationViewController!)
+         }
+-        updateKnownSources()
+         WidgetCenter.shared.reloadAllTimelines()
+         didFinishLaunching = true
+         
+@@ -324,56 +328,128 @@ extension LaunchViewController {
+ final class SplashView: UIView {
+     let iconView = UIImageView()
+     let titleLabel = UILabel()
++    private var iconContainer: UIView!
+ 
+     init(frame: CGRect, appName: String) {
+         super.init(frame: frame)
+-        backgroundColor = .systemBackground
+         setupIcon()
+         setupTitle(appName: appName)
++        setupSleekSpinner()
+     }
+ 
+     required init?(coder: NSCoder) { fatalError() }
+ 
++    override func layoutSubviews() {
++        super.layoutSubviews()
++        if let sublayers = layer.sublayers, let grad = sublayers.first(where: { $0 is CAGradientLayer }) as? CAGradientLayer {
++            grad.frame = bounds
++        } else {
++            let gradient = CAGradientLayer()
++            gradient.frame = bounds
++            gradient.colors = [
++                UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0).cgColor,
++                UIColor(red: 0.01, green: 0.01, blue: 0.02, alpha: 1.0).cgColor
++            ]
++            gradient.locations = [0.0, 1.0]
++            layer.insertSublayer(gradient, at: 0)
++        }
++    }
++
+     private func setupIcon() {
+         let container = UIView()
+         container.translatesAutoresizingMaskIntoConstraints = false
+-        container.layer.shadowColor = UIColor.black.cgColor
+-        container.layer.shadowOpacity = 0.25
+-        container.layer.shadowOffset = CGSize(width: 0, height: 4)
+-        container.layer.shadowRadius = 8
+         addSubview(container)
+-
++        self.iconContainer = container
++        
++        let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
++        let blurView = UIVisualEffectView(effect: blurEffect)
++        blurView.translatesAutoresizingMaskIntoConstraints = false
++        blurView.layer.cornerRadius = 28
++        blurView.clipsToBounds = true
++        blurView.layer.borderColor = UIColor.white.withAlphaComponent(0.12).cgColor
++        blurView.layer.borderWidth = 1.0
++        container.addSubview(blurView)
++        
+         iconView.image = UIImage(named: "AppIcon") ?? UIImage(named: "AppIcon60x60") ?? UIImage(systemName: "app.fill")
+         iconView.contentMode = .scaleAspectFit
+         iconView.translatesAutoresizingMaskIntoConstraints = false
+-        iconView.layer.cornerRadius = 24
++        iconView.layer.cornerRadius = 20
+         iconView.clipsToBounds = true
+         container.addSubview(iconView)
+-
++        
+         NSLayoutConstraint.activate([
+             container.centerXAnchor.constraint(equalTo: centerXAnchor),
+-            container.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -20),
+-            container.widthAnchor.constraint(equalToConstant: 120),
+-            container.heightAnchor.constraint(equalToConstant: 120),
+-            iconView.topAnchor.constraint(equalTo: container.topAnchor),
+-            iconView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+-            iconView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+-            iconView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
++            container.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -30),
++            container.widthAnchor.constraint(equalToConstant: 130),
++            container.heightAnchor.constraint(equalToConstant: 130),
++            
++            blurView.topAnchor.constraint(equalTo: container.topAnchor),
++            blurView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
++            blurView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
++            blurView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
++            
++            iconView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
++            iconView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
++            iconView.widthAnchor.constraint(equalToConstant: 84),
++            iconView.heightAnchor.constraint(equalToConstant: 84)
+         ])
+     }
+ 
+     private func setupTitle(appName: String) {
+         titleLabel.text = appName
+         titleLabel.font = .systemFont(ofSize: 24, weight: .bold)
+-        titleLabel.textColor = .label
++        titleLabel.textColor = .white
+         titleLabel.textAlignment = .center
+         titleLabel.translatesAutoresizingMaskIntoConstraints = false
+         addSubview(titleLabel)
++        
+         NSLayoutConstraint.activate([
+-            titleLabel.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 12),
++            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 24),
+             titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor)
+         ])
+     }
++
++    private func setupSleekSpinner() {
++        let size: CGFloat = 36
++        let container = UIView()
++        container.translatesAutoresizingMaskIntoConstraints = false
++        addSubview(container)
++        
++        NSLayoutConstraint.activate([
++            container.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 28),
++            container.centerXAnchor.constraint(equalTo: centerXAnchor),
++            container.widthAnchor.constraint(equalToConstant: size),
++            container.heightAnchor.constraint(equalToConstant: size)
++        ])
++        
++        let circularPath = UIBezierPath(arcCenter: CGPoint(x: size/2, y: size/2), radius: size/2 - 3, startAngle: 0, endAngle: CGFloat.pi * 2, clockwise: true)
++        
++        // Track layer
++        let trackLayer = CAShapeLayer()
++        trackLayer.path = circularPath.cgPath
++        trackLayer.strokeColor = UIColor.white.withAlphaComponent(0.1).cgColor
++        trackLayer.lineWidth = 3
++        trackLayer.fillColor = UIColor.clear.cgColor
++        container.layer.addSublayer(trackLayer)
++        
++        // Loading progress layer
++        let loaderLayer = CAShapeLayer()
++        loaderLayer.path = circularPath.cgPath
++        loaderLayer.strokeColor = UIColor.white.withAlphaComponent(0.85).cgColor
++        loaderLayer.lineWidth = 3
++        loaderLayer.fillColor = UIColor.clear.cgColor
++        loaderLayer.strokeEnd = 0.3
++        loaderLayer.lineCap = .round
++        container.layer.addSublayer(loaderLayer)
++        
++        // Rotation animation
++        let animation = CABasicAnimation(keyPath: "transform.rotation")
++        animation.toValue = CGFloat.pi * 2
++        animation.duration = 1.0
++        animation.repeatCount = .infinity
++        animation.timingFunction = CAMediaTimingFunction(name: .linear)
++        container.layer.add(animation, forKey: "spin")
++    }
+ }
+ 
+ 
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e..6269af5 100644
+index eb7535e7..6269af5f 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
 @@ -22,7 +22,11 @@ final class NewsCollectionViewCell: UICollectionViewCell
@@ -133,7 +387,7 @@ index eb7535e..6269af5 100644
          self.contentBackgroundView.layer.cornerRadius = 30
          self.contentBackgroundView.clipsToBounds = true
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..e86b9b4 100644
+index 7eeec623..e86b9b4b 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -182,8 +436,34 @@ index 7eeec62..e86b9b4 100644
          self.cachedCellSizes[globallyUniqueID] = size
          return size
      }
+diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
+index 085fb616..40365a6c 100644
+--- a/AltStore/Operations/AuthenticationOperation.swift
++++ b/AltStore/Operations/AuthenticationOperation.swift
+@@ -669,7 +669,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?,
+     @MainActor
+     private func showRevokeAlert(certsText: String, teamType: ALTTeamType) async throws -> RevokeAlertAction {
+         try await withCheckedThrowingContinuation { continuation in
+-            let alertController = UIAlertController(title: NSLocalizedString("Would you like to revoke your previous certificates?\n\(certsText)", comment: ""), message: nil, preferredStyle: .alert)
++            let alertController = UIAlertController(title: String(format: NSLocalizedString("Would you like to revoke your previous certificates?\n%@", comment: ""), certsText), message: nil, preferredStyle: .alert)
+             
+             let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
+                 if teamType == .free {
+diff --git a/AltStore/Operations/RemoveAppExtensionsOperation.swift b/AltStore/Operations/RemoveAppExtensionsOperation.swift
+index 50408893..f301ed4f 100644
+--- a/AltStore/Operations/RemoveAppExtensionsOperation.swift
++++ b/AltStore/Operations/RemoveAppExtensionsOperation.swift
+@@ -121,7 +121,7 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
+             firstSentence = NSLocalizedString("Non-developer Apple IDs are limited to creating 10 App IDs per week.", comment: "")
+         }
+         
+-        let message = firstSentence + " " + NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit? There are \(extensions.count) Extensions", comment: "")
++        let message = firstSentence + " " + String(format: NSLocalizedString("Would you like to remove this app's extensions so they don't count towards your limit? There are %d Extensions", comment: ""), extensions.count)
+         
+         let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
+         alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
 diff --git a/AltStore/Settings/Error Log/ErrorLogViewController.swift b/AltStore/Settings/Error Log/ErrorLogViewController.swift
-index a19d5e7..7a89a62 100644
+index a19d5e74..7a89a626 100644
 --- a/AltStore/Settings/Error Log/ErrorLogViewController.swift	
 +++ b/AltStore/Settings/Error Log/ErrorLogViewController.swift	
 @@ -42,13 +42,24 @@ final class ErrorLogViewController: UITableViewController, QLPreviewControllerDe
@@ -212,8 +492,55 @@ index a19d5e7..7a89a62 100644
          self.tableView.dataSource = self.dataSource
          self.dataSource.contentView = self.tableView
          self.tableView.prefetchDataSource = self.dataSource
+diff --git a/AltStore/Settings/InsetGroupTableViewCell.swift b/AltStore/Settings/InsetGroupTableViewCell.swift
+index 47a4e887..4ae35835 100644
+--- a/AltStore/Settings/InsetGroupTableViewCell.swift
++++ b/AltStore/Settings/InsetGroupTableViewCell.swift
+@@ -47,7 +47,9 @@ final class InsetGroupTableViewCell: UITableViewCell
+         self.addSubview(self.separatorView)
+         
+         self.insetView.layer.masksToBounds = true
+-        self.insetView.layer.cornerRadius = 16
++        self.insetView.layer.cornerRadius = 20
++        self.insetView.layer.borderWidth = 1.0
++        self.insetView.layer.borderColor = UIColor.white.withAlphaComponent(0.10).cgColor
+         
+         // Get the preferred background color from Interface Builder.
+         self.insetView.backgroundColor = self.backgroundColor
+@@ -84,14 +86,9 @@ final class InsetGroupTableViewCell: UITableViewCell
+     {
+         super.setHighlighted(highlighted, animated: animated)
+         
+-        if animated
+-        {
+-            UIView.animate(withDuration: 0.4) {
+-                self.update()
+-            }
+-        }
+-        else
+-        {
++        let scale: CGFloat = highlighted ? 0.97 : 1.0
++        UIView.animate(withDuration: 0.18, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: [.allowUserInteraction]) {
++            self.insetView.transform = CGAffineTransform(scaleX: scale, y: scale)
+             self.update()
+         }
+     }
+@@ -109,11 +106,11 @@ private extension InsetGroupTableViewCell
+             
+         case .top:
+             self.insetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+-            self.separatorView.isHidden = false
++            self.separatorView.isHidden = true
+             
+         case .middle:
+             self.insetView.layer.maskedCorners = []
+-            self.separatorView.isHidden = false
++            self.separatorView.isHidden = true
+             
+         case .bottom:
+             self.insetView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
-index cfe1435..1692c7f 100644
+index cfe14355..1692c7fa 100644
 --- a/AltStore/Settings/Settings.storyboard
 +++ b/AltStore/Settings/Settings.storyboard
 @@ -303,7 +303,7 @@
@@ -265,7 +592,7 @@ index cfe1435..1692c7f 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 82b1622..466e8d4 100644
+index 82b16227..466e8d4b 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
 @@ -293,7 +293,7 @@ final class SettingsViewController: UITableViewController
@@ -422,8 +749,21 @@ index 82b1622..466e8d4 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/Sources/Components/SourceHeaderView.swift b/AltStore/Sources/Components/SourceHeaderView.swift
+index e1b3f2cd..070a9cce 100644
+--- a/AltStore/Sources/Components/SourceHeaderView.swift
++++ b/AltStore/Sources/Components/SourceHeaderView.swift
+@@ -40,6 +40,8 @@ class SourceHeaderView: RSTNibView
+     
+     private func initialize()
+     {
++        self.titleLabel.adjustsFontSizeToFitWidth = false
++        self.titleLabel.lineBreakMode = .byTruncatingTail
+         self.clipsToBounds = true
+         self.layer.cornerRadius = 22
+         
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0..2de2f29 100644
+index 00ee6b0a..2de2f296 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
 @@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
@@ -436,3 +776,103 @@ index 00ee6b0..2de2f29 100644
          navigationController?.navigationBar.layoutMargins.left = 20
          
          let layout = self.makeLayout()
+diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
+index a40b3b65..f36e0509 100644
+--- a/AltStore/TabBarController.swift
++++ b/AltStore/TabBarController.swift
+@@ -42,12 +42,28 @@ final class TabBarController: UITabBarController
+     override func viewDidLoad() 
+     {
+         super.viewDidLoad()
++        self.delegate = self
+         
+         let browseNavigationController = self.viewControllers![Tab.browse.rawValue] as! UINavigationController
+         browseNavigationController.tabBarItem.image = UIImage(systemName: "bag")
+         
+         let sourcesNavigationController = self.viewControllers![Tab.sources.rawValue] as! UINavigationController
+         self.sourcesViewController = sourcesNavigationController.viewControllers.first as? SourcesViewController
++        
++        if let vcs = self.viewControllers {
++            let tabTitles = [
++                Tab.news.rawValue: NSLocalizedString("News", comment: ""),
++                Tab.sources.rawValue: NSLocalizedString("Sources", comment: ""),
++                Tab.browse.rawValue: NSLocalizedString("Browse", comment: ""),
++                Tab.myApps.rawValue: NSLocalizedString("My Apps", comment: ""),
++                Tab.settings.rawValue: NSLocalizedString("Settings", comment: "")
++            ]
++            for (index, title) in tabTitles {
++                if index < vcs.count {
++                    vcs[index].tabBarItem.title = title
++                }
++            }
++        }
+     }
+     
+     override func viewDidAppear(_ animated: Bool)
+@@ -113,3 +129,16 @@ private extension TabBarController
+         self.selectedIndex = Tab.settings.rawValue
+     }
+ }
++
++extension TabBarController: UITabBarControllerDelegate
++{
++    func tabBarController(_ tabBarController: UITabBarController, shouldSelect viewController: UIViewController) -> Bool {
++        guard let fromView = selectedViewController?.view, let toView = viewController.view else {
++            return true
++        }
++        if fromView != toView {
++            UIView.transition(with: self.view, duration: 0.22, options: [.transitionCrossDissolve, .allowUserInteraction], animations: nil, completion: nil)
++        }
++        return true
++    }
++}
+diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
+index b63a603f..0feacebf 100644
+--- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
++++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
+@@ -42,6 +42,45 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
+         guard let operations = rst_operations else { return }
+         rst_operations = nil
+         
++        // Check for conflicts to prevent UIKit crashes
++        var hasConflict = false
++        var deleted = Set<IndexPath>()
++        var inserted = Set<IndexPath>()
++        var movedSource = Set<IndexPath>()
++        var movedDest = Set<IndexPath>()
++        
++        for change in operations {
++            if change.sectionIndex == RSTUnknownSectionIndex {
++                switch change.type {
++                case .insert:
++                    if let ip = change.destinationIndexPath {
++                        if inserted.contains(ip) || movedDest.contains(ip) { hasConflict = true; break }
++                        inserted.insert(ip)
++                    }
++                case .delete:
++                    if let ip = change.currentIndexPath {
++                        if deleted.contains(ip) || movedSource.contains(ip) { hasConflict = true; break }
++                        deleted.insert(ip)
++                    }
++                case .move:
++                    if let src = change.currentIndexPath, let dest = change.destinationIndexPath {
++                        if movedSource.contains(src) || deleted.contains(src) { hasConflict = true; break }
++                        if movedDest.contains(dest) || inserted.contains(dest) { hasConflict = true; break }
++                        movedSource.insert(src)
++                        movedDest.insert(dest)
++                    }
++                default:
++                    break
++                }
++            }
++            if hasConflict { break }
++        }
++        
++        if hasConflict {
++            self.reloadData()
++            return
++        }
++        
+         var postMoveUpdateChanges = [RSTCellContentChange]()
+         for change in operations {
+             if change.type == .move, let destinationIndexPath = change.destinationIndexPath {
