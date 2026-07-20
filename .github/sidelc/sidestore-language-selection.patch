@@ -379,7 +379,7 @@ index eb7535e..f4c874c 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..fd24f5d 100644
+index 7eeec62..332d834 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -82,6 +82,14 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -457,18 +457,19 @@ index 7eeec62..fd24f5d 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -416,8 +443,8 @@ extension NewsViewController
+@@ -416,8 +443,9 @@ extension NewsViewController
          let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner", for: indexPath) as! AppBannerFooterView
          guard let storeApp = item.storeApp else { return footerView }
          
 -        footerView.layoutMargins.left = self.view.layoutMargins.left
 -        footerView.layoutMargins.right = self.view.layoutMargins.right
-+        footerView.layoutMargins.left = 0
-+        footerView.layoutMargins.right = 0
++        footerView.insetsLayoutMarginsFromSafeArea = true
++        footerView.layoutMargins.left = 16
++        footerView.layoutMargins.right = 16
          
          footerView.bannerView.button.isIndicatingActivity = false
          footerView.bannerView.configure(for: storeApp)
-@@ -440,20 +467,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +468,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
@@ -504,7 +505,7 @@ index 7eeec62..fd24f5d 100644
          return size
      }
      
-@@ -467,7 +503,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +504,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -513,7 +514,7 @@ index 7eeec62..fd24f5d 100644
          }
          else
          {
-@@ -477,7 +513,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -477,7 +514,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      
      func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets
      {
@@ -522,7 +523,7 @@ index 7eeec62..fd24f5d 100644
          
          if section == 0
          {
-@@ -486,6 +522,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -486,6 +523,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          return insets
      }
