@@ -611,10 +611,10 @@ index 063361dc..009c03f3 100644
              
              if title != self.navigationBarButton.title(for: .normal) && !self.navigationBarButton.isIndicatingActivity
 diff --git a/AltStore/TabBarController.swift b/AltStore/TabBarController.swift
-index a40b3b65..94428ddc 100644
+index a40b3b65..f36e0509 100644
 --- a/AltStore/TabBarController.swift
 +++ b/AltStore/TabBarController.swift
-@@ -42,6 +42,7 @@ final class TabBarController: UITabBarController
+@@ -42,12 +42,28 @@ final class TabBarController: UITabBarController
      override func viewDidLoad() 
      {
          super.viewDidLoad()
@@ -622,7 +622,28 @@ index a40b3b65..94428ddc 100644
          
          let browseNavigationController = self.viewControllers![Tab.browse.rawValue] as! UINavigationController
          browseNavigationController.tabBarItem.image = UIImage(systemName: "bag")
-@@ -113,3 +114,16 @@ private extension TabBarController
+         
+         let sourcesNavigationController = self.viewControllers![Tab.sources.rawValue] as! UINavigationController
+         self.sourcesViewController = sourcesNavigationController.viewControllers.first as? SourcesViewController
++        
++        if let vcs = self.viewControllers {
++            let tabTitles = [
++                Tab.news.rawValue: NSLocalizedString("News", comment: ""),
++                Tab.sources.rawValue: NSLocalizedString("Sources", comment: ""),
++                Tab.browse.rawValue: NSLocalizedString("Browse", comment: ""),
++                Tab.myApps.rawValue: NSLocalizedString("My Apps", comment: ""),
++                Tab.settings.rawValue: NSLocalizedString("Settings", comment: "")
++            ]
++            for (index, title) in tabTitles {
++                if index < vcs.count {
++                    vcs[index].tabBarItem.title = title
++                }
++            }
++        }
+     }
+     
+     override func viewDidAppear(_ animated: Bool)
+@@ -113,3 +129,16 @@ private extension TabBarController
          self.selectedIndex = Tab.settings.rawValue
      }
  }
