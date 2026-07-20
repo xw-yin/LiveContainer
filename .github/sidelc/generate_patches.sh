@@ -38,14 +38,14 @@ PATCH2_FILES=(
 )
 
 # Temporarily register untracked files so they are included in git diff
-untracked_files=$(git status --porcelain | grep '??' | awk '{print $2}')
+untracked_files=$(git status --porcelain | grep '??' | awk '{print $2}' | grep -Ev '\.(rej|orig)$' || true)
 if [ -n "$untracked_files" ]; then
     echo "Temporarily registering untracked files in Git..."
     echo "$untracked_files" | xargs git add -N
 fi
 
 # Get all modified files compared to base branch LiveContainerSupport
-all_modified=($(git diff --name-only refs/heads/LiveContainerSupport))
+all_modified=($(git diff --name-only refs/heads/LiveContainerSupport | grep -Ev '\.(rej|orig)$' || true))
 
 # Function to check if an array contains an element
 contains_element() {

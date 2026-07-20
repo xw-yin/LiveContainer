@@ -60,16 +60,29 @@ index 237219d3..a33c2ec9 100644
 +                }
 +            }
 +        }
++        if resolvedCode == nil {
++            resolvedCode = "en"
++        }
 +
-+        var sideStoreBundle = Bundle(for: AppDelegate.self)
 +        let resourceName = resolvedCode == "en" ? "Base" : resolvedCode
-+        if let name = resourceName, sideStoreBundle.path(forResource: name, ofType: "lproj") == nil {
-+            if let foundBundle = Bundle.allBundles.first(where: { $0.bundlePath.lowercased().contains("sidestore.app") }) {
-+                sideStoreBundle = foundBundle
++        var candidateBundles = [Bundle.main, Bundle(for: AppDelegate.self)]
++        let embeddedSideStoreURL = Bundle.main.bundleURL
++            .appendingPathComponent("Frameworks", isDirectory: true)
++            .appendingPathComponent("SideStoreApp.framework", isDirectory: true)
++        if let embeddedSideStoreBundle = Bundle(url: embeddedSideStoreURL) {
++            candidateBundles.append(embeddedSideStoreBundle)
++        }
++        candidateBundles.append(contentsOf: Bundle.allBundles)
++        candidateBundles.append(contentsOf: Bundle.allFrameworks)
++
++        let sideStoreBundle = resourceName.flatMap { name in
++            candidateBundles.first { bundle in
++                bundle.path(forResource: name, ofType: "lproj") != nil &&
++                (bundle.bundlePath.lowercased().contains("sidestore") || bundle == Bundle.main)
 +            }
 +        }
 +        let localizedBundle = resourceName
-+            .flatMap { sideStoreBundle.path(forResource: $0, ofType: "lproj") }
++            .flatMap { sideStoreBundle?.path(forResource: $0, ofType: "lproj") }
 +            .flatMap { Bundle(path: $0) }
 +        objc_setAssociatedObject(
 +            Bundle.main,
@@ -120,22 +133,6 @@ index 237219d3..a33c2ec9 100644
          }
      }
  
-diff --git a/AltStore/Components/AppBannerView.swift.rej b/AltStore/Components/AppBannerView.swift.rej
-new file mode 100644
-index 00000000..7db49392
---- /dev/null
-+++ b/AltStore/Components/AppBannerView.swift.rej
-@@ -0,0 +1,10 @@
-+diff a/AltStore/Components/AppBannerView.swift b/AltStore/Components/AppBannerView.swift	(rejected hunks)
-+@@ -93,6 +93,8 @@ class AppBannerView: RSTNibView
-+     
-+     private func initialize()
-+     {
-++        self.titleLabel.adjustsFontSizeToFitWidth = false
-++        self.titleLabel.lineBreakMode = .byTruncatingTail
-+         self.accessibilityView.accessibilityTraits.formUnion(.button)
-+         
-+         self.isAccessibilityElement = false
 diff --git a/AltStore/Info.plist b/AltStore/Info.plist
 index 8ee1025f..62b7073d 100644
 --- a/AltStore/Info.plist
@@ -149,22 +146,6 @@ index 8ee1025f..62b7073d 100644
  	</array>
  	<key>UISupportedInterfaceOrientations~ipad</key>
  	<array>
-diff --git a/AltStore/LaunchViewController.swift.rej b/AltStore/LaunchViewController.swift.rej
-new file mode 100644
-index 00000000..b2537866
---- /dev/null
-+++ b/AltStore/LaunchViewController.swift.rej
-@@ -0,0 +1,10 @@
-+diff a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift	(rejected hunks)
-+@@ -190,7 +190,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
-+             let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
-+             Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
-+             Keychain.shared.signingCertificatePassword = account.certpass
-+-            let toastView = ToastView(text: NSLocalizedString("Successfully imported '\(account.email)'!", comment: ""), detailText: "SideStore should be fully operational!")
-++            let toastView = ToastView(text: String(format: NSLocalizedString("Successfully imported '%@'!", comment: ""), account.email), detailText: "SideStore should be fully operational!")
-+             return toastView.show(in: self)
-+         } catch {
-+             let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
 index eb7535e7..0992a356 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
@@ -196,11 +177,12 @@ diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewCont
 index 7eeec623..c3424895 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -54,6 +54,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -54,6 +54,8 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
      
      // Cache
      private var cachedCellSizes = [String: CGSize]()
 +    private var lastLayoutWidth: CGFloat = 0
++    private var lastLayoutMargins = UIEdgeInsets.zero
      private var cancellables = Set<AnyCancellable>()
      
      init?(source: Source?, coder: NSCoder)
@@ -216,7 +198,7 @@ index 7eeec623..c3424895 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +152,25 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +152,24 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
@@ -226,18 +208,17 @@ index 7eeec623..c3424895 100644
 +        super.viewDidLayoutSubviews()
 +        
 +        let width = self.collectionView.bounds.width
-+        if abs(width - self.lastLayoutWidth) > 1.0 && width > 0
++        let layoutMargins = self.view.layoutMargins
++        let widthChanged = abs(width - self.lastLayoutWidth) > 1.0
++        let marginsChanged = layoutMargins != self.lastLayoutMargins
++        if width > 0 && (widthChanged || marginsChanged)
 +        {
 +            self.lastLayoutWidth = width
++            self.lastLayoutMargins = layoutMargins
 +            self.cachedCellSizes.removeAll()
 +            self.collectionView.collectionViewLayout.invalidateLayout()
 +            self.collectionView.reloadData()
 +        }
-+    }
-+    
-+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
-+    {
-+        super.viewWillTransition(to: size, with: coordinator)
 +    }
  }
  
@@ -331,27 +312,6 @@ index 589958bd..bd7106f0 100644
          
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
-diff --git a/AltStore/Settings/InsetGroupTableViewCell.swift.rej b/AltStore/Settings/InsetGroupTableViewCell.swift.rej
-new file mode 100644
-index 00000000..e98000b1
---- /dev/null
-+++ b/AltStore/Settings/InsetGroupTableViewCell.swift.rej
-@@ -0,0 +1,15 @@
-+diff a/AltStore/Settings/InsetGroupTableViewCell.swift b/AltStore/Settings/InsetGroupTableViewCell.swift	(rejected hunks)
-+@@ -106,11 +106,11 @@ private extension InsetGroupTableViewCell
-+             
-+         case .top:
-+             self.insetView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-+-            self.separatorView.isHidden = false
-++            self.separatorView.isHidden = true
-+             
-+         case .middle:
-+             self.insetView.layer.maskedCorners = []
-+-            self.separatorView.isHidden = false
-++            self.separatorView.isHidden = true
-+             
-+         case .bottom:
-+             self.insetView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
 index 6cd51eff..2fcaf83f 100644
 --- a/AltStore/Settings/Settings.storyboard
