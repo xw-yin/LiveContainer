@@ -62,7 +62,7 @@ jobs:
       - name: Build Patched SideStore
         run: |
           brew install ldid xcbeautify || true
-          git clone --depth 1 --branch LiveContainerSupport3 --recurse-submodules --shallow-submodules https://github.com/LiveContainer/SideStore.git SideStoreBuild
+          git clone --depth 1 --branch LiveContainerSupport_old_v3 --recurse-submodules --shallow-submodules https://github.com/LiveContainer/SideStore.git SideStoreBuild
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-source-detail-navigation.patch"
           git -C SideStoreBuild apply "$GITHUB_WORKSPACE/.github/sidelc/sidestore-nonblocking-startup.patch"
           git -C SideStoreBuild apply --recount "$GITHUB_WORKSPACE/.github/sidelc/sidestore-language-selection.patch"
