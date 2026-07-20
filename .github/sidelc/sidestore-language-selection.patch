@@ -156,7 +156,7 @@ index 8ee1025..62b7073 100644
  	<key>UISupportedInterfaceOrientations~ipad</key>
  	<array>
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index aa29e53..f28719a 100644
+index aa29e53..35ae683 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -75,6 +75,11 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
@@ -235,9 +235,9 @@ index aa29e53..f28719a 100644
 -                headerView.layoutMargins.left = self.view.layoutMargins.left
 -                headerView.layoutMargins.right = self.view.layoutMargins.right
 +                headerView.preservesSuperviewLayoutMargins = false
-+                headerView.insetsLayoutMarginsFromSafeArea = false
-+                headerView.layoutMargins.left = 0
-+                headerView.layoutMargins.right = 0
++                headerView.insetsLayoutMarginsFromSafeArea = true
++                headerView.layoutMargins.left = 16
++                headerView.layoutMargins.right = 16
                  
                  if UserDefaults.standard.activeAppsLimit == nil || UserDefaults.standard.isAppLimitDisabled
                  {
@@ -248,9 +248,9 @@ index aa29e53..f28719a 100644
 -                headerView.layoutMargins.left = self.view.layoutMargins.left
 -                headerView.layoutMargins.right = self.view.layoutMargins.right
 +                headerView.preservesSuperviewLayoutMargins = false
-+                headerView.insetsLayoutMarginsFromSafeArea = false
-+                headerView.layoutMargins.left = 0
-+                headerView.layoutMargins.right = 0
++                headerView.insetsLayoutMarginsFromSafeArea = true
++                headerView.layoutMargins.left = 16
++                headerView.layoutMargins.right = 16
                  
                  headerView.textLabel.text = NSLocalizedString("Inactive", comment: "")
                  headerView.button.setTitle(nil, for: .normal)
@@ -379,10 +379,10 @@ index eb7535e..f4c874c 100644
 +    }
  }
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..3850cbc 100644
+index 7eeec62..fd24f5d 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -82,6 +82,13 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -82,6 +82,14 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          super.viewDidLoad()
          
          self.collectionView.backgroundColor = .altBackground
@@ -392,11 +392,12 @@ index 7eeec62..3850cbc 100644
 +            layout.sectionInsetReference = .fromSafeArea
 +            layout.sectionInset.left = 16
 +            layout.sectionInset.right = 16
++            layout.estimatedItemSize = .zero
 +        }
          
          self.prototypeCell = NewsCollectionViewCell.instantiate(with: NewsCollectionViewCell.nib)
          self.prototypeCell.contentView.translatesAutoresizingMaskIntoConstraints = false
-@@ -135,6 +142,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -135,6 +143,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.update()
      }
      
@@ -408,7 +409,7 @@ index 7eeec62..3850cbc 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +158,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +159,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
@@ -425,7 +426,7 @@ index 7eeec62..3850cbc 100644
  }
  
  private extension NewsViewController
-@@ -174,8 +196,6 @@ private extension NewsViewController
+@@ -174,8 +197,6 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -434,7 +435,7 @@ index 7eeec62..3850cbc 100644
              
              cell.titleLabel.text = newsItem.title
              cell.captionLabel.text = newsItem.caption
-@@ -183,15 +203,21 @@ private extension NewsViewController
+@@ -183,15 +204,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -456,7 +457,7 @@ index 7eeec62..3850cbc 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -416,8 +442,8 @@ extension NewsViewController
+@@ -416,8 +443,8 @@ extension NewsViewController
          let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner", for: indexPath) as! AppBannerFooterView
          guard let storeApp = item.storeApp else { return footerView }
          
@@ -467,7 +468,7 @@ index 7eeec62..3850cbc 100644
          
          footerView.bannerView.button.isIndicatingActivity = false
          footerView.bannerView.configure(for: storeApp)
-@@ -440,20 +466,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +467,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
@@ -503,7 +504,7 @@ index 7eeec62..3850cbc 100644
          return size
      }
      
-@@ -467,7 +502,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +503,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -512,7 +513,7 @@ index 7eeec62..3850cbc 100644
          }
          else
          {
-@@ -477,7 +512,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -477,7 +513,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      
      func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets
      {
@@ -521,7 +522,7 @@ index 7eeec62..3850cbc 100644
          
          if section == 0
          {
-@@ -486,6 +521,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -486,6 +522,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          return insets
      }
@@ -1706,14 +1707,14 @@ index b63a603..b7c6d32 100644
          for change in operations {
              if change.type == .move, let destinationIndexPath = change.destinationIndexPath {
 diff --git a/Dependencies/AltSign b/Dependencies/AltSign
-index 55ba33ca..bf8db82b 160000
+index 55ba33c..bf8db82 160000
 --- a/Dependencies/AltSign
 +++ b/Dependencies/AltSign
 @@ -1 +1 @@
 -Subproject commit 55ba33ca500831279c3c702132a7515063029ed2
 +Subproject commit bf8db82b172cedd1933d7c2bf3e2460bdfdb5adb
 diff --git a/Dependencies/minimuxer b/Dependencies/minimuxer
-index 059d895c..c1a5ad23 160000
+index 059d895..c1a5ad2 160000
 --- a/Dependencies/minimuxer
 +++ b/Dependencies/minimuxer
 @@ -1 +1 @@

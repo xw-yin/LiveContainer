@@ -1,5 +1,5 @@
 diff --git a/AltStore/AppBootManager.swift b/AltStore/AppBootManager.swift
-index 2311b21d..ca31d8ab 100644
+index 2311b21..ca31d8a 100644
 --- a/AltStore/AppBootManager.swift
 +++ b/AltStore/AppBootManager.swift
 @@ -42,6 +42,7 @@ public final class AppBootManager {
@@ -48,7 +48,7 @@ index 2311b21d..ca31d8ab 100644
 +    }
 +}
 diff --git a/AltStore/LaunchViewController.swift b/AltStore/LaunchViewController.swift
-index 5e33a718..28c95075 100644
+index 5e33a71..28c9507 100644
 --- a/AltStore/LaunchViewController.swift
 +++ b/AltStore/LaunchViewController.swift
 @@ -190,7 +190,7 @@ final class LaunchViewController: UIViewController, UIDocumentPickerDelegate {
@@ -250,7 +250,7 @@ index 5e33a718..28c95075 100644
  
  
 diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
-index cb2f6cf9..04c366ac 100644
+index cb2f6cf..04c366a 100644
 --- a/AltStore/Managing Apps/AppManager.swift	
 +++ b/AltStore/Managing Apps/AppManager.swift	
 @@ -48,7 +48,7 @@ class AppManager: ObservableObject
@@ -276,7 +276,7 @@ index cb2f6cf9..04c366ac 100644
          self.fetchSources() { (result) in
              do
 diff --git a/AltStore/SceneDelegate.swift b/AltStore/SceneDelegate.swift
-index 47d9eaf5..7dc4d2ba 100644
+index 47d9eaf..7dc4d2b 100644
 --- a/AltStore/SceneDelegate.swift
 +++ b/AltStore/SceneDelegate.swift
 @@ -46,7 +46,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
