@@ -425,17 +425,22 @@ index 48e982f..be222c6 100644
              <connections>
                  <outlet property="captionLabel" destination="SHB-kk-YhL" id="zY3-qQ-9oY"/>
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..f8d588b 100644
+index 7eeec62..75c8aba 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
-@@ -82,6 +82,14 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -82,6 +82,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          super.viewDidLoad()
          
          self.collectionView.backgroundColor = .altBackground
 +
++        // Ignore the safe area for horizontal layout so cards sit symmetrically
++        // from the physical screen edge; top/bottom insets are managed manually
++        // in viewWillLayoutSubviews().
++        self.collectionView.contentInsetAdjustmentBehavior = .never
++
 +        if let layout = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout
 +        {
-+            layout.sectionInsetReference = .fromSafeArea
++            layout.sectionInsetReference = .fromContentInset
 +            layout.sectionInset.left = 16
 +            layout.sectionInset.right = 16
 +            layout.estimatedItemSize = .zero
@@ -443,7 +448,7 @@ index 7eeec62..f8d588b 100644
          
          self.prototypeCell = NewsCollectionViewCell.instantiate(with: NewsCollectionViewCell.nib)
          self.prototypeCell.contentView.translatesAutoresizingMaskIntoConstraints = false
-@@ -134,7 +142,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -134,16 +147,32 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
          self.preparePipeline()
          self.update()
      }
@@ -452,10 +457,23 @@ index 7eeec62..f8d588b 100644
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +154,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
-             self.collectionView.contentInset.bottom = 20
-         }
-     }
+-        
+-        if self.collectionView.contentInset.bottom != 20
++
++        // contentInsetAdjustmentBehavior is .never, so apply the vertical safe-area
++        // insets manually (keeping the original 20pt bottom padding). Horizontal
++        // insets are intentionally left at zero so content spans the full width.
++        let safeArea = self.collectionView.safeAreaInsets
++        let bottomInset = safeArea.bottom + 20
++        if self.collectionView.contentInset.top != safeArea.top || self.collectionView.contentInset.bottom != bottomInset
+         {
+             // Triggers collection view update in iOS 13, which crashes if we do it in viewDidLoad()
+             // since the database might not be loaded yet.
+-            self.collectionView.contentInset.bottom = 20
++            self.collectionView.contentInset.top = safeArea.top
++            self.collectionView.contentInset.bottom = bottomInset
++        }
++    }
 +    
 +    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator)
 +    {
@@ -464,12 +482,10 @@ index 7eeec62..f8d588b 100644
 +        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
 +            self?.cachedCellSizes.removeAll()
 +            self?.collectionView.collectionViewLayout.invalidateLayout()
-+        }
-+    }
+         }
+     }
  }
- 
- private extension NewsViewController
-@@ -174,8 +192,13 @@ private extension NewsViewController
+@@ -174,8 +203,13 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -485,7 +501,7 @@ index 7eeec62..f8d588b 100644
              
              cell.titleLabel.text = newsItem.title
              cell.captionLabel.text = newsItem.caption
-@@ -183,15 +206,21 @@ private extension NewsViewController
+@@ -183,15 +217,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -507,19 +523,19 @@ index 7eeec62..f8d588b 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -416,8 +445,9 @@ extension NewsViewController
+@@ -416,8 +456,9 @@ extension NewsViewController
          let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner", for: indexPath) as! AppBannerFooterView
          guard let storeApp = item.storeApp else { return footerView }
          
 -        footerView.layoutMargins.left = self.view.layoutMargins.left
 -        footerView.layoutMargins.right = self.view.layoutMargins.right
-+        footerView.insetsLayoutMarginsFromSafeArea = true
++        footerView.insetsLayoutMarginsFromSafeArea = false
 +        footerView.layoutMargins.left = 16
 +        footerView.layoutMargins.right = 16
          
          footerView.bannerView.button.isIndicatingActivity = false
          footerView.bannerView.configure(for: storeApp)
-@@ -440,20 +470,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +481,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
@@ -555,7 +571,7 @@ index 7eeec62..f8d588b 100644
          return size
      }
      
-@@ -467,7 +506,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +517,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -564,7 +580,7 @@ index 7eeec62..f8d588b 100644
          }
          else
          {
-@@ -477,7 +516,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -477,7 +527,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      
      func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets
      {
@@ -573,15 +589,14 @@ index 7eeec62..f8d588b 100644
          
          if section == 0
          {
-@@ -486,6 +525,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -486,6 +536,11 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          return insets
      }
 +
 +    private func cardContentWidth(in collectionView: UICollectionView) -> CGFloat
 +    {
-+        let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right
-+        return max(1, collectionView.bounds.width - safeAreaWidth - 32)
++        return max(1, collectionView.bounds.width - 32)
 +    }
  }
  

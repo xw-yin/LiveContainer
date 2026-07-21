@@ -76,7 +76,9 @@ jobs:
           grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
           grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
-          grep -Fq 'collectionView.bounds.width - safeAreaWidth - 32' SideStoreBuild/AltStore/News/NewsViewController.swift
+          grep -Fq 'contentInsetAdjustmentBehavior = .never' SideStoreBuild/AltStore/News/NewsViewController.swift
+          grep -Fq 'layout.sectionInsetReference = .fromContentInset' SideStoreBuild/AltStore/News/NewsViewController.swift
+          grep -Fq 'collectionView.bounds.width - 32' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'UIEdgeInsets(top: 30, left: 16, bottom: 13, right: 16)' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'collectionView.bounds.width - safeAreaWidth - 32' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
           grep -Fq 'layout.sectionInsetReference = .fromSafeArea' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
