@@ -352,10 +352,10 @@ index aa29e53..35ae683 100644
  {
      func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem]
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e..6c2d3d8 100644
+index eb7535e..d93b634 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
-@@ -22,7 +22,12 @@ final class NewsCollectionViewCell: UICollectionViewCell
+@@ -22,7 +22,14 @@ final class NewsCollectionViewCell: UICollectionViewCell
          let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .title2).bolded()
          self.titleLabel.font = UIFont(descriptor: descriptor, size: 0.0)
          
@@ -366,23 +366,46 @@ index eb7535e..6c2d3d8 100644
 +        self.contentView.insetsLayoutMarginsFromSafeArea = false
 +        self.layoutMargins = .zero
 +        self.contentView.layoutMargins = .zero
++        self.contentBackgroundView.preservesSuperviewLayoutMargins = false
++        self.contentBackgroundView.insetsLayoutMarginsFromSafeArea = false
          
          self.contentBackgroundView.layer.cornerRadius = 30
          self.contentBackgroundView.clipsToBounds = true
-@@ -30,4 +35,9 @@ final class NewsCollectionViewCell: UICollectionViewCell
+@@ -30,4 +37,21 @@ final class NewsCollectionViewCell: UICollectionViewCell
          self.imageView.layer.cornerRadius = 30
          self.imageView.clipsToBounds = true
      }
 +    
-+    override func layoutSubviews() {
++    override func prepareForReuse()
++    {
++        super.prepareForReuse()
++        
++        // UIKit may reset safe-area–derived margins during reuse; re-assert our layout.
++        self.insetsLayoutMarginsFromSafeArea = false
++        self.contentView.insetsLayoutMarginsFromSafeArea = false
++        self.layoutMargins = .zero
++        self.contentView.layoutMargins = .zero
++    }
++    
++    override func layoutSubviews()
++    {
 +        super.layoutSubviews()
 +        self.contentView.frame = self.bounds
 +    }
  }
 diff --git a/AltStore/News/NewsCollectionViewCell.xib b/AltStore/News/NewsCollectionViewCell.xib
-index 48e982f..8c86c85 100644
+index 48e982f..be222c6 100644
 --- a/AltStore/News/NewsCollectionViewCell.xib
 +++ b/AltStore/News/NewsCollectionViewCell.xib
+@@ -19,7 +19,7 @@
+                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="azr-Ea-luN">
+                         <rect key="frame" x="16" y="0.0" width="303" height="299"/>
+                     </view>
+-                    <view contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Xba-Qs-SQo">
++                    <view contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Xba-Qs-SQo">
+                         <rect key="frame" x="16" y="0.0" width="303" height="299"/>
+                         <subviews>
+                             <stackView opaque="NO" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" axis="vertical" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="tNk-9u-1tk">
 @@ -63,13 +63,13 @@
              </view>
              <constraints>
@@ -402,7 +425,7 @@ index 48e982f..8c86c85 100644
              <connections>
                  <outlet property="captionLabel" destination="SHB-kk-YhL" id="zY3-qQ-9oY"/>
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..db1f687 100644
+index 7eeec62..f8d588b 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -82,6 +82,14 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -420,19 +443,16 @@ index 7eeec62..db1f687 100644
          
          self.prototypeCell = NewsCollectionViewCell.instantiate(with: NewsCollectionViewCell.nib)
          self.prototypeCell.contentView.translatesAutoresizingMaskIntoConstraints = false
-@@ -135,6 +143,11 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -134,7 +142,7 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+         self.preparePipeline()
          self.update()
      }
-     
-+    override func viewWillAppear(_ animated: Bool)
-+    {
-+        super.viewWillAppear(animated)
-+    }
+-    
 +
      override func viewWillLayoutSubviews()
      {
          super.viewWillLayoutSubviews()
-@@ -146,6 +159,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
+@@ -146,6 +154,16 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
              self.collectionView.contentInset.bottom = 20
          }
      }
@@ -449,7 +469,7 @@ index 7eeec62..db1f687 100644
  }
  
  private extension NewsViewController
-@@ -174,8 +197,13 @@ private extension NewsViewController
+@@ -174,8 +192,13 @@ private extension NewsViewController
              guard let self else { return }
              
              let cell = cell as! NewsCollectionViewCell
@@ -465,7 +485,7 @@ index 7eeec62..db1f687 100644
              
              cell.titleLabel.text = newsItem.title
              cell.captionLabel.text = newsItem.caption
-@@ -183,15 +211,21 @@ private extension NewsViewController
+@@ -183,15 +206,21 @@ private extension NewsViewController
              
              cell.imageView.image = nil
              
@@ -487,7 +507,7 @@ index 7eeec62..db1f687 100644
              }
              
              cell.isAccessibilityElement = true
-@@ -416,8 +450,9 @@ extension NewsViewController
+@@ -416,8 +445,9 @@ extension NewsViewController
          let footerView = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: "AppBanner", for: indexPath) as! AppBannerFooterView
          guard let storeApp = item.storeApp else { return footerView }
          
@@ -499,7 +519,7 @@ index 7eeec62..db1f687 100644
          
          footerView.bannerView.button.isIndicatingActivity = false
          footerView.bannerView.configure(for: storeApp)
-@@ -440,20 +475,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -440,20 +470,29 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      {        
          let item = self.dataSource.item(at: indexPath)
          let globallyUniqueID = item.globallyUniqueID ?? item.identifier
@@ -535,7 +555,7 @@ index 7eeec62..db1f687 100644
          return size
      }
      
-@@ -467,7 +511,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -467,7 +506,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          if item.storeApp != nil
          {
@@ -544,7 +564,7 @@ index 7eeec62..db1f687 100644
          }
          else
          {
-@@ -477,7 +521,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -477,7 +516,7 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
      
      func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets
      {
@@ -553,7 +573,7 @@ index 7eeec62..db1f687 100644
          
          if section == 0
          {
-@@ -486,6 +530,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
+@@ -486,6 +525,12 @@ extension NewsViewController: UICollectionViewDelegateFlowLayout
          
          return insets
      }
