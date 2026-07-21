@@ -1,5 +1,5 @@
 diff --git a/AltStore.xcodeproj/project.pbxproj b/AltStore.xcodeproj/project.pbxproj
-index 2e461a3..05db8c5 100644
+index 2e461a39..05db8c59 100644
 --- a/AltStore.xcodeproj/project.pbxproj
 +++ b/AltStore.xcodeproj/project.pbxproj
 @@ -589,6 +589,7 @@
@@ -11,7 +11,7 @@ index 2e461a3..05db8c5 100644
  			);
  			mainGroup = BFD247612284B9A500981D42;
 diff --git a/AltStore/AppDelegate.swift b/AltStore/AppDelegate.swift
-index 237219d..fa71d76 100644
+index 237219d3..fa71d765 100644
 --- a/AltStore/AppDelegate.swift
 +++ b/AltStore/AppDelegate.swift
 @@ -13,10 +13,90 @@ import Intents
@@ -143,7 +143,7 @@ index 237219d..fa71d76 100644
      }
  
 diff --git a/AltStore/Info.plist b/AltStore/Info.plist
-index 8ee1025..62b7073 100644
+index 8ee1025f..62b7073d 100644
 --- a/AltStore/Info.plist
 +++ b/AltStore/Info.plist
 @@ -255,6 +255,8 @@
@@ -156,7 +156,7 @@ index 8ee1025..62b7073 100644
  	<key>UISupportedInterfaceOrientations~ipad</key>
  	<array>
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index aa29e53..35ae683 100644
+index aa29e537..35ae6833 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -75,6 +75,11 @@ class MyAppsViewController: UICollectionViewController, PeekPopPreviewing
@@ -352,7 +352,7 @@ index aa29e53..35ae683 100644
  {
      func collectionView(_ collectionView: UICollectionView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem]
 diff --git a/AltStore/News/NewsCollectionViewCell.swift b/AltStore/News/NewsCollectionViewCell.swift
-index eb7535e..d93b634 100644
+index eb7535e7..d93b634e 100644
 --- a/AltStore/News/NewsCollectionViewCell.swift
 +++ b/AltStore/News/NewsCollectionViewCell.swift
 @@ -22,7 +22,14 @@ final class NewsCollectionViewCell: UICollectionViewCell
@@ -394,7 +394,7 @@ index eb7535e..d93b634 100644
 +    }
  }
 diff --git a/AltStore/News/NewsCollectionViewCell.xib b/AltStore/News/NewsCollectionViewCell.xib
-index 48e982f..be222c6 100644
+index 48e982fc..be222c62 100644
 --- a/AltStore/News/NewsCollectionViewCell.xib
 +++ b/AltStore/News/NewsCollectionViewCell.xib
 @@ -19,7 +19,7 @@
@@ -425,7 +425,7 @@ index 48e982f..be222c6 100644
              <connections>
                  <outlet property="captionLabel" destination="SHB-kk-YhL" id="zY3-qQ-9oY"/>
 diff --git a/AltStore/News/NewsViewController.swift b/AltStore/News/NewsViewController.swift
-index 7eeec62..75c8aba 100644
+index 7eeec623..75c8abac 100644
 --- a/AltStore/News/NewsViewController.swift
 +++ b/AltStore/News/NewsViewController.swift
 @@ -82,6 +82,19 @@ class NewsViewController: UICollectionViewController, PeekPopPreviewing
@@ -602,7 +602,7 @@ index 7eeec62..75c8aba 100644
  
  extension NewsViewController: UIViewControllerPreviewingDelegate
 diff --git a/AltStore/Operations/AuthenticationOperation.swift b/AltStore/Operations/AuthenticationOperation.swift
-index 085fb61..40365a6 100644
+index 085fb616..40365a6c 100644
 --- a/AltStore/Operations/AuthenticationOperation.swift
 +++ b/AltStore/Operations/AuthenticationOperation.swift
 @@ -669,7 +669,7 @@ final class AuthenticationOperation: ResultOperation<(ALTTeam, ALTCertificate?,
@@ -615,7 +615,7 @@ index 085fb61..40365a6 100644
              let noAction = UIAlertAction(title: NSLocalizedString("No", comment: ""), style: .default) { _ in
                  if teamType == .free {
 diff --git a/AltStore/Operations/RemoveAppExtensionsOperation.swift b/AltStore/Operations/RemoveAppExtensionsOperation.swift
-index 589958b..bd7106f 100644
+index 589958bd..bd7106f0 100644
 --- a/AltStore/Operations/RemoveAppExtensionsOperation.swift
 +++ b/AltStore/Operations/RemoveAppExtensionsOperation.swift
 @@ -122,7 +122,7 @@ final class RemoveAppExtensionsOperation: ResultOperation<Void>, OperationLoggin
@@ -628,7 +628,7 @@ index 589958b..bd7106f 100644
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
-index 6cd51ef..686074e 100644
+index 829fc325..24a8736b 100644
 --- a/AltStore/Settings/Settings.storyboard
 +++ b/AltStore/Settings/Settings.storyboard
 @@ -23,7 +23,7 @@
@@ -689,7 +689,7 @@ index 6cd51ef..686074e 100644
                              </tableViewSection>
                              <tableViewSection headerTitle="" id="2dM-lg-cRI">
 diff --git a/AltStore/Settings/SettingsHeaderFooterView.swift b/AltStore/Settings/SettingsHeaderFooterView.swift
-index 511dda8..3a5a542 100644
+index 511dda83..3a5a542e 100644
 --- a/AltStore/Settings/SettingsHeaderFooterView.swift
 +++ b/AltStore/Settings/SettingsHeaderFooterView.swift
 @@ -21,8 +21,11 @@ final class SettingsHeaderFooterView: UITableViewHeaderFooterView
@@ -728,10 +728,10 @@ index 511dda8..3a5a542 100644
 +    }
  }
 diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
-index 9e8a94a..47e90a9 100644
+index ac4036e9..b8bd0cbe 100644
 --- a/AltStore/Settings/SettingsViewController.swift
 +++ b/AltStore/Settings/SettingsViewController.swift
-@@ -297,7 +297,7 @@ final class SettingsViewController: UITableViewController
+@@ -298,7 +298,7 @@ final class SettingsViewController: UITableViewController
              let altCert = try ALTCertificate(p12Data: account.cert, password: account.certpass)
              Keychain.shared.signingCertificate = altCert.encryptedP12Data(withPassword: "")!
              Keychain.shared.signingCertificatePassword = account.certpass
@@ -740,7 +740,7 @@ index 9e8a94a..47e90a9 100644
              return toastView.show(in: self)
          } catch {
              let toastView = ToastView(text: NSLocalizedString("Failed to import account certificate!", comment: ""), detailText: "Error: \(error.localizedDescription). Still imported account/adi.pb details!")
-@@ -388,12 +388,15 @@ final class SettingsViewController: UITableViewController
+@@ -389,12 +389,15 @@ final class SettingsViewController: UITableViewController
      {
          super.viewWillAppear(animated)
          
@@ -757,7 +757,7 @@ index 9e8a94a..47e90a9 100644
      override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
          if segue.identifier == "anisetteServers" || segue.identifier == "certificateManagement" || segue.identifier == "wirelessPairing" || segue.identifier == "networkDiscovery" {
              let controller = segue.destination
-@@ -421,7 +424,6 @@ final class SettingsViewController: UITableViewController
+@@ -422,7 +425,6 @@ final class SettingsViewController: UITableViewController
  
  private extension SettingsViewController
  {
@@ -765,7 +765,7 @@ index 9e8a94a..47e90a9 100644
      private func getVersionLabel() -> String {
          let buildInfo = BuildInfo()
          
-@@ -1089,6 +1091,20 @@ extension SettingsViewController
+@@ -1090,6 +1092,20 @@ extension SettingsViewController
          let section = Section.allCases[indexPath.section]
          let cell = super.tableView(tableView, cellForRowAt: indexPath)
          
@@ -786,7 +786,7 @@ index 9e8a94a..47e90a9 100644
          if section == .advancedSettings {
              let row = AdvancedSettingsRow.allCases[indexPath.row]
              if row == .wirelessPair {
-@@ -1127,8 +1143,14 @@ extension SettingsViewController
+@@ -1128,8 +1144,14 @@ extension SettingsViewController
          }
          
          
@@ -801,7 +801,7 @@ index 9e8a94a..47e90a9 100644
      
      override func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView?
      {
-@@ -1461,6 +1483,13 @@ extension SettingsViewController
+@@ -1462,6 +1484,13 @@ extension SettingsViewController
                  })
                  
                  let vc = UIHostingController(rootView: anisetteServersView)
@@ -814,8 +814,8 @@ index 9e8a94a..47e90a9 100644
 +                vc.navigationItem.compactAppearance = appearance
                  self.prepare(for: UIStoryboardSegue(identifier: "anisetteServers", source: self, destination: vc), sender: nil)
  
-             case .certificateManagement:
-@@ -1732,7 +1761,11 @@ extension SettingsViewController
+             case .vpnConfiguration:
+@@ -1744,7 +1773,11 @@ extension SettingsViewController
              
              
          // case .account, .patreon, .display, .instructions, .macDirtyCow: break
@@ -828,7 +828,7 @@ index 9e8a94a..47e90a9 100644
          }
          
          
-@@ -1741,6 +1774,81 @@ extension SettingsViewController
+@@ -1753,6 +1786,81 @@ extension SettingsViewController
      }
  }
  
@@ -911,7 +911,7 @@ index 9e8a94a..47e90a9 100644
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
 diff --git a/AltStore/Sources/AddSourceViewController.swift b/AltStore/Sources/AddSourceViewController.swift
-index c9be9e1..2e56307 100644
+index c9be9e13..2e56307a 100644
 --- a/AltStore/Sources/AddSourceViewController.swift
 +++ b/AltStore/Sources/AddSourceViewController.swift
 @@ -137,6 +137,7 @@ private extension AddSourceViewController
@@ -957,7 +957,7 @@ index c9be9e1..2e56307 100644
          
          cell.bannerView.configure(for: source)
 diff --git a/AltStore/Sources/Components/SourceHeaderView.swift b/AltStore/Sources/Components/SourceHeaderView.swift
-index e1b3f2c..070a9cc 100644
+index e1b3f2cd..070a9cce 100644
 --- a/AltStore/Sources/Components/SourceHeaderView.swift
 +++ b/AltStore/Sources/Components/SourceHeaderView.swift
 @@ -40,6 +40,8 @@ class SourceHeaderView: RSTNibView
@@ -970,7 +970,7 @@ index e1b3f2c..070a9cc 100644
          self.layer.cornerRadius = 22
          
 diff --git a/AltStore/Sources/SourcesViewController.swift b/AltStore/Sources/SourcesViewController.swift
-index 00ee6b0..05f8982 100644
+index 00ee6b0a..05f89827 100644
 --- a/AltStore/Sources/SourcesViewController.swift
 +++ b/AltStore/Sources/SourcesViewController.swift
 @@ -49,7 +49,8 @@ final class SourcesViewController: UICollectionViewController
@@ -1044,14 +1044,14 @@ index 00ee6b0..05f8982 100644
              
 diff --git a/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 new file mode 100644
-index 0000000..e9b8596
+index 00000000..e9b8596c
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/AboutPatreonHeaderView.strings
 @@ -0,0 +1 @@
 +"DTd-Yu-HXr.text" = "SideStore 团队";
 diff --git a/AltStore/zh-Hans.lproj/Authentication.strings b/AltStore/zh-Hans.lproj/Authentication.strings
 new file mode 100644
-index 0000000..2864559
+index 00000000..28645594
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Authentication.strings
 @@ -0,0 +1,20 @@
@@ -1077,14 +1077,14 @@ index 0000000..2864559
 +"qxJ-Go-OPq.title" = "选择团队";
 diff --git a/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
 new file mode 100644
-index 0000000..4ab9202
+index 00000000..4ab92021
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/InstalledAppsCollectionHeaderView.strings
 @@ -0,0 +1 @@
 +"zhW-Re-WNf.text" = "已安装";
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 new file mode 100644
-index 0000000..50627f5
+index 00000000..50627f58
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
 @@ -0,0 +1,469 @@
@@ -1559,7 +1559,7 @@ index 0000000..50627f5
 +"Opt in for beta testing to receive regular updates and early previews of upcoming releases.\n\nPlease note that these builds are experimental and may be unstable or break unexpectedly." = "选择加入测试版测试，以获取定期更新 and 早期预览。\n\n请注意，这些版本是实验性的，可能会不稳定或意外崩溃。";
 diff --git a/AltStore/zh-Hans.lproj/Main.strings b/AltStore/zh-Hans.lproj/Main.strings
 new file mode 100644
-index 0000000..8d0bc49
+index 00000000..8d0bc490
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Main.strings
 @@ -0,0 +1,15 @@
@@ -1580,7 +1580,7 @@ index 0000000..8d0bc49
 +"fVN-ed-uO1.title" = "新闻";
 diff --git a/AltStore/zh-Hans.lproj/Settings.strings b/AltStore/zh-Hans.lproj/Settings.strings
 new file mode 100644
-index 0000000..6d39a0b
+index 00000000..6d39a0b8
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Settings.strings
 @@ -0,0 +1,65 @@
@@ -1651,7 +1651,7 @@ index 0000000..6d39a0b
 +
 diff --git a/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 new file mode 100644
-index 0000000..3e25ac4
+index 00000000..3e25ac44
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/SettingsHeaderFooterView.strings
 @@ -0,0 +1,2 @@
@@ -1659,7 +1659,7 @@ index 0000000..3e25ac4
 +"eet-Hi-RU4.text" = "说明";
 diff --git a/AltStore/zh-Hans.lproj/SourceHeaderView.strings b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
 new file mode 100644
-index 0000000..663dfce
+index 00000000..663dfced
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/SourceHeaderView.strings
 @@ -0,0 +1,2 @@
@@ -1667,7 +1667,7 @@ index 0000000..663dfce
 +"IUL-qI-QAg.text" = "副标题";
 diff --git a/AltStore/zh-Hans.lproj/Sources.strings b/AltStore/zh-Hans.lproj/Sources.strings
 new file mode 100644
-index 0000000..346d95e
+index 00000000..346d95ee
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/Sources.strings
 @@ -0,0 +1,6 @@
@@ -1679,13 +1679,13 @@ index 0000000..346d95e
 +"v46-dC-g7e.title" = "添加来源";
 diff --git a/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 new file mode 100644
-index 0000000..f338081
+index 00000000..f338081c
 --- /dev/null
 +++ b/AltStore/zh-Hans.lproj/UpdateCollectionViewCell.strings
 @@ -0,0 +1 @@
 +"rNs-2O-k3V.text" = "版本说明";
 diff --git a/AltStoreCore/Roxas/UICollectionView+CellContent.swift b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
-index b63a603..b7c6d32 100644
+index b63a603f..b7c6d32a 100644
 --- a/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 +++ b/AltStoreCore/Roxas/UICollectionView+CellContent.swift
 @@ -42,6 +42,83 @@ extension UICollectionView: RSTCellContentUpdateableView, RSTCellContentTransact
@@ -1772,15 +1772,8 @@ index b63a603..b7c6d32 100644
          var postMoveUpdateChanges = [RSTCellContentChange]()
          for change in operations {
              if change.type == .move, let destinationIndexPath = change.destinationIndexPath {
-diff --git a/Dependencies/AltSign b/Dependencies/AltSign
-index 55ba33c..bf8db82 160000
---- a/Dependencies/AltSign
-+++ b/Dependencies/AltSign
-@@ -1 +1 @@
--Subproject commit 55ba33ca500831279c3c702132a7515063029ed2
-+Subproject commit bf8db82b172cedd1933d7c2bf3e2460bdfdb5adb
 diff --git a/Dependencies/minimuxer b/Dependencies/minimuxer
-index 059d895..c1a5ad2 160000
+index 059d895c..c1a5ad23 160000
 --- a/Dependencies/minimuxer
 +++ b/Dependencies/minimuxer
 @@ -1 +1 @@
