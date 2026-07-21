@@ -142,6 +142,94 @@ index 237219d3..fa71d765 100644
          }
      }
  
+diff --git a/AltStore/Authentication/InstructionsViewController.swift b/AltStore/Authentication/InstructionsViewController.swift
+index dc50eca5..98454b32 100644
+--- a/AltStore/Authentication/InstructionsViewController.swift
++++ b/AltStore/Authentication/InstructionsViewController.swift
+@@ -17,6 +17,8 @@ final class InstructionsViewController: UIViewController
+     @IBOutlet private var contentStackView: UIStackView!
+     @IBOutlet private var dismissButton: UIButton!
+     
++    private var containerScrollView: UIScrollView!
++    
+     override var preferredStatusBarStyle: UIStatusBarStyle {
+         return .lightContent
+     }
+@@ -25,23 +27,67 @@ final class InstructionsViewController: UIViewController
+     {
+         super.viewDidLoad()
+         
+-        if UIScreen.main.isExtraCompactHeight
+-        {
+-            self.contentStackView.layoutMargins.top = 0
+-            self.contentStackView.layoutMargins.bottom = self.contentStackView.layoutMargins.left
+-        }
++        // Wrap content in a scroll view programmatically to support landscape/scrolling
++        let scrollView = UIScrollView()
++        scrollView.translatesAutoresizingMaskIntoConstraints = false
++        scrollView.alwaysBounceVertical = true
++        self.view.addSubview(scrollView)
++        self.containerScrollView = scrollView
+         
+-        self.dismissButton.clipsToBounds = true
+-        self.dismissButton.layer.cornerRadius = 16
++        let containerView = UIView()
++        containerView.translatesAutoresizingMaskIntoConstraints = false
++        scrollView.addSubview(containerView)
++        
++        self.contentStackView.removeFromSuperview()
++        self.dismissButton.removeFromSuperview()
++        
++        containerView.addSubview(self.contentStackView)
++        containerView.addSubview(self.dismissButton)
++        
++        NSLayoutConstraint.activate([
++            scrollView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
++            scrollView.leadingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.leadingAnchor),
++            scrollView.trailingAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.trailingAnchor),
++            scrollView.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor),
++            
++            containerView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
++            containerView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
++            containerView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
++            containerView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
++            containerView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
++            
++            self.contentStackView.topAnchor.constraint(equalTo: containerView.topAnchor),
++            self.contentStackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
++            self.contentStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
++        ])
+         
+         if self.showsBottomButton
+         {
++            NSLayoutConstraint.activate([
++                self.dismissButton.topAnchor.constraint(equalTo: self.contentStackView.bottomAnchor, constant: 20),
++                self.dismissButton.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
++                self.dismissButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
++                self.dismissButton.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -20),
++            ])
++            self.dismissButton.isHidden = false
+             self.navigationItem.hidesBackButton = true
+         }
+         else
+         {
++            NSLayoutConstraint.activate([
++                self.contentStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -20)
++            ])
+             self.dismissButton.isHidden = true
+         }
++        
++        if UIScreen.main.isExtraCompactHeight
++        {
++            self.contentStackView.layoutMargins.top = 0
++            self.contentStackView.layoutMargins.bottom = self.contentStackView.layoutMargins.left
++        }
++        
++        self.dismissButton.clipsToBounds = true
++        self.dismissButton.layer.cornerRadius = 16
+     }
+ }
+ 
 diff --git a/AltStore/Info.plist b/AltStore/Info.plist
 index 8ee1025f..62b7073d 100644
 --- a/AltStore/Info.plist
@@ -607,6 +695,66 @@ index 589958bd..bd7106f0 100644
          
          let alertController = UIAlertController(title: NSLocalizedString("App Contains Extensions", comment: ""), message: message, preferredStyle: .alert)
          alertController.addAction(UIAlertAction(title: UIAlertAction.cancel.title, style: UIAlertAction.cancel.style, handler: { (action) in
+diff --git a/AltStore/Settings/Error Log/ErrorLogViewController.swift b/AltStore/Settings/Error Log/ErrorLogViewController.swift
+index a19d5e74..9f08e4a8 100644
+--- a/AltStore/Settings/Error Log/ErrorLogViewController.swift	
++++ b/AltStore/Settings/Error Log/ErrorLogViewController.swift	
+@@ -40,29 +40,51 @@ final class ErrorLogViewController: UITableViewController, QLPreviewControllerDe
+     @IBOutlet private var clearLogButton: UIBarButtonItem!
+     
+     private var _exportedLogURL: URL?
++    private var oldNavigationBarTintColor: UIColor?
+     
+     override var preferredStatusBarStyle: UIStatusBarStyle {
+-        return .lightContent
++        return .default
+     }
+     
+     override func viewDidLoad()
+     {
+         super.viewDidLoad()
+         
++        let appearance = UINavigationBarAppearance()
++        appearance.configureWithDefaultBackground()
++        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
++        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
++        self.navigationItem.standardAppearance = appearance
++        self.navigationItem.scrollEdgeAppearance = appearance
++        
+         self.tableView.dataSource = self.dataSource
+         self.dataSource.contentView = self.tableView
+         self.tableView.prefetchDataSource = self.dataSource
+         
+-        self.exportLogButton?.activityIndicatorView.color = .white
++        self.exportLogButton?.activityIndicatorView.color = .gray
+         
+         if #unavailable(iOS 15)
+         {
+             // Assign just clearLogButton to hide export button.
+             self.navigationItem.rightBarButtonItems = [self.clearLogButton]
+         }
++    }
++    
++    override func viewWillAppear(_ animated: Bool)
++    {
++        super.viewWillAppear(animated)
+         
+-//        // Adjust the width of the right bar button items
+-//        adjustRightBarButtonWidth()
++        self.oldNavigationBarTintColor = self.navigationController?.navigationBar.tintColor
++        self.navigationController?.navigationBar.tintColor = .altPrimary
++    }
++    
++    override func viewWillDisappear(_ animated: Bool)
++    {
++        super.viewWillDisappear(animated)
++        
++        if let oldColor = self.oldNavigationBarTintColor {
++            self.navigationController?.navigationBar.tintColor = oldColor
++        }
+     }
+     
+     
 diff --git a/AltStore/Settings/Settings.storyboard b/AltStore/Settings/Settings.storyboard
 index 829fc325..24a8736b 100644
 --- a/AltStore/Settings/Settings.storyboard
@@ -890,6 +1038,292 @@ index ac4036e9..b8bd0cbe 100644
  extension SettingsViewController: MFMailComposeViewControllerDelegate
  {
      func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?)
+diff --git a/AltStore/Settings/WirelessPair/WirelessPairView.swift b/AltStore/Settings/WirelessPair/WirelessPairView.swift
+index 808f00b6..a26de2f3 100644
+--- a/AltStore/Settings/WirelessPair/WirelessPairView.swift
++++ b/AltStore/Settings/WirelessPair/WirelessPairView.swift
+@@ -15,152 +15,152 @@ struct WirelessPairView: View {
+     private let pulse = Animation.interactiveSpring(response: 1.5, dampingFraction: 0.55)
+     
+     var body: some View {
+-        VStack(spacing: 24) {
+-            // Pulsing Status Orb
+-            ZStack {
+-                // Outer breathing glow
+-                Circle()
+-                    .fill(
+-                        RadialGradient(
+-                            colors: manager.isAdvertising ? [Color.accentColor.opacity(0.25), Color.clear] : [Color.gray.opacity(0.1), Color.clear],
+-                            center: .center,
+-                            startRadius: 20,
+-                            endRadius: 100
++        ScrollView {
++            VStack(spacing: 24) {
++                // Pulsing Status Orb
++                ZStack {
++                    // Outer breathing glow
++                    Circle()
++                        .fill(
++                            RadialGradient(
++                                colors: manager.isAdvertising ? [Color.accentColor.opacity(0.25), Color.clear] : [Color.gray.opacity(0.1), Color.clear],
++                                center: .center,
++                                startRadius: 20,
++                                endRadius: 100
++                            )
+                         )
+-                    )
+-                    .frame(width: 220, height: 220)
+-                    .scaleEffect(manager.isAdvertising ? 1.2 : 1.0)
+-                    .opacity(manager.isAdvertising ? 1.0 : 0.5)
+-                    .animation(manager.isAdvertising ? pulse.repeatForever(autoreverses: true) : .default, value: manager.isAdvertising)
+-                
+-                // Secondary pulsing ring
+-                Circle()
+-                    .stroke(manager.isAdvertising ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 2)
+-                    .frame(width: 140, height: 140)
+-                    .scaleEffect(manager.isAdvertising ? 1.15 : 1.0)
+-                    .opacity(manager.isAdvertising ? 0.8 : 0.0)
+-                    .animation(manager.isAdvertising ? pulse.delay(0.2).repeatForever(autoreverses: true) : .default, value: manager.isAdvertising)
++                        .frame(width: 220, height: 220)
++                        .scaleEffect(manager.isAdvertising ? 1.2 : 1.0)
++                        .opacity(manager.isAdvertising ? 1.0 : 0.5)
++                        .animation(manager.isAdvertising ? pulse.repeatForever(autoreverses: true) : .default, value: manager.isAdvertising)
++                    
++                    // Secondary pulsing ring
++                    Circle()
++                        .stroke(manager.isAdvertising ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 2)
++                        .frame(width: 140, height: 140)
++                        .scaleEffect(manager.isAdvertising ? 1.15 : 1.0)
++                        .opacity(manager.isAdvertising ? 0.8 : 0.0)
++                        .animation(manager.isAdvertising ? pulse.delay(0.2).repeatForever(autoreverses: true) : .default, value: manager.isAdvertising)
+ 
+-                // Central Orb
+-                Circle()
+-                    .fill(
+-                        LinearGradient(
+-                            gradient: Gradient(colors: manager.isAdvertising ? [Color.accentColor, Color.accentColor.opacity(0.8)] : [Color.gray, Color.gray.opacity(0.8)]),
+-                            startPoint: .topLeading,
+-                            endPoint: .bottomTrailing
++                    // Central Orb
++                    Circle()
++                        .fill(
++                            LinearGradient(
++                                gradient: Gradient(colors: manager.isAdvertising ? [Color.accentColor, Color.accentColor.opacity(0.8)] : [Color.gray, Color.gray.opacity(0.8)]),
++                                startPoint: .topLeading,
++                                endPoint: .bottomTrailing
++                            )
+                         )
+-                    )
+-                    .frame(width: 90, height: 90)
+-                    .shadow(color: manager.isAdvertising ? Color.accentColor.opacity(0.5) : Color.clear, radius: 15)
+-                
+-                Group {
+-                    if manager.isAdvertising {
+-                        Image(systemName: "antenna.radiowaves.left.and.right")
+-                            .transition(.scale.combined(with: .opacity))
+-                    } else {
+-                        Image(systemName: "wifi.slash")
+-                            .transition(.scale.combined(with: .opacity))
++                        .frame(width: 90, height: 90)
++                        .shadow(color: manager.isAdvertising ? Color.accentColor.opacity(0.5) : Color.clear, radius: 15)
++                    
++                    Group {
++                        if manager.isAdvertising {
++                            Image(systemName: "antenna.radiowaves.left.and.right")
++                                .transition(.scale.combined(with: .opacity))
++                        } else {
++                            Image(systemName: "wifi.slash")
++                                .transition(.scale.combined(with: .opacity))
++                        }
+                     }
++                    .font(.system(size: 36, weight: .semibold))
++                    .foregroundColor(.white)
+                 }
+-                .font(.system(size: 36, weight: .semibold))
+-                .foregroundColor(.white)
+-            }
+-            .frame(height: 220)
+-            .padding(.top, 20)
+-            .padding(.bottom, 20)
+-            
+-            // Status Info
+-            VStack(spacing: 8) {
+-                Text(manager.statusText)
+-                    .font(.title2)
+-                    .fontWeight(.bold)
+-                    .multilineTextAlignment(.center)
++                .frame(height: 220)
++                .padding(.top, 20)
++                .padding(.bottom, 20)
+                 
+-                if manager.serviceID == nil {
+-                    Text(manager.subStatusText)
+-                        .font(.subheadline)
+-                        .foregroundColor(.secondary)
++                // Status Info
++                VStack(spacing: 8) {
++                    Text(manager.statusText)
++                        .font(.title2)
++                        .fontWeight(.bold)
+                         .multilineTextAlignment(.center)
+-                        .padding(.horizontal, 32)
+-                        .transition(.scale.combined(with: .opacity))
+-                }
+-            }
+-            
+-            // Connection Details Card
+-            if let serviceID = manager.serviceID, let port = manager.port {
+-                    ConnectionDetailsCard(serviceID: serviceID, port: port)
+-                        .transition(.scale(scale: 0.95).combined(with: .opacity))
+-
+-                HStack(spacing: 8) {
+-                        Image(systemName: "wifi")
++                    
++                    if manager.serviceID == nil {
++                        Text(manager.subStatusText)
+                             .font(.subheadline)
+-                            .foregroundColor(.accentColor)
+-                        Text("Ensure both devices are on the same Wi-Fi network.")
+-                            .font(.footnote)
+                             .foregroundColor(.secondary)
++                            .multilineTextAlignment(.center)
++                            .padding(.horizontal, 32)
++                            .transition(.scale.combined(with: .opacity))
+                     }
+-                    .padding(.top, 4)
+-            }
++                }
++                
++                // Connection Details Card
++                if let serviceID = manager.serviceID, let port = manager.port {
++                        ConnectionDetailsCard(serviceID: serviceID, port: port)
++                            .transition(.scale(scale: 0.95).combined(with: .opacity))
+ 
+-            
+-            // PIN Display
+-            if let pin = manager.pinCode {
+-                VStack(spacing: 12) {
+-                    Text("PAIRING CODE")
+-                        .font(.caption2)
+-                        .fontWeight(.bold)
+-                        .foregroundColor(.secondary)
+-                        .tracking(3)
+-                    
+-                    HStack(spacing: 14) {
+-                        ForEach(Array(pin.enumerated()), id: \.offset) { _, char in
+-                            Text(String(char))
+-                                .font(.system(size: 34, weight: .bold, design: .monospaced))
+-                                .frame(width: 52, height: 68)
+-                                .background(RoundedRectangle(cornerRadius: 14).fill(Color(.secondarySystemBackground)))
+-                                .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
+-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.5), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5))
++                    HStack(spacing: 8) {
++                            Image(systemName: "wifi")
++                                .font(.subheadline)
++                                .foregroundColor(.accentColor)
++                            Text("Ensure both devices are on the same Wi-Fi network.")
++                                .font(.footnote)
++                                .foregroundColor(.secondary)
++                        }
++                        .padding(.top, 4)
++                }
++
++                
++                // PIN Display
++                if let pin = manager.pinCode {
++                    VStack(spacing: 12) {
++                        Text("PAIRING CODE")
++                            .font(.caption2)
++                            .fontWeight(.bold)
++                            .foregroundColor(.secondary)
++                            .tracking(3)
++                        
++                        HStack(spacing: 14) {
++                            ForEach(Array(pin.enumerated()), id: \.offset) { _, char in
++                                Text(String(char))
++                                    .font(.system(size: 34, weight: .bold, design: .monospaced))
++                                    .frame(width: 52, height: 68)
++                                    .background(RoundedRectangle(cornerRadius: 14).fill(Color(.secondarySystemBackground)))
++                                    .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 3)
++                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(LinearGradient(gradient: Gradient(colors: [Color.accentColor.opacity(0.5), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5))
++                            }
+                         }
+                     }
++                    .padding(.vertical, 16)
++                    .transition(.scale.combined(with: .opacity))
+                 }
+-                .padding(.vertical, 16)
+-                .transition(.scale.combined(with: .opacity))
+-            }
+-            
+-            // Error Display
+-            if let error = manager.errorMessage {
+-                Text(error)
+-                    .font(.footnote)
+-                    .foregroundColor(.red)
+-                    .multilineTextAlignment(.center)
+-                    .padding(.horizontal, 32)
+-                    .transition(.opacity)
+-            }
+-            
+-            Spacer()
+-            
+-            // Main Button
+-            SwiftUI.Button(action: togglePairing) {
+-                HStack {
+-                    if manager.isAdvertising {
+-                        Text("Stop Advertising")
+-                            .transition(.scale.combined(with: .opacity))
+-                    } else {
+-                        Text("Start Pairing")
+-                            .transition(.scale.combined(with: .opacity))
++                
++                // Error Display
++                if let error = manager.errorMessage {
++                    Text(error)
++                        .font(.footnote)
++                        .foregroundColor(.red)
++                        .multilineTextAlignment(.center)
++                        .padding(.horizontal, 32)
++                        .transition(.opacity)
++                }
++                
++                // Main Button
++                SwiftUI.Button(action: togglePairing) {
++                    HStack {
++                        if manager.isAdvertising {
++                            Text("Stop Advertising")
++                                .transition(.scale.combined(with: .opacity))
++                        } else {
++                            Text("Start Pairing")
++                                .transition(.scale.combined(with: .opacity))
++                        }
+                     }
++                    .font(.headline)
++                    .foregroundColor(.white)
++                    .frame(maxWidth: .infinity)
++                    .frame(height: 56)
++                    .background(manager.isAdvertising ? Color.red : Color.accentColor)
++                    .clipShape(Capsule())
++                    .shadow(color: (manager.isAdvertising ? Color.red : Color.accentColor).opacity(0.3), radius: 10, y: 5)
+                 }
+-                .font(.headline)
+-                .foregroundColor(.white)
+-                .frame(maxWidth: .infinity)
+-                .frame(height: 56)
+-                .background(manager.isAdvertising ? Color.red : Color.accentColor)
+-                .clipShape(Capsule())
+-                .shadow(color: (manager.isAdvertising ? Color.red : Color.accentColor).opacity(0.3), radius: 10, y: 5)
++                .animation(.spring(response: 0.28, dampingFraction: 0.65), value: manager.isAdvertising)
++                .padding(.horizontal, 32)
++                .padding(.bottom, 32)
+             }
+-            .animation(.spring(response: 0.28, dampingFraction: 0.65), value: manager.isAdvertising)
+-            .padding(.horizontal, 32)
+-            .padding(.bottom, 32)
+         }
+         .navigationTitle("Wireless Pairing")
+         .navigationBarTitleDisplayMode(.inline)
 diff --git a/AltStore/Sources/AddSourceViewController.swift b/AltStore/Sources/AddSourceViewController.swift
 index c9be9e13..2e56307a 100644
 --- a/AltStore/Sources/AddSourceViewController.swift
