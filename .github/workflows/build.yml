@@ -70,7 +70,7 @@ jobs:
           git -C SideStoreBuild submodule update --init --recursive --depth 1
           python3 "$GITHUB_WORKSPACE/.github/sidelc/patch_package.py"
           test "$(git -C SideStoreBuild/Dependencies/AltSign rev-parse HEAD)" = "16af0d75bf8c8495b0b34e36c5051a9977e0ea28"
-          test "$(git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD)" = "059d895cbefcd77f21382bd8d178c6b503e80b9c"
+          test "$(git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD)" = "f00298393ba0cbb0f66cacde421daad78f6a15f6"
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
           grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift

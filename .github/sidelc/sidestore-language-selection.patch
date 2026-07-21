@@ -1752,18 +1752,10 @@ index b63a603f..b7c6d32a 100644
          var postMoveUpdateChanges = [RSTCellContentChange]()
          for change in operations {
              if change.type == .move, let destinationIndexPath = change.destinationIndexPath {
-diff --git a/SideStore/MinimuxerWrapper.swift b/SideStore/MinimuxerWrapper.swift
-index 4b69350f..0ce26965 100644
---- a/SideStore/MinimuxerWrapper.swift
-+++ b/SideStore/MinimuxerWrapper.swift
-@@ -19,9 +19,7 @@ func bindTunnelConfig() async {
-     let configBinding = TunnelConfigBinding(
-         setTunnelIfaceIp: { value in Task { @MainActor in config.tunnelIfaceIp = value } },
-         setTunnelPeerIp: { value in Task { @MainActor in config.tunnelPeerIp = value } },
--        setSubnetMask: { value in Task { @MainActor in config.subnetMask = value } },
--        getOverridePeerIp: { config.overridePeerIp },
--        setOverrideEffective: { value in Task { @MainActor in config.overrideEffective = value } }
-+        setSubnetMask: { value in Task { @MainActor in config.subnetMask = value } }
-     )
-     await Minimuxer.shared.bindTunnelConfig(configBinding)
-     #endif
+diff --git a/Dependencies/minimuxer b/Dependencies/minimuxer
+index 059d895c..f0029839 160000
+--- a/Dependencies/minimuxer
++++ b/Dependencies/minimuxer
+@@ -1 +1 @@
+-Subproject commit 059d895cbefcd77f21382bd8d178c6b503e80b9c
++Subproject commit f00298393ba0cbb0f66cacde421daad78f6a15f6
