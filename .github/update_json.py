@@ -48,21 +48,8 @@ def update_json_file_release(repo_url, json_file, latest_release):
         print("Error getting latest release")
         return
 
-    try:
-        apps_json_url = f"https://github.com/{repo_url}/releases/download/1.0/apps.json"
-        response = requests.get(apps_json_url)
-        response.raise_for_status()
-        data = response.json()
-    except json.JSONDecodeError as e:
-        print(f"Error reading JSON file: {e}")
-        data = {"apps": []}
-        raise
-    except requests.RequestException as e:
-        # Release "1.0" may not exist yet (e.g. first run); fall back to the local copy
-        # so the pipeline can bootstrap it, then the upload step creates/updates release "1.0".
-        print(f"Warning: could not download apps.json from release 1.0 ({e}); using local {json_file}")
-        with open(json_file, "r") as file:
-            data = json.load(file)
+    with open(json_file, "r") as file:
+        data = json.load(file)
 
     app = data["apps"][0]
 
@@ -232,21 +219,8 @@ def update_json_file_release_ss_lc(repo_url, json_file, latest_release, is_night
         print("Error getting latest release")
         return
 
-    try:
-        apps_json_url = f"https://github.com/{repo_url}/releases/download/1.0/apps_ss_lc.json"
-        response = requests.get(apps_json_url)
-        response.raise_for_status()
-        data = response.json()
-    except json.JSONDecodeError as e:
-        print(f"Error reading JSON file: {e}")
-        data = {"apps": []}
-        raise
-    except requests.RequestException as e:
-        # Release "1.0" may not exist yet (e.g. first run); fall back to the local copy
-        # so the pipeline can bootstrap it, then the upload step creates/updates release "1.0".
-        print(f"Warning: could not download apps_ss_lc.json from release 1.0 ({e}); using local {json_file}")
-        with open(json_file, "r") as file:
-            data = json.load(file)
+    with open(json_file, "r") as file:
+        data = json.load(file)
 
     app = data["apps"][0]
     data.update({
