@@ -58,6 +58,17 @@ mv ./tmp/Payload/SideStore.app ./Payload/LiveContainer.app/Frameworks/SideStoreA
 ldid -S"" ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 cp ./.github/sidelc/LCAppInfo.plist ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/
 
+# Embedded SideStore becomes Bundle.main at runtime, so its orientation mask must
+# match the LiveContainer host instead of SideStore's portrait-only iPhone default.
+SIDESTORE_INFO=./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Info.plist
+/usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" \
+    -c "Add :UISupportedInterfaceOrientations array" \
+    -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" \
+    -c "Add :UISupportedInterfaceOrientations:1 string UIInterfaceOrientationLandscapeLeft" \
+    -c "Add :UISupportedInterfaceOrientations:2 string UIInterfaceOrientationLandscapeRight" \
+    "$SIDESTORE_INFO"
+/usr/libexec/PlistBuddy -c "Print :UISupportedInterfaceOrientations:1" "$SIDESTORE_INFO" | grep -Fxq "UIInterfaceOrientationLandscapeLeft"
+
 # copy intents
 cp ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Intents.intentdefinition ./Payload/LiveContainer.app/
 cp ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/ViewApp.intentdefinition ./Payload/LiveContainer.app/
