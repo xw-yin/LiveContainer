@@ -4,7 +4,7 @@ set -e
 # Determine directory paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIVE_CONTAINER_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SIDESTORE_DIR="${SIDESTORE_DIR:-$LIVE_CONTAINER_DIR/../SideStoreBuild}"
+SIDESTORE_DIR="$LIVE_CONTAINER_DIR/../SideStoreBuild"
 
 if [ ! -d "$SIDESTORE_DIR" ]; then
     echo "Error: SideStoreBuild directory not found at $SIDESTORE_DIR"

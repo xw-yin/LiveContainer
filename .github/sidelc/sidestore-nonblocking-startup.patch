@@ -250,7 +250,7 @@ index 5e33a718..28c95075 100644
  
  
 diff --git a/AltStore/Managing Apps/AppManager.swift b/AltStore/Managing Apps/AppManager.swift
-index d166db19..8fa66109 100644
+index cb2f6cf9..04c366ac 100644
 --- a/AltStore/Managing Apps/AppManager.swift	
 +++ b/AltStore/Managing Apps/AppManager.swift	
 @@ -48,7 +48,7 @@ class AppManager: ObservableObject
