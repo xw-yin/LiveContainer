@@ -420,6 +420,19 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             sharedModel.deepLink = nil
             handleURL(url: link)
         }
+        .onDrop(of: [.url], isTargeted: nil) { providers in
+            guard let provider = providers.first else { return false }
+            _ = provider.loadObject(ofClass: URL.self) { url, error in
+                guard let url else { return }
+                Task {
+                    guard let urlToOpen = await webViewUrlInput.open(initVal: url.absoluteString), urlToOpen != "" else {
+                        return
+                    }
+                    await openWebView(urlString: urlToOpen)
+                }
+            }
+            return true
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.InstallAppNotification)) { obj in
             if let obj2 = obj.object as? [String: Any], let installUrl = obj2["url"] as? URL {
                 Task { await installFromUrl(urlStr: installUrl.absoluteString) }
@@ -743,6 +756,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             finalNewApp.lastLaunched = appToReplace.appInfo.lastLaunched
             finalNewApp.jitLaunchScriptJs = appToReplace.appInfo.jitLaunchScriptJs
             finalNewApp.multitaskSpecified = appToReplace.appInfo.multitaskSpecified
+            finalNewApp.classicMode = appToReplace.appInfo.classicMode
             finalNewApp.autoSaveDisabled = false
             finalNewApp.save()
         } else {
@@ -1073,17 +1087,17 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
     }
     
-    func jitLaunch(appName: String) async {
-        await jitLaunch(withScript: "", appName: appName)
+    func jitLaunch(appName: String, classicMode: UInt) async {
+        await jitLaunch(withScript: "", appName: appName, classicMode: classicMode)
     }
 
-    func jitLaunch(withScript script: String, appName: String) async {
+    func jitLaunch(withScript script: String, appName: String, classicMode: UInt) async {
         await MainActor.run {
             jitLog = ""
         }
         let enableJITTask = Task {
             
-            let _ = await LCUtils.askForJIT(withScript: script, appName: appName) { newMsg in
+            let _ = await LCUtils.askForJIT(withScript: script, appName: appName, classicMode: classicMode) { newMsg in
                 Task { await MainActor.run {
                     self.jitLog += "\(newMsg)\n"
                 }}
@@ -1097,7 +1111,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             enableJITTask.cancel()
             return
         }
-        LCSharedUtils.launchToGuestApp()
+        LCSharedUtils.launchToGuestApp(withClassicMode: classicMode)
 
     }
     
