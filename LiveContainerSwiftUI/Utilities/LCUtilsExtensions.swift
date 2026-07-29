@@ -9,7 +9,7 @@ import LocalAuthentication
 
 extension LCUtils {
     public static let appGroupUserDefault = UserDefaults.init(suiteName: LCSharedUtils.appGroupID()) ?? UserDefaults.standard
-    
+
     public static func signTweaks(tweakFolderUrl: URL, force : Bool = false, progressHandler : ((Progress) -> Void)? = nil) async throws {
         guard LCSharedUtils.certificatePassword() != nil else {
             return
@@ -26,7 +26,7 @@ extension LCUtils {
         if(fm.fileExists(atPath: tweakFolderUrl.path, isDirectory: &isFolder) && !isFolder.boolValue) {
             return
         }
-        
+
         // check if re-sign is needed
         // if signature is invalid, we need to re-sign. dylib and framework's main binary are supported
         let fileURLs = try fm.contentsOfDirectory(at: tweakFolderUrl, includingPropertiesForKeys: nil)
@@ -57,7 +57,7 @@ extension LCUtils {
             if !force, checkCodeSignature((fileURL.path as NSString).utf8String) {
                 continue;
             }
-            
+
             filesToSign.append(fileURL)
         }
         
@@ -516,11 +516,27 @@ extension LCUtils {
         }
     }
     
+    private static let builtInSideStoreApp = LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared)
+    private static var builtInSideStoreLaunchTask: Task<Void, Never>?
+
     static func openSideStore(delegate: LCAppModelDelegate? = nil, urlStr: String? = nil) {
-        let sideStoreApp = LCAppModel(appInfo: BuiltInSideStoreAppInfo.shared, delegate: delegate)
+        guard builtInSideStoreLaunchTask == nil else {
+            return
+        }
+
+        let sideStoreApp = builtInSideStoreApp
+        sideStoreApp.delegate = delegate
         
-        Task {
-            try await sideStoreApp.runApp(bundleIdOverride: "builtinSideStore", urlStr: urlStr)
+        builtInSideStoreLaunchTask = Task {
+            defer {
+                builtInSideStoreLaunchTask = nil
+            }
+
+            do {
+                try await sideStoreApp.runApp(bundleIdOverride: "builtinSideStore", urlStr: urlStr)
+            } catch {
+                NSLog("[LC] Failed to launch built-in SideStore: \(error)")
+            }
         }
     }
 }
