@@ -1,7 +1,8 @@
 import os
 
 def main():
-    path = 'SideStoreBuild/Dependencies/AltSign/Package.swift'
+    sidestore_dir = os.environ.get('SIDESTORE_DIR', 'SideStoreBuild')
+    path = os.path.join(sidestore_dir, 'Dependencies/AltSign/Package.swift')
     if not os.path.exists(path):
         print(f"Error: {path} not found.")
         return
