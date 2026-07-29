@@ -22,4 +22,12 @@ require 'configureForEmbeddedLiveContainer' 'AltStoreCore/Model/StoreApp.swift'
 require 'let hostApplication = ALTApplication(fileURL: Bundle.realMainBundle.bundleURL)' 'AltStoreCore/Model/InstalledApp.swift'
 require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
 
+# Landscape layout fixes must survive upstream rebases as well.
+require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
+require 'layout.sectionInsetReference = .fromContentInset' 'AltStore/News/NewsViewController.swift'
+require 'override func viewWillTransition(to size:' 'AltStore/Sources/SourcesViewController.swift'
+require 'layoutConfiguration.contentInsetsReference = .safeArea' 'AltStore/Sources/SourcesViewController.swift'
+require 'layout.sectionInsetReference = .fromSafeArea' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right' 'AltStore/My Apps/MyAppsViewController.swift'
+
 echo 'LiveContainer SideStore integration checks passed.'
