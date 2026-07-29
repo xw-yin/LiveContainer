@@ -86,7 +86,7 @@ jobs:
           grep -Fq 'setCollectionViewLayout(self.makeLayout(), animated: false)' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'cell.contentView.preservesSuperviewLayoutMargins = false' SideStoreBuild/AltStore/Sources/SourcesViewController.swift
           grep -Fq 'layoutSection.contentInsets' SideStoreBuild/AltStore/Sources/AddSourceViewController.swift
-          grep -Fq 'autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"' SideStoreBuild/AltStore/Settings/Settings.storyboard
+          grep -Fq 'autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"' SideStoreBuild/AltStore/Settings/Settings.storyboard
           grep -Fq 'self.insetView.leadingAnchor.constraint(equalTo: self.safeAreaLayoutGuide.leadingAnchor, constant: 16)' SideStoreBuild/AltStore/Settings/InsetGroupTableViewCell.swift
           grep -Fq 'left: self.safeAreaInsets.left + 30' SideStoreBuild/AltStore/Settings/InsetGroupTableViewCell.swift
           grep -Fq 'left: self.safeAreaInsets.left + 30' SideStoreBuild/AltStore/Settings/SettingsHeaderFooterView.swift

@@ -29,6 +29,9 @@ require 'override func viewWillTransition(to size:' 'AltStore/Sources/SourcesVie
 require 'layoutConfiguration.contentInsetsReference = .safeArea' 'AltStore/Sources/SourcesViewController.swift'
 require 'layout.sectionInsetReference = .fromSafeArea' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'override func viewWillTransition(to size:' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'ScrollView(.vertical)' 'AltStore/Settings/WirelessPair/WirelessPairView.swift'
+require 'UIInterfaceOrientationLandscapeLeft' 'AltStore/Info.plist'
+require 'widthSizable="YES" flexibleMaxY="YES"' 'AltStore/Settings/Settings.storyboard'
 
 echo 'LiveContainer SideStore integration checks passed.'
