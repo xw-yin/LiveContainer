@@ -30,6 +30,8 @@ require 'layoutConfiguration.contentInsetsReference = .safeArea' 'AltStore/Sourc
 require 'layout.sectionInsetReference = .fromSafeArea' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'let safeAreaWidth = collectionView.safeAreaInsets.left + collectionView.safeAreaInsets.right' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'override func viewWillTransition(to size:' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'func configureCardMargins(for cell: UICollectionViewCell)' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'headerView.insetsLayoutMarginsFromSafeArea = true' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'ScrollView(.vertical)' 'AltStore/Settings/WirelessPair/WirelessPairView.swift'
 require 'UIInterfaceOrientationLandscapeLeft' 'AltStore/Info.plist'
 require 'widthSizable="YES" flexibleMaxY="YES"' 'AltStore/Settings/Settings.storyboard'
