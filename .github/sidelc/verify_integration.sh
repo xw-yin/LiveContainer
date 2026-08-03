@@ -21,6 +21,7 @@ require 'liveContainerSourceURL' 'AltStoreCore/Model/Source.swift'
 require 'configureForEmbeddedLiveContainer' 'AltStoreCore/Model/StoreApp.swift'
 require 'let hostApplication = ALTApplication(fileURL: Bundle.realMainBundle.bundleURL)' 'AltStoreCore/Model/InstalledApp.swift'
 require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'try self.managedObjectContext.save()' 'AltStore/Operations/RefreshAppOperation.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
