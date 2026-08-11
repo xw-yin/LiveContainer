@@ -24,6 +24,7 @@ require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'try dbContext.save()' 'SideStore/Core/Operations/PipelineRunner.swift'
 require 'try await AppBootManager.shared.ensureMinimuxerStarted()' 'SideStore/Core/Operations/PipelineRunner.swift'
 require 'public nonisolated func ensureMinimuxerStarted() async throws' 'SideStore/AppBootManager.swift'
+require 'Timed out waiting for Minimuxer to start.' 'SideStore/AppBootManager.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
