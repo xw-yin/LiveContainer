@@ -28,6 +28,7 @@ require 'private struct MinimuxerStartup' 'SideStore/AppBootManager.swift'
 require 'try await startup.task.value' 'SideStore/AppBootManager.swift'
 require '? Bundle.realMainBundle.bundleURL' 'SideStore/Core/Certificates/CertificateManager.swift'
 require 'ALTProvisioningProfile(url: bundleURL.appendingPathComponent("embedded.mobileprovision"))' 'SideStore/Core/Certificates/CertificateManager.swift'
+require 'appBundle.provisioningProfile?.certificates.first' 'SideStore/Core/Certificates/CertificateManager.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
