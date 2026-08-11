@@ -90,12 +90,12 @@ class RefreshHandler: NSObject, RefreshServer {
         
         if listener == nil {
             guard let listener = startAnonymousListener(self) else {
-                return
+                throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unable to start the built-in SideStore listener."])
             }
             self.listener = listener
         }
         guard let listener = self.listener else {
-            return
+            throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "The built-in SideStore listener is unavailable."])
         }
 
         // launch SideStore if it's not running
@@ -127,22 +127,25 @@ class RefreshHandler: NSObject, RefreshServer {
                 throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to start extension \(error). To use the Refresh All Apps shortcut, reinstall LiveContainer+SideStore with LiveProcess installed. If you use SideStore, choose \"Keep App Extensions (Use Main Profile)\". If you use Impactor, choose \"Only Register Main Bundle\". For other sideloaders, select keep all extensions, i.e. DO NOT Remove any extension."])
             }
             guard let ext else {
-                return
+                throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unable to create the built-in SideStore extension."])
             }
             self.ext = ext
             
             ext.setRequestInterruptionBlock { uuid in
-                self.c?.resume(throwing: NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore quit unexpectedly"]))
+                let error = NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore quit unexpectedly"])
+                self.c?.resume(throwing: error)
                 self.c = nil
-                self.sideStorePid = 0
+                self.launchContinuation?.resume(throwing: error)
                 self.launchContinuation = nil
+                self.sideStorePid = 0
             }
-            
-            let uuid = await ext.beginRequest(withInputItems: [extensionItem])
-            sideStorePid = ext.pid(forRequestIdentifier: uuid)
-            
+
             try await withUnsafeThrowingContinuation { c in
                 self.launchContinuation = c
+                Task {
+                    let uuid = await ext.beginRequest(withInputItems: [extensionItem])
+                    self.sideStorePid = ext.pid(forRequestIdentifier: uuid)
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 300) {
                     if let c = self.launchContinuation {
                         c.resume(throwing: NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore failed to start in reasonable time"]))
@@ -152,10 +155,14 @@ class RefreshHandler: NSObject, RefreshServer {
                 }
             }
         }
-        self.client?.refreshAllApps(withIdentifier: identifier, mangledTypeName: mangledName)
-        
+
+        guard let client else {
+            throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore did not establish a refresh connection."])
+        }
+
         try await withUnsafeThrowingContinuation { c in
             self.c = c
+            client.refreshAllApps(withIdentifier: identifier, mangledTypeName: mangledName)
         }
         
     }
