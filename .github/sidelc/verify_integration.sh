@@ -21,7 +21,7 @@ require 'liveContainerSourceURL' 'AltStoreCore/Model/Source.swift'
 require 'configureForEmbeddedLiveContainer' 'AltStoreCore/Model/StoreApp.swift'
 require 'let hostApplication = ALTApplication(fileURL: Bundle.realMainBundle.bundleURL)' 'AltStoreCore/Model/InstalledApp.swift'
 require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
-require 'try self.managedObjectContext.save()' 'AltStore/Operations/RefreshAppOperation.swift'
+require 'try dbContext.save()' 'SideStore/Core/Operations/PipelineRunner.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
@@ -47,7 +47,7 @@ require 'self.viewControllers?[tab.rawValue].tabBarItem.title = title' 'AltStore
 require 'override func safeAreaInsetsDidChange()' 'AltStore/My Apps/InstalledAppsCollectionHeaderView.swift'
 require 'let horizontalInset = max(self.safeAreaInsets.left, self.safeAreaInsets.right) + 16' 'AltStore/My Apps/InstalledAppsCollectionHeaderView.swift'
 require 'self.navigationItem.largeTitleDisplayMode = .always' 'AltStore/Settings/RefreshAttemptsViewController.swift'
-require 'ScrollView(.vertical)' 'AltStore/Settings/WirelessPair/WirelessPairView.swift'
+require 'ScrollView(.vertical)' 'SideStore/Views/Settings/Advanced/WirelessPair/WirelessPairView.swift'
 require 'UIInterfaceOrientationLandscapeLeft' 'AltStore/Info.plist'
 require 'widthSizable="YES" flexibleMaxY="YES"' 'AltStore/Settings/Settings.storyboard'
 

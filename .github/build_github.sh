@@ -9,13 +9,12 @@ clang -Wall -Wextra -o ./tmp/patch_sidestore_executable ./.github/sidelc/patch_s
 # copy lc to working folder
 cp -R "$archive_path.xcarchive/Products/Applications" Payload
 
-# temporarily move sidestore support framrwork to tmp before zip
-
-mv Payload/LiveContainer.app/Frameworks/SideStore.framework ./tmp
+# temporarily move SideStore support framework to tmp before zip
+mv Payload/LiveContainer.app/Frameworks/SideStoreSupport.framework ./tmp
 
 zip -r "$scheme.ipa" "Payload" -x "._*" -x ".DS_Store" -x "__MACOSX"
 
-mv ./tmp/SideStore.framework Payload/LiveContainer.app/Frameworks
+mv ./tmp/SideStoreSupport.framework Payload/LiveContainer.app/Frameworks
 
 # put sidestore related keys into Info.plist and settings bundle
 /usr/libexec/PlistBuddy -c 'Add :ALTAppGroups array' ./Payload/LiveContainer.app/Info.plist
@@ -73,6 +72,8 @@ SIDESTORE_INFO=./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Inf
 cp ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Intents.intentdefinition ./Payload/LiveContainer.app/
 cp ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/ViewApp.intentdefinition ./Payload/LiveContainer.app/
 cp -r ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Metadata.appintents ./Payload/LiveContainer.app/Metadata.appintents
+sed -i '' 's/9SideStore20RefreshAllAppsIntentV/16SideStoreSupport20RefreshAllAppsIntentV/g' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
+sed -i '' 's/9SideStore26RefreshAllAppsWidgetIntentV/16SideStoreSupport26RefreshAllAppsWidgetIntentV/g' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 
 # AltWidgetExtension
 mv ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/PlugIns/AltWidgetExtension.appex ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex
