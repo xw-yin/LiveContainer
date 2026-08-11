@@ -22,6 +22,8 @@ require 'configureForEmbeddedLiveContainer' 'AltStoreCore/Model/StoreApp.swift'
 require 'let hostApplication = ALTApplication(fileURL: Bundle.realMainBundle.bundleURL)' 'AltStoreCore/Model/InstalledApp.swift'
 require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'try dbContext.save()' 'SideStore/Core/Operations/PipelineRunner.swift'
+require 'try await AppBootManager.shared.ensureMinimuxerStarted()' 'SideStore/Core/Operations/PipelineRunner.swift'
+require 'public nonisolated func ensureMinimuxerStarted() async throws' 'SideStore/AppBootManager.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
