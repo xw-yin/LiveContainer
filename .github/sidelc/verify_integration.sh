@@ -93,6 +93,7 @@ require 'ScrollView(.vertical)' 'SideStore/Views/Settings/Advanced/WirelessPair/
 require 'UIInterfaceOrientationLandscapeLeft' 'AltStore/Info.plist'
 require 'widthSizable="YES" flexibleMaxY="YES"' 'AltStore/Settings/Settings.storyboard'
 require 'viewControllers.indices.contains(Tab.browse.rawValue)' 'AltStore/TabBarController.swift'
+require 'private func selectTab(_ tab: Tab)' 'AltStore/TabBarController.swift'
 require 'guard let destinationVC = destinationViewController else' 'AltStore/LaunchViewController.swift'
 reject 'UIStackView.appearance(whenContainedInInstancesOf: [UINavigationBar.self])' 'AltStore/AppDelegate.swift'
 reject 'self.viewControllers![' 'AltStore/TabBarController.swift'
