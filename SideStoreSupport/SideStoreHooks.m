@@ -5,10 +5,8 @@
 //  Created by s s on 2026/8/6.
 //
 #include "../LiveContainer/utils.h"
-#include "../LiveContainer/LCSharedUtils.h"
 #include "XPCServer.h"
 @import UserNotifications;
-@import UIKit;
 
 @interface LCAuthorizedNotificationSettings : UNNotificationSettings
 @end
@@ -48,106 +46,8 @@
 
 @end
 
-@implementation NSBundle(SideStoreHooks)
-
-- (NSString*)hook_altstoreAppGroup {
-    return LCSharedUtils.appGroupID;
-}
-
-@end
-
-NSURL* SideStoreSource_hook_altStoreSourceURL(id self, SEL cmd) {
-    static NSURL* sourceURL = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sourceURL = [NSURL URLWithString:@"https://github.com/LiveContainer/LiveContainer/releases/download/1.0/apps_ss_lc.json"];
-    });
-    return sourceURL;
-}
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-void (*SideStoreMyAppsViewController_orig_viewDidload)(UICollectionViewController* self, SEL cmd) = nil;
-void SideStoreMyAppsViewController_hook_viewDidload(UICollectionViewController* self, SEL cmd) {
-    if(!SideStoreMyAppsViewController_orig_viewDidload) return;
-    SideStoreMyAppsViewController_orig_viewDidload(self, cmd);
-    
-    UIImage *escapeImage = [UIImage systemImageNamed:@"escape"];
-    UIBarButtonItem *escapeItem = [[UIBarButtonItem alloc] initWithImage:escapeImage
-                                                                   style:UIBarButtonItemStylePlain
-                                                                  target:self
-                                                                  action:@selector(escapeButtonTapped:)];
-        
-    NSMutableArray* oldToolBarItems = [self.navigationItem.leftBarButtonItems mutableCopy];
-    [oldToolBarItems addObject:escapeItem];
-    self.navigationItem.leftBarButtonItems = oldToolBarItems;
-}
-
-void SideStoreMyAppsViewController_hook_escapeButtonTapped(UICollectionViewController* self, SEL cmd, id target) {
-    [LCSharedUtils launchToGuestAppWithClassicMode:0];
-}
-
-
-@implementation UITabBarController(hook)
-
-- (void)hook_viewDidLoad {
-    [self hook_viewDidLoad];
-    
-    static char SideStoreVersionLabelKey;
-    if (objc_getAssociatedObject(self, &SideStoreVersionLabelKey)) {
-        return;
-    }
-
-    NSString* LCVersion = [NSString stringWithFormat:@"%@-%@",
-                         NSUserDefaults.lcMainBundle.infoDictionary[@"CFBundleShortVersionString"],
-                         NSUserDefaults.lcMainBundle.infoDictionary[@"LCVersionInfo"]];
-    
-    NSString* SSVersion = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
-
-    UILabel* versionLabel = [UILabel new];
-    versionLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    versionLabel.font = [UIFont systemFontOfSize:9 weight:UIFontWeightRegular];
-    versionLabel.textColor = UIColor.secondaryLabelColor;
-    versionLabel.textAlignment = NSTextAlignmentCenter;
-    versionLabel.userInteractionEnabled = NO;
-    versionLabel.text = [NSString stringWithFormat:@"LC %@, SS %@", LCVersion, SSVersion];
-
-    [self.view addSubview:versionLabel];
-    [NSLayoutConstraint activateConstraints:@[
-        [versionLabel.centerXAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerXAnchor],
-        [versionLabel.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:13],
-    ]];
-    objc_setAssociatedObject(self, &SideStoreVersionLabelKey, versionLabel, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
-@end
-
-
 void installSideStoreHooks(void) {
-
-    swizzle(NSBundle.class, @selector(altstoreAppGroup), @selector(hook_altstoreAppGroup));
-    
-    // replace altStoreSourceURL
-    Method altStoreSourceURLMethod = class_getClassMethod(PrivClass(Source), @selector(altStoreSourceURL));
-    if (altStoreSourceURLMethod) {
-        method_setImplementation(altStoreSourceURLMethod, (IMP)SideStoreSource_hook_altStoreSourceURL);
-    }
-    
-    if (!NSUserDefaults.isLiveProcess) {
-        // add escape button
-        Method viewDidLoadMethod = class_getInstanceMethod(PrivClass(MyAppsViewController), @selector(viewDidLoad));
-        if (viewDidLoadMethod) {
-            SideStoreMyAppsViewController_orig_viewDidload = (void (*)(UICollectionViewController *, SEL))method_getImplementation(viewDidLoadMethod);
-            method_setImplementation(viewDidLoadMethod, (IMP)SideStoreMyAppsViewController_hook_viewDidload);
-            class_addMethod(PrivClass(MyAppsViewController), @selector(escapeButtonTapped:), (IMP)SideStoreMyAppsViewController_hook_escapeButtonTapped, "v@:@");
-        }
-        
-        // add version number
-        swizzle(UITabBarController.class, @selector(viewDidLoad), @selector(hook_viewDidLoad));
-    }
-    
-
 }
-#pragma clang diagnostic pop
 
 void installSideStoreNotificationHooks(void) {
     swizzle(UNUserNotificationCenter.class,
