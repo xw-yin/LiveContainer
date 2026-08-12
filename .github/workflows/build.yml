@@ -18,6 +18,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
+      sidestore_revision: 2f93af0fbf98148af4ced354b47f67d2ca929416
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -63,7 +64,11 @@ jobs:
       - name: Build Patched SideStore
         run: |
           brew install ldid xcbeautify || true
-          git clone --depth 1 --branch LiveContainerSupport --recurse-submodules --shallow-submodules https://github.com/xw-yin/SideStore.git SideStoreBuild
+          git clone --filter=blob:none --no-checkout https://github.com/xw-yin/SideStore.git SideStoreBuild
+          git -C SideStoreBuild fetch --depth 1 origin "$sidestore_revision"
+          git -C SideStoreBuild checkout --detach "$sidestore_revision"
+          test "$(git -C SideStoreBuild rev-parse HEAD)" = "$sidestore_revision"
+          echo "Building SideStore revision: $sidestore_revision"
           git -C SideStoreBuild submodule update --init --recursive --depth 1
           python3 "$GITHUB_WORKSPACE/.github/sidelc/patch_package.py"
           "$GITHUB_WORKSPACE/.github/sidelc/verify_integration.sh" SideStoreBuild
@@ -71,6 +76,10 @@ jobs:
           git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
+          test "$(grep -c '<barButtonItem' SideStoreBuild/AltStore/Base.lproj/Main.storyboard | tr -d ' ')" -ge 2
+          grep -Fq 'items.count == 2' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
+          grep -Fq 'items[1].customView = liveContainerButton' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
+          if grep -Fq 'UIStackView(arrangedSubviews: [sideloadButton, liveContainerButton])' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'; then exit 1; fi
           grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
           grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
