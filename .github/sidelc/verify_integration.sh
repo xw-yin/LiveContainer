@@ -12,6 +12,33 @@ require() {
     }
 }
 
+reject() {
+    local pattern="$1"
+    local file="$2"
+    if grep -Fq "$pattern" "$SIDESTORE_DIR/$file"; then
+        echo "Unsafe LiveContainer integration: $file -> $pattern" >&2
+        exit 1
+    fi
+}
+
+require_host() {
+    local pattern="$1"
+    local file="$2"
+    grep -Fq "$pattern" "$file" || {
+        echo "Missing LiveContainer host integration: $file -> $pattern" >&2
+        exit 1
+    }
+}
+
+reject_host() {
+    local pattern="$1"
+    local file="$2"
+    if grep -Fq "$pattern" "$file"; then
+        echo "Unsafe LiveContainer host integration: $file -> $pattern" >&2
+        exit 1
+    fi
+}
+
 # Keep the runtime bundle, registration identity, source, and icon behavior aligned.
 require 'static let isBundledWithLiveContainer' 'Shared/Extensions/Bundle+AltStore.swift'
 require 'static var realMainBundle' 'Shared/Extensions/Bundle+AltStore.swift'
@@ -30,6 +57,10 @@ require 'url = https://github.com/xw-yin/minimuxer' '.gitmodules'
 require 'await prewarmDDI(docsPath: mountPath)' 'Dependencies/minimuxer/Sources/MinimuxerImpl.swift'
 require 'DDI is only required for debug/JIT services.' 'Dependencies/minimuxer/Sources/MinimuxerImpl.swift'
 require 'try await ensureDDIMounted()' 'Dependencies/minimuxer/Sources/MinimuxerImpl.swift'
+reject 'setSideStoreLanguage' 'AltStore/AppDelegate.swift'
+require_host 'if (!originalMethod || !swizzledMethod) return;' 'LiveContainer/utils.h'
+reject_host '@selector(appbundleIdentifier)' 'SideStoreSupport/SideStoreHooks.m'
+reject_host '@selector(activeBundle)' 'SideStoreSupport/SideStoreHooks.m'
 require '? Bundle.realMainBundle.bundleURL' 'SideStore/Core/Certificates/CertificateManager.swift'
 require 'ALTProvisioningProfile(url: bundleURL.appendingPathComponent("embedded.mobileprovision"))' 'SideStore/Core/Certificates/CertificateManager.swift'
 require 'appBundle.provisioningProfile?.certificates.first' 'SideStore/Core/Certificates/CertificateManager.swift'

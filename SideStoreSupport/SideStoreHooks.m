@@ -50,23 +50,8 @@
 
 @implementation NSBundle(SideStoreHooks)
 
-+ (NSString*)hook_appbundleIdentifier {
-    return @"com.kdt.livecontainer";
-}
-
 - (NSString*)hook_altstoreAppGroup {
     return LCSharedUtils.appGroupID;
-}
-
-+ (NSBundle*)hook_activeBundle {
-    if (!NSUserDefaults.isLiveProcess) return NSUserDefaults.lcMainBundle;
-    
-    static NSBundle* lcAppBundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        lcAppBundle = [NSBundle bundleWithURL: NSUserDefaults.lcMainBundle.bundleURL.URLByDeletingLastPathComponent.URLByDeletingLastPathComponent];
-    });
-    return lcAppBundle;
 }
 
 @end
@@ -139,20 +124,22 @@ void SideStoreMyAppsViewController_hook_escapeButtonTapped(UICollectionViewContr
 
 void installSideStoreHooks(void) {
 
-    swizzleClassMethod(NSBundle.class, @selector(appbundleIdentifier), @selector(hook_appbundleIdentifier));
     swizzle(NSBundle.class, @selector(altstoreAppGroup), @selector(hook_altstoreAppGroup));
-    swizzleClassMethod(NSBundle.class, @selector(activeBundle), @selector(hook_activeBundle));
     
     // replace altStoreSourceURL
     Method altStoreSourceURLMethod = class_getClassMethod(PrivClass(Source), @selector(altStoreSourceURL));
-    method_setImplementation(altStoreSourceURLMethod, (IMP)SideStoreSource_hook_altStoreSourceURL);
+    if (altStoreSourceURLMethod) {
+        method_setImplementation(altStoreSourceURLMethod, (IMP)SideStoreSource_hook_altStoreSourceURL);
+    }
     
     if (!NSUserDefaults.isLiveProcess) {
         // add escape button
         Method viewDidLoadMethod = class_getInstanceMethod(PrivClass(MyAppsViewController), @selector(viewDidLoad));
-        SideStoreMyAppsViewController_orig_viewDidload = (void (*)(UICollectionViewController *, SEL))method_getImplementation(viewDidLoadMethod);
-        method_setImplementation(viewDidLoadMethod, (IMP)SideStoreMyAppsViewController_hook_viewDidload);
-        class_addMethod(PrivClass(MyAppsViewController), @selector(escapeButtonTapped:), (IMP)SideStoreMyAppsViewController_hook_escapeButtonTapped, "v@:@");
+        if (viewDidLoadMethod) {
+            SideStoreMyAppsViewController_orig_viewDidload = (void (*)(UICollectionViewController *, SEL))method_getImplementation(viewDidLoadMethod);
+            method_setImplementation(viewDidLoadMethod, (IMP)SideStoreMyAppsViewController_hook_viewDidload);
+            class_addMethod(PrivClass(MyAppsViewController), @selector(escapeButtonTapped:), (IMP)SideStoreMyAppsViewController_hook_escapeButtonTapped, "v@:@");
+        }
         
         // add version number
         swizzle(UITabBarController.class, @selector(viewDidLoad), @selector(hook_viewDidLoad));
