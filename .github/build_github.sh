@@ -1,10 +1,14 @@
 set -eu
 
-rm -rf Payload tmp .zsign_cache patch_sidestore_executable "$scheme.ipa" "$scheme+SideStore.ipa"
+rm -rf Payload tmp .zsign_cache dylibify "$scheme.ipa" "$scheme+SideStore.ipa"
 mkdir -p tmp
 
-# compile local patcher
-clang -Wall -Wextra -o ./tmp/patch_sidestore_executable ./.github/sidelc/patch_sidestore_executable.c || exit 1
+# Use the same executable-to-dylib conversion as upstream LiveContainer. The
+# converter also updates chained-fixup segment indexes after removing PAGEZERO.
+curl --fail --location --retry 3 \
+    --output ./tmp/dylibify \
+    https://github.com/LiveContainer/dylibify/releases/download/1.0/dylibify
+chmod +x ./tmp/dylibify
 
 # copy lc to working folder
 cp -R "$archive_path.xcarchive/Products/Applications" Payload
@@ -53,7 +57,16 @@ cd ..
 
 # SideStore
 mv ./tmp/Payload/SideStore.app ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework
-./tmp/patch_sidestore_executable ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore || exit 1
+SIDESTORE_EXECUTABLE=./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
+./tmp/dylibify "$SIDESTORE_EXECUTABLE" "$SIDESTORE_EXECUTABLE.dylib"
+test -s "$SIDESTORE_EXECUTABLE.dylib"
+rm "$SIDESTORE_EXECUTABLE"
+mv "$SIDESTORE_EXECUTABLE.dylib" "$SIDESTORE_EXECUTABLE"
+
+# Fail packaging if the converted image is not a dylib or has no install name.
+otool -hv "$SIDESTORE_EXECUTABLE"
+otool -hv "$SIDESTORE_EXECUTABLE" | grep -Eq 'DYLIB|0x6'
+otool -D "$SIDESTORE_EXECUTABLE" | grep -Fq 'SideStore'
 ldid -S"" ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 cp ./.github/sidelc/LCAppInfo.plist ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/
 
