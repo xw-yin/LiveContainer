@@ -46,7 +46,7 @@ require 'override func viewWillTransition(to size:' 'AltStore/My Apps/MyAppsView
 require 'override func viewSafeAreaInsetsDidChange()' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'func configureCardMargins(for cell: UICollectionViewCell)' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'func symmetricHorizontalInset(in collectionView: UICollectionView)' 'AltStore/My Apps/MyAppsViewController.swift'
-require 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]' 'AltStore/Settings/Error Log/ErrorLogViewController.swift'
+require 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]' 'AltStore/Settings/SettingsViewController.swift'
 require 'containerView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
 require 'self.title = NSLocalizedString("Refresh Attempts", comment: "")' 'AltStore/Settings/RefreshAttemptsViewController.swift'
 require '"My Apps" = "我的应用";' 'AltStore/zh-Hans.lproj/Localizable.strings'
