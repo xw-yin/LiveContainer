@@ -63,7 +63,7 @@ jobs:
       - name: Build Patched SideStore
         run: |
           brew install ldid xcbeautify || true
-          git clone --depth 1 --branch develop --recurse-submodules --shallow-submodules https://github.com/xw-yin/SideStore.git SideStoreBuild
+          git clone --depth 1 --branch LiveContainerSupport --recurse-submodules --shallow-submodules https://github.com/xw-yin/SideStore.git SideStoreBuild
           git -C SideStoreBuild submodule update --init --recursive --depth 1
           python3 "$GITHUB_WORKSPACE/.github/sidelc/patch_package.py"
           "$GITHUB_WORKSPACE/.github/sidelc/verify_integration.sh" SideStoreBuild
