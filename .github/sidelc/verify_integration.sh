@@ -100,6 +100,8 @@ require 'viewControllers.indices.contains(Tab.browse.rawValue)' 'AltStore/TabBar
 require 'private func selectTab(_ tab: Tab)' 'AltStore/TabBarController.swift'
 require 'func configureEmbeddedVersionLabel()' 'AltStore/TabBarController.swift'
 require 'func configureEmbeddedLiveContainerButton()' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'self.navigationItem.leftBarButtonItems = [UIBarButtonItem(customView: buttonStack)]' 'AltStore/My Apps/MyAppsViewController.swift'
+reject 'userLabel="OpenLC"' 'AltStore/Base.lproj/Main.storyboard'
 require 'self.tabBarItem.badgeColor = (status == .ready) ? .systemGreen : .systemRed' 'AltStore/My Apps/MyAppsViewController.swift'
 reject 'NSStringFromClass(type(of: $0)).contains("LargeTitle")' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'guard let destinationVC = destinationViewController else' 'AltStore/LaunchViewController.swift'
