@@ -89,6 +89,14 @@ if grep -Fq 'appearance.titleTextAttributes = [.foregroundColor: UIColor.white]'
     echo 'Invalid settings navigation title color: hard-coded white' >&2
     exit 1
 fi
+require 'self.tableView.backgroundColor = .systemGroupedBackground' 'AltStore/Settings/SettingsViewController.swift'
+require 'self.insetView.backgroundColor = .secondarySystemGroupedBackground' 'AltStore/Settings/InsetGroupTableViewCell.swift'
+require 'static let settingsRowBackground = Color(uiColor: .secondarySystemGroupedBackground)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
+require 'static let settingsDivider = Color(uiColor: .separator)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
+require '"red" : "1.000"' 'AltStore/Resources/Assets.xcassets/Colors/SettingsBackground.colorset/Contents.json'
+reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
+reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Diagnostics/ExperimentalFeaturesView.swift'
+reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Advanced/BackupRestore/BackupAndRestoreView.swift'
 require 'containerView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
 require 'self.title = NSLocalizedString("Refresh Attempts", comment: "")' 'AltStore/Settings/RefreshAttemptsViewController.swift'
 require '"My Apps" = "我的应用";' 'AltStore/zh-Hans.lproj/Localizable.strings'
