@@ -75,6 +75,8 @@ require 'ffiDispatchQueue.async' 'Dependencies/minimuxer/Sources/FFIDispatcher.s
 reject 'on queue: DispatchQueue = .global()' 'Dependencies/minimuxer/Sources/FFIDispatcher.swift'
 require 'var mountGeneration: UInt = 0' 'Dependencies/minimuxer/Sources/MinimuxerImpl.swift'
 require 'await prewarmDDI(docsPath: mountPath)' 'Dependencies/minimuxer/Sources/MinimuxerImpl.swift'
+require 'self.layer.shadowPath = UIBezierPath(' 'AltStore/Components/AppBannerView.swift'
+require 'self.clipsToBounds = false' 'AltStore/Components/AppBannerView.swift'
 require 'Minimuxer.emproxy.setHandshakeClient' 'SideStore/Core/DeviceApi/EMProxyWrapper.swift'
 require 'try await Minimuxer.emproxy.start' 'SideStore/Core/DeviceApi/EMProxyWrapper.swift'
 reject 'self.viewModel.isSourceAdded = nil' 'AltStore/Sources/SourceDetailViewController.swift'
