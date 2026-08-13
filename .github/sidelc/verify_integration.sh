@@ -48,6 +48,7 @@ require 'liveContainerSourceURL' 'AltStoreCore/Model/Source.swift'
 require 'configureForEmbeddedLiveContainer' 'AltStoreCore/Model/StoreApp.swift'
 require 'let hostApplication = ALTApplication(fileURL: Bundle.realMainBundle.bundleURL)' 'AltStoreCore/Model/InstalledApp.swift'
 require 'func openLC' 'AltStore/My Apps/MyAppsViewController.swift'
+require '<barButtonItem title="Item" image="escape" catalog="system" id="XLE-l0-Jf0" userLabel="OpenLC">' 'AltStore/Base.lproj/Main.storyboard'
 require 'try dbContext.save()' 'SideStore/Core/Operations/PipelineRunner.swift'
 require 'try await AppBootManager.shared.ensureMinimuxerStarted()' 'SideStore/Core/Operations/PipelineRunner.swift'
 require 'public nonisolated func ensureMinimuxerStarted() async throws' 'SideStore/AppBootManager.swift'
@@ -83,12 +84,23 @@ require 'override func viewSafeAreaInsetsDidChange()' 'AltStore/My Apps/MyAppsVi
 require 'func configureCardMargins(for cell: UICollectionViewCell)' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'func symmetricHorizontalInset(in collectionView: UICollectionView)' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]' 'AltStore/Settings/SettingsViewController.swift'
+if grep -Fq 'appearance.titleTextAttributes = [.foregroundColor: UIColor.white]' "$SIDESTORE_DIR/AltStore/Settings/SettingsViewController.swift" ||
+   grep -Fq 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]' "$SIDESTORE_DIR/AltStore/Settings/SettingsViewController.swift"; then
+    echo 'Invalid settings navigation title color: hard-coded white' >&2
+    exit 1
+fi
 require 'containerView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
 require 'self.title = NSLocalizedString("Refresh Attempts", comment: "")' 'AltStore/Settings/RefreshAttemptsViewController.swift'
 require '"My Apps" = "我的应用";' 'AltStore/zh-Hans.lproj/Localizable.strings'
 require '"4gT-9u-k7y.title" = "我的应用";' 'AltStore/zh-Hans.lproj/Main.strings'
 require '"SIGN OUT" = "注销";' 'AltStore/zh-Hans.lproj/Localizable.strings'
 require '"Connection Config" = "连接配置";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require '"Developer Options" = "开发者选项";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require '"Experimental Features" = "实验性功能";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require '"Backup & Restore" = "备份与恢复";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require '"User Customizations" = "用户自定义";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require 'Text(LocalizedStringKey(title))' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
+require 'Text(LocalizedStringKey(title))' 'SideStore/Views/Settings/Diagnostics/OperationsLoggingControlView.swift'
 require '"iie-Nj-lki.text" = "连接配置";' 'AltStore/zh-Hans.lproj/Settings.strings'
 require 'viewControllers[tab.rawValue].tabBarItem.title = title' 'AltStore/TabBarController.swift'
 require 'override func safeAreaInsetsDidChange()' 'AltStore/My Apps/InstalledAppsCollectionHeaderView.swift'
