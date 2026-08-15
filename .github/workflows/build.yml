@@ -18,7 +18,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: 6759a2534a743be225289fb24c54f5ab76fc7761
+      sidestore_revision: 67e3af236f25ea1392494f861368fd94aa8279e5
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -76,10 +76,10 @@ jobs:
           git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
-          test "$(grep -c '<barButtonItem' SideStoreBuild/AltStore/Base.lproj/Main.storyboard | tr -d ' ')" -ge 2
-          grep -Fq 'items.count == 2' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
-          grep -Fq 'items[1].customView = liveContainerButton' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'
-          if grep -Fq 'UIStackView(arrangedSubviews: [sideloadButton, liveContainerButton])' 'SideStoreBuild/AltStore/My Apps/MyAppsViewController.swift'; then exit 1; fi
+          grep -Fq 'SSInstallVersionWindow' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
+          grep -Fq 'SideStoreMyAppsViewController_hook_viewDidload' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
+          if grep -Fq 'userLabel="OpenLC"' SideStoreBuild/AltStore/Base.lproj/Main.storyboard; then exit 1; fi
+          if grep -Fq 'configureEmbeddedVersionLabel' SideStoreBuild/AltStore/TabBarController.swift; then exit 1; fi
           grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
           grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
