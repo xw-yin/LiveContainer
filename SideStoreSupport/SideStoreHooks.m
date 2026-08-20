@@ -95,14 +95,6 @@ static id SSSceneObserver;
 
 @end
 
-NSURL* SideStoreSource_hook_altStoreSourceURL(id self, SEL cmd) {
-    static NSURL* sourceURL = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sourceURL = [NSURL URLWithString:@"https://github.com/LiveContainer/LiveContainer/releases/download/1.0/apps_ss_lc.json"];
-    });
-    return sourceURL;
-}
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundeclared-selector"
 void (*SideStoreMyAppsViewController_orig_viewDidload)(UICollectionViewController* self, SEL cmd) = nil;
@@ -198,10 +190,6 @@ void installSideStoreHooks(void) {
     swizzle(NSBundle.class, @selector(altstoreAppGroup), @selector(hook_altstoreAppGroup));
     swizzleClassMethod(NSBundle.class, @selector(activeBundle), @selector(hook_activeBundle));
     swizzleClassMethod(NSBundle.class, @selector(baseAltStoreAppGroupID), @selector(hook_baseAltStoreAppGroupID));
-    
-    // replace altStoreSourceURL
-    Method altStoreSourceURLMethod = class_getClassMethod(PrivClass(Source), @selector(altStoreSourceURL));
-    method_setImplementation(altStoreSourceURLMethod, (IMP)SideStoreSource_hook_altStoreSourceURL);
     
     if (!NSUserDefaults.isLiveProcess) {
         // add escape button

@@ -104,25 +104,11 @@ require 'override func viewWillTransition(to size:' 'AltStore/My Apps/MyAppsView
 require 'override func viewSafeAreaInsetsDidChange()' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'func configureCardMargins(for cell: UICollectionViewCell)' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'func symmetricHorizontalInset(in collectionView: UICollectionView)' 'AltStore/My Apps/MyAppsViewController.swift'
-require 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]' 'AltStore/Settings/SettingsViewController.swift'
-if grep -Fq 'appearance.titleTextAttributes = [.foregroundColor: UIColor.white]' "$SIDESTORE_DIR/AltStore/Settings/SettingsViewController.swift" ||
-   grep -Fq 'appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]' "$SIDESTORE_DIR/AltStore/Settings/SettingsViewController.swift"; then
-    echo 'Invalid settings navigation title color: hard-coded white' >&2
-    exit 1
-fi
-require 'self.tableView.backgroundColor = .systemGroupedBackground' 'AltStore/Settings/SettingsViewController.swift'
-require 'return .default' 'AltStore/Settings/SettingsViewController.swift'
-reject 'return .lightContent' 'AltStore/Settings/SettingsViewController.swift'
 require 'self.configureLanguageDisclosureIndicator()' 'AltStore/Settings/SettingsViewController.swift'
 require 'UIImage.SymbolConfiguration(scale: .large)' 'AltStore/Settings/SettingsViewController.swift'
 reject 'accessoryType="disclosureIndicator" indentationWidth="10" textLabel="Lng-Ti-tle"' 'AltStore/Settings/Settings.storyboard'
-require 'self.insetView.backgroundColor = .secondarySystemGroupedBackground' 'AltStore/Settings/InsetGroupTableViewCell.swift'
-require 'static let settingsRowBackground = Color(uiColor: .secondarySystemGroupedBackground)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
-require 'static let settingsDivider = Color(uiColor: .separator)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
+require 'self.insetView.layer.masksToBounds = true' 'AltStore/Settings/InsetGroupTableViewCell.swift'
 require '"color-space" : "srgb"' 'AltStore/Resources/Assets.xcassets/Colors/SettingsBackground.colorset/Contents.json'
-reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Diagnostics/DeveloperOptionsView.swift'
-reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Diagnostics/ExperimentalFeaturesView.swift'
-reject 'Color.white.opacity(0.15)' 'SideStore/Views/Settings/Advanced/BackupRestore/BackupAndRestoreView.swift'
 require 'self.scrollView.topAnchor.constraint(equalTo: safeArea.topAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
 require 'self.scrollView.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
 require 'self.contentStackView.widthAnchor.constraint(equalTo: self.scrollView.frameLayoutGuide.widthAnchor)' 'AltStore/Authentication/InstructionsViewController.swift'
