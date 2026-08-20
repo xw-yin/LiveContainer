@@ -84,7 +84,7 @@ require_host '@selector(appbundleIdentifier)' 'SideStoreSupport/SideStoreHooks.m
 require_host '@selector(storeAppBundleIdentifier)' 'SideStoreSupport/SideStoreHooks.m'
 require_host '@selector(activeBundle)' 'SideStoreSupport/SideStoreHooks.m'
 require_host 'SideStoreMyAppsViewController_hook_viewDidload' 'SideStoreSupport/SideStoreHooks.m'
-require_host 'SSInstallVersionWindow' 'SideStoreSupport/SideStoreHooks.m'
+reject_host 'SSInstallVersionWindow' 'SideStoreSupport/SideStoreHooks.m'
 reject_host 'swizzle(UITabBarController.class' 'SideStoreSupport/SideStoreHooks.m'
 require_host 'hook_altstoreAppGroup' 'SideStoreSupport/SideStoreHooks.m'
 require_host 'method_setImplementation' 'SideStoreSupport/SideStoreHooks.m'
