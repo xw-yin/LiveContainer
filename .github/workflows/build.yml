@@ -18,7 +18,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: 1db57f3b609128f65a5e62cc0b04a7bbde08cb79
+      sidestore_revision: 53cd997a82cd2c20ec47d0c5ee3230cba60ece30
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
