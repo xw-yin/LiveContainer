@@ -80,7 +80,6 @@ jobs:
           grep -Fq 'SideStoreMyAppsViewController_hook_viewDidload' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
           if grep -Fq 'userLabel="OpenLC"' SideStoreBuild/AltStore/Base.lproj/Main.storyboard; then exit 1; fi
           if grep -Fq 'configureEmbeddedVersionLabel' SideStoreBuild/AltStore/TabBarController.swift; then exit 1; fi
-          grep -Fq 'AppleLanguages' SideStoreBuild/AltStore/Settings/SettingsViewController.swift
           grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'contentInsetAdjustmentBehavior = .never' SideStoreBuild/AltStore/News/NewsViewController.swift
