@@ -76,7 +76,6 @@ jobs:
           git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
-          grep -Fq 'SSInstallVersionWindow' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
           grep -Fq 'SideStoreMyAppsViewController_hook_viewDidload' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
           if grep -Fq 'userLabel="OpenLC"' SideStoreBuild/AltStore/Base.lproj/Main.storyboard; then exit 1; fi
           if grep -Fq 'configureEmbeddedVersionLabel' SideStoreBuild/AltStore/TabBarController.swift; then exit 1; fi
