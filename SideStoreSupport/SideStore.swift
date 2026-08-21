@@ -23,7 +23,7 @@ func performIntentRefresh(identifier: String, mangledTypeName: String, intentPro
 @available(iOS 17.0, *)
 public struct RefreshAllAppsWidgetIntent: AppIntent, ProgressReportingIntent
 {
-    public static var title: LocalizedStringResource { "Refresh Apps via Widget" }
+    public static var title: LocalizedStringResource { LocalizedStringResource("Refresh Apps via Widget", defaultValue: "通过小组件刷新应用") }
     public static var isDiscoverable: Bool { false } // Don't show in Shortcuts or Spotlight.
     
     public init() {}
@@ -40,8 +40,8 @@ public struct RefreshAllAppsIntent: AppIntent, CustomIntentMigratedAppIntent, Pr
 {
     public static let intentClassName = "RefreshAllIntent"
     
-    public static var title: LocalizedStringResource = "Refresh All Apps"
-    public static var description = IntentDescription("Refreshes your sideloaded apps to prevent them from expiring.")
+    public static var title: LocalizedStringResource = LocalizedStringResource("Refresh All Apps", defaultValue: "刷新所有应用")
+    public static var description = IntentDescription(LocalizedStringResource("Refreshes your sideloaded apps to prevent them from expiring.", defaultValue: "刷新已侧载的应用以防止证书过期。"))
     
     public init() {}
     
@@ -52,7 +52,7 @@ public struct RefreshAllAppsIntent: AppIntent, CustomIntentMigratedAppIntent, Pr
     public static var predictionConfiguration: some IntentPredictionConfiguration {
         IntentPrediction {
             DisplayRepresentation(
-                title: "Refresh All Apps",
+                title: LocalizedStringResource("Refresh All Apps", defaultValue: "刷新所有应用"),
                 subtitle: ""
             )
         }
@@ -61,9 +61,34 @@ public struct RefreshAllAppsIntent: AppIntent, CustomIntentMigratedAppIntent, Pr
     public func perform() async throws -> some IntentResult & ProvidesDialog
     {
         try await performIntentRefresh(identifier: "RefreshAllIntent", mangledTypeName: "9SideStore20RefreshAllAppsIntentV", intentProgress: progress)
-        return .result(dialog: "All apps have been refreshed.")
+        return .result(dialog: IntentDialog(LocalizedStringResource("All apps have been refreshed.", defaultValue: "所有应用已成功刷新。")))
+    }
+}
+
+@available(iOS 17.0, *)
+public struct LiveContainerShortcutsProvider: AppShortcutsProvider
+{
+    public static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: RefreshAllAppsIntent(),
+            phrases: [
+                "Refresh \(.applicationName)",
+                "Refresh \(.applicationName) apps",
+                "Refresh my \(.applicationName) apps",
+                "Refresh apps with \(.applicationName)",
+                "刷新 \(.applicationName)",
+                "刷新 \(.applicationName) 应用",
+                "刷新我的 \(.applicationName) 应用",
+                "使用 \(.applicationName) 刷新应用",
+            ],
+            shortTitle: LocalizedStringResource("Refresh All Apps", defaultValue: "刷新所有应用"),
+            systemImageName: "arrow.triangle.2.circlepath"
+        )
     }
     
+    public static var shortcutTileColor: ShortcutTileColor {
+        return .teal
+    }
 }
 
 
