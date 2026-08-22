@@ -87,6 +87,8 @@ cp ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/ViewApp.intentd
 cp -r ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Metadata.appintents ./Payload/LiveContainer.app/Metadata.appintents
 sed -i '' 's/9SideStore20RefreshAllAppsIntentV/16SideStoreSupport20RefreshAllAppsIntentV/g' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 sed -i '' 's/9SideStore26RefreshAllAppsWidgetIntentV/16SideStoreSupport26RefreshAllAppsWidgetIntentV/g' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
+grep -Fq '16SideStoreSupport20RefreshAllAppsIntentV' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
+grep -Fq '16SideStoreSupport26RefreshAllAppsWidgetIntentV' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 
 # AltWidgetExtension
 mv ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/PlugIns/AltWidgetExtension.appex ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex
@@ -104,4 +106,6 @@ fi
 ldid -S.github/sidelc/LiveWidgetExtension_adhoc.xml ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex/LiveWidgetExtension
 
 # package
+test -d ./Payload/LiveContainer.app/PlugIns/LaunchAppExtension.appex
+test -d ./Payload/LiveContainer.app/PlugIns/LiveProcess.appex
 zip -r "$scheme+SideStore.ipa" "Payload" -x "._*" -x ".DS_Store" -x "__MACOSX"
