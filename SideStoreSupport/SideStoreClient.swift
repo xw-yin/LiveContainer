@@ -65,3 +65,17 @@ struct SideStoreIntentCaller {
     }
     
 }
+
+@available(iOS 17.0, *)
+@objc extension SideStoreClient {
+    @objc(performRefreshForRealWithIdentifier:mangledTypeName:server:)
+    func performRefreshForReal(identifier: String, mangledTypeName: String, server: any RefreshServer) {
+        let selector = NSSelectorFromString("performRefreshForRealWithServer:")
+        guard self.responds(to: selector) else {
+            server.finish("The embedded SideStore refresh service is unavailable.")
+            return
+        }
+
+        _ = self.perform(selector, with: server)
+    }
+}
