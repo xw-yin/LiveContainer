@@ -64,7 +64,15 @@ void installSideStoreHooks(void);
     if(!handler) {
         return;
     }
-    [self performRefreshForRealWithIdentifier:identifier mangledTypeName:mangledTypeName server:handler.server];
+    SEL selector = NSSelectorFromString(@"performRefreshForRealWithServer:");
+    if (![self respondsToSelector:selector]) {
+        [handler.server finish:@"The embedded SideStore refresh service is unavailable."];
+        return;
+    }
+
+    typedef void (*DirectRefreshIMP)(id, SEL, id<RefreshServer>);
+    DirectRefreshIMP refresh = (DirectRefreshIMP)[self methodForSelector:selector];
+    refresh(self, selector, handler.server);
 }
 
 @end
