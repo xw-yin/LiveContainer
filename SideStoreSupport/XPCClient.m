@@ -11,9 +11,7 @@
 @import UIKit;
 
 @interface SideStoreClient(Swift)
-- (void)performRefreshForRealWithIdentifier:(NSString*)identifier
-                            mangledTypeName:(NSString*)mangledTypeName
-                                     server:(id <RefreshServer> _Nonnull)server;
+- (void)performRefreshForRealWithServer:(id <RefreshServer> _Nonnull)server;
 
 @end
 
@@ -64,7 +62,7 @@ void installSideStoreHooks(void);
     if(!handler) {
         return;
     }
-    [self performRefreshForRealWithIdentifier:identifier mangledTypeName:mangledTypeName server:handler.server];
+    [self performRefreshForRealWithServer:handler.server];
 }
 
 @end
