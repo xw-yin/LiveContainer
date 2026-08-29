@@ -89,6 +89,7 @@ sed -i '' 's/9SideStore20RefreshAllAppsIntentV/16SideStoreSupport20RefreshAllApp
 sed -i '' 's/9SideStore26RefreshAllAppsWidgetIntentV/16SideStoreSupport26RefreshAllAppsWidgetIntentV/g' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 grep -Fq '16SideStoreSupport20RefreshAllAppsIntentV' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 grep -Fq '16SideStoreSupport26RefreshAllAppsWidgetIntentV' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
+grep -aFq 'SideStoreRefreshService' ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 
 # AltWidgetExtension
 mv ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/PlugIns/AltWidgetExtension.appex ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex
