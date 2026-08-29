@@ -81,6 +81,7 @@ require_host 'NSSelectorFromString(@"performRefreshForRealWithServer:")' 'SideSt
 reject_host '[self performRefreshForRealWithIdentifier:' 'SideStoreSupport/XPCClient.m'
 require_host 'LiveContainerShortcutsProvider: AppShortcutsProvider' 'SideStoreSupport/SideStore.swift'
 require 'ShortcutsProvider: AppShortcutsProvider' 'AltStore/Intents/App Intents/AppShortcuts.swift'
+reject 'bbc110bea43f84ba8cdb2e18490328024e6aba51' 'AltStore.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
 require '@MainActor static func enqueueAppImport(_ url: URL)' 'AltStore/AppDelegate.swift'
 require '@MainActor static func dequeueAppImport() -> URL?' 'AltStore/AppDelegate.swift'
 require 'AppDelegate.enqueueAppImport(ipa)' 'AltStore/SceneDelegate.swift'
