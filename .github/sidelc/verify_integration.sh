@@ -137,6 +137,10 @@ require_host 'method_setImplementation' 'SideStoreSupport/SideStoreHooks.m'
 require '? Bundle.realMainBundle.bundleURL' 'SideStore/Core/Certificates/CertificateManager.swift'
 require 'ALTProvisioningProfile(url: bundleURL.appendingPathComponent("embedded.mobileprovision"))' 'SideStore/Core/Certificates/CertificateManager.swift'
 require 'appBundle.provisioningProfile?.certificates.first' 'SideStore/Core/Certificates/CertificateManager.swift'
+require 'let runningExpirationDate = ALTApplication(fileURL: runningBundleURL)?.provisioningProfile?.expirationDate' 'SideStore/Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift'
+require 'center.removeDeliveredNotifications(withIdentifiers: allIdentifiers)' 'SideStore/Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift'
+require 'content.userInfo[AppManager.expirationWarningDateKey] = expirationDate.timeIntervalSince1970' 'SideStore/Core/Operations/StandaloneOperations/ScheduleExpirationWarningNotificationOperation.swift'
+require 'Suppressing stale expiration warning' 'AltStore/AppDelegate.swift'
 
 # Landscape layout fixes must survive upstream rebases as well.
 require 'override func viewWillTransition(to size:' 'AltStore/News/NewsViewController.swift'
