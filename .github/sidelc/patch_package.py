@@ -3,7 +3,7 @@ import os
 def main():
     path = 'SideStoreBuild/Dependencies/AltSign/Package.swift'
     if not os.path.exists(path):
-        print(f"Error: {path} not found.")
+        print(f"Info: {path} not found. Skipping OpenSSL patch.")
         return
 
     with open(path, 'r', encoding='utf-8') as f:

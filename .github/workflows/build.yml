@@ -72,7 +72,11 @@ jobs:
           git -C SideStoreBuild submodule update --init --recursive --depth 1
           python3 "$GITHUB_WORKSPACE/.github/sidelc/patch_package.py"
           "$GITHUB_WORKSPACE/.github/sidelc/verify_integration.sh" SideStoreBuild
-          git -C SideStoreBuild/Dependencies/AltSign rev-parse HEAD
+          if [ -d "SideStoreBuild/Dependencies/SideSign" ]; then
+            git -C SideStoreBuild/Dependencies/SideSign rev-parse HEAD
+          elif [ -d "SideStoreBuild/Dependencies/AltSign" ]; then
+            git -C SideStoreBuild/Dependencies/AltSign rev-parse HEAD
+          fi
           git -C SideStoreBuild/Dependencies/minimuxer rev-parse HEAD
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
