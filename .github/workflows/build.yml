@@ -109,6 +109,7 @@ jobs:
           grep -Fq 'left: self.safeAreaInsets.left + 30' SideStoreBuild/AltStore/Settings/SettingsHeaderFooterView.swift
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
+          rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts/ ~/Library/Developer/Xcode/DerivedData/ || true
           make -C SideStoreBuild build fakesign ipa
           unzip -l SideStoreBuild/SideStore.ipa > /tmp/SideStore.ipa.contents
           grep -Fq 'zh-Hans.lproj/Settings.strings' /tmp/SideStore.ipa.contents
