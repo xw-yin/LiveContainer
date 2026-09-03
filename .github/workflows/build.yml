@@ -24,7 +24,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'b247df1b53e877960351794775d045d414a3efd2' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || '2813479871bb0c85848e514d4a0aa2ab59f7b190' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -71,7 +71,7 @@ jobs:
         run: |
           brew install ldid xcbeautify || true
           git clone --filter=blob:none --no-checkout https://github.com/xw-yin/SideStore.git SideStoreBuild
-          git -C SideStoreBuild fetch --depth 1 origin "$sidestore_revision"
+          git -C SideStoreBuild fetch origin "$sidestore_revision" || git -C SideStoreBuild fetch origin feat/sidesign-migration
           git -C SideStoreBuild checkout --detach "$sidestore_revision"
           test "$(git -C SideStoreBuild rev-parse HEAD)" = "$sidestore_revision"
           echo "Building SideStore revision: $sidestore_revision"
@@ -87,7 +87,7 @@ jobs:
           test -z "$(find SideStoreBuild -name '*.rej' -o -name '*.orig')"
           grep -Fq 'SideStoreApp.framework' SideStoreBuild/AltStore/AppDelegate.swift
           grep -Fq 'SideStoreMyAppsViewController_hook_viewDidload' "$GITHUB_WORKSPACE/SideStoreSupport/SideStoreHooks.m"
-          if grep -Fq 'userLabel="OpenLC"' SideStoreBuild/AltStore/Base.lproj/Main.storyboard; then exit 1; fi
+          if grep -Fq 'userLabel="OpenLC"' SideStoreBuild/AltStore/iOS/Main.storyboard; then exit 1; fi
           if grep -Fq 'configureEmbeddedVersionLabel' SideStoreBuild/AltStore/TabBarController.swift; then exit 1; fi
           grep -Fq 'let cacheKey = "\(globallyUniqueID)-\(layoutWidth)"' SideStoreBuild/AltStore/News/NewsViewController.swift
           grep -Fq 'viewWillTransition(to size:' SideStoreBuild/AltStore/News/NewsViewController.swift
