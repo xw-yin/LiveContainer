@@ -10,6 +10,12 @@ on:
         description: Create a nightly release
         type: boolean
         required: false
+      sidestore_revision:
+        description: SideStore revision to build
+        type: string
+        required: false
+  repository_dispatch:
+    types: [build_sidestore, sidestore_updated]
 
 jobs:
   build:
@@ -18,7 +24,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: 352f3c32cbd6d5a17fe6ad1a401a2a209e780686
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'b247df1b53e877960351794775d045d414a3efd2' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
