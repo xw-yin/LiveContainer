@@ -24,7 +24,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || '2813479871bb0c85848e514d4a0aa2ab59f7b190' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'f6346fdaf8e615660903486f57e30031fc10a673' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -109,7 +109,7 @@ jobs:
           grep -Fq 'left: self.safeAreaInsets.left + 30' SideStoreBuild/AltStore/Settings/SettingsHeaderFooterView.swift
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
-          rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts/ ~/Library/Developer/Xcode/DerivedData/ || true
+          rm -rf ~/Library/Caches/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.swiftpm /tmp/org.swift.swiftpm SideStoreBuild/.spm_cache || true
           make -C SideStoreBuild build fakesign ipa
           unzip -l SideStoreBuild/SideStore.ipa > /tmp/SideStore.ipa.contents
           grep -Fq 'zh-Hans.lproj/Settings.strings' /tmp/SideStore.ipa.contents
