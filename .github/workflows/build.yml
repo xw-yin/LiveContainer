@@ -110,6 +110,11 @@ jobs:
           grep -Fq 'Enable AppExtns Customization' SideStoreBuild/AltStore/zh-Hans.lproj/Localizable.strings
           grep -Fq '后台刷新' SideStoreBuild/AltStore/zh-Hans.lproj/Settings.strings
           rm -rf ~/Library/Caches/org.swift.swiftpm ~/Library/Developer/Xcode/DerivedData ~/.swiftpm /tmp/org.swift.swiftpm SideStoreBuild/.spm_cache || true
+          mkdir -p "$HOME/Library/Caches/org.swift.swiftpm/artifacts/https___github_com_krzyzanowskim_OpenSSL_releases_download_3_6_2000_OpenSSL_xcframework_zip"
+          curl -sSL "https://github.com/krzyzanowskim/OpenSSL/releases/download/3.6.2000/OpenSSL.xcframework.zip" -o /tmp/OpenSSL.zip
+          unzip -qo /tmp/OpenSSL.zip -d "$HOME/Library/Caches/org.swift.swiftpm/artifacts/https___github_com_krzyzanowskim_OpenSSL_releases_download_3_6_2000_OpenSSL_xcframework_zip"
+          rm -f /tmp/OpenSSL.zip
+          xcodebuild -resolvePackageDependencies -project SideStoreBuild/AltStore.xcodeproj -scheme SideStore -clonedSourcePackagesDirPath SideStoreBuild/.spm_cache || true
           make -C SideStoreBuild build fakesign ipa
           unzip -l SideStoreBuild/SideStore.ipa > /tmp/SideStore.ipa.contents
           grep -Fq 'zh-Hans.lproj/Settings.strings' /tmp/SideStore.ipa.contents
