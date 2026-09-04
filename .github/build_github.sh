@@ -104,7 +104,23 @@ if [ -d payloadlc/Payload ]; then
     find payloadlc/Payload -type d -name "_CodeSignature" -exec rm -r {} +
 fi
 
+# SideStore's fakesign target signs only its app and extension executables.
+# After embedding, every nested Mach-O (notably OpenSSL) must be signed again
+# with the same ad-hoc identity or iOS rejects the framework at dlopen time.
+sign_macho_tree() {
+    find "$1" -type f -print0 | while IFS= read -r -d '' file; do
+        if file "$file" | grep -q 'Mach-O'; then
+            ldid -S"" "$file"
+        fi
+    done
+}
+
+sign_macho_tree ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Frameworks
+sign_macho_tree ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex/Frameworks
 ldid -S.github/sidelc/LiveWidgetExtension_adhoc.xml ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex/LiveWidgetExtension
+
+# Re-sign the converted SideStore image after all bundle moves are complete.
+ldid -S"" ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 
 # package
 test -d ./Payload/LiveContainer.app/PlugIns/LaunchAppExtension.appex
