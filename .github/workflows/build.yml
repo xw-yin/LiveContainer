@@ -24,7 +24,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'fca938af37654d8dd201f261adfb757f45b1089a' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'd32f443a02f2655f6e2f9c571b0cd1f9d1a80406' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -71,7 +71,7 @@ jobs:
         run: |
           brew install ldid xcbeautify || true
           git clone --filter=blob:none --no-checkout https://github.com/xw-yin/SideStore.git SideStoreBuild
-          git -C SideStoreBuild fetch origin "$sidestore_revision" || git -C SideStoreBuild fetch origin feat/sidesign-migration
+          git -C SideStoreBuild fetch origin "$sidestore_revision"
           git -C SideStoreBuild checkout --detach "$sidestore_revision"
           test "$(git -C SideStoreBuild rev-parse HEAD)" = "$sidestore_revision"
           echo "Building SideStore revision: $sidestore_revision"
