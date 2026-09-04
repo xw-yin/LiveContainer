@@ -152,7 +152,8 @@ jobs:
     needs: [build]
     concurrency:
       group: release__nightly
-      cancel-in-progress: true
+      # Nightly releases mutate the same tag and assets; serialize them instead of cancelling mid-update.
+      cancel-in-progress: false
 
     steps:
       - name: Checkout
