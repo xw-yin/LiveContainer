@@ -195,7 +195,7 @@ require 'Text("MINIMUXER BACKEND")' 'SideStore/Views/Settings/Advanced/UserCusto
 require 'Text(backend.rawValue)' 'SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift'
 reject 'foregroundColor(Color.white.opacity(0.6))' 'SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift'
 require '"MINIMUXER BACKEND" = "MINIMUXER 后端";' 'AltStore/zh-Hans.lproj/Localizable.strings'
-require '"Enable SideJITServer" = "启用 SideJITServer";' 'AltStore/zh-Hans.lproj/Localizable.strings'
+require '"Enable SideJITServer" = "启用 SideJIT 服务器";' 'AltStore/zh-Hans.lproj/Localizable.strings'
 require '"Connection Status" = "连接状态";' 'AltStore/zh-Hans.lproj/Localizable.strings'
 require '"Diagnostics & Tools" = "诊断与工具";' 'AltStore/zh-Hans.lproj/Localizable.strings'
 require '"2N5-zd-fUj.normalTitle" = "登录";' 'AltStore/zh-Hans.lproj/Authentication.strings'
