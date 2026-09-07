@@ -91,6 +91,9 @@ grep -Fq '16SideStoreSupport20RefreshAllAppsIntentV' ./Payload/LiveContainer.app
 grep -Fq '16SideStoreSupport26RefreshAllAppsWidgetIntentV' ./Payload/LiveContainer.app/Metadata.appintents/extract.actionsdata
 grep -aFq 'SideStoreRefreshService' ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/SideStore
 
+# Shortcuts resolves copied metadata against the host's localization tables.
+python3 .github/sidelc/sync_intent_localizations.py ./Payload/LiveContainer.app
+
 # AltWidgetExtension
 mv ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/PlugIns/AltWidgetExtension.appex ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex
 cp -r ./Payload/LiveContainer.app/Frameworks/SideStoreApp.framework/Frameworks ./Payload/LiveContainer.app/PlugIns/LiveWidgetExtension.appex

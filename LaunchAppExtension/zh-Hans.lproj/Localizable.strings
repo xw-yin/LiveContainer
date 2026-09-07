@@ -1,0 +1,4 @@
+/* Launch App shortcut */
+"Launch App" = "启动应用";
+"Launch URL" = "启动 URL";
+"This action directly launches an app in normal mode in LiveContainer. To get the launch URL, open LiveContainer, hold the app, tap \"Add to Home Screen\" -> \"Copy Launch URL\"" = "此操作会在 LiveContainer 中以普通模式直接启动应用。要获取启动 URL，请打开 LiveContainer，长按应用，然后依次点击“添加到主屏幕”与“复制启动 URL”。";
