@@ -81,7 +81,7 @@ struct LCEntitlementView : View {
                         .font(.system(.subheadline, design: .monospaced))
                 }
             }
-            .navigationTitle(isLiveProcess ? "LiveProcess Entitlements" : "LiveContainer Entitlements")
+            .navigationTitle(isLiveProcess ? "LiveProcess Entitlements".loc : "LiveContainer Entitlements".loc)
             .navigationBarTitleDisplayMode(.inline)
         } else {
             Text("lc.common.loading".loc)
@@ -107,13 +107,13 @@ struct LCEntitlementView : View {
         } else {
             executablePath = Bundle.main.builtInPlugInsURL?.appendingPathComponent("LiveProcess.appex/LiveProcess").path
             if let executablePath, !FileManager.default.fileExists(atPath: executablePath) {
-                entitlementContent = "LiveProcess is not installed."
+                entitlementContent = "LiveProcess is not installed.".loc
                 return
             }
         }
 
         guard let entitlementXML = getExecutableEntitlementXML(executablePath) else {
-            entitlementContent = "Failed to load entitlement."
+            entitlementContent = "Failed to load entitlement.".loc
             return
         }
         entitlementContent = entitlementXML
