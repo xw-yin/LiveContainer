@@ -213,8 +213,12 @@ require 'NSLocalizedString("Ready (%d ms)"' 'SideStore/Views/Settings/Advanced/J
 require '<color key="textColor" systemColor="labelColor"/>' 'AltStore/Authentication/Authentication.storyboard'
 require '<color key="textColor" systemColor="secondaryLabelColor"/>' 'AltStore/Authentication/Authentication.storyboard'
 require '<color key="backgroundColor" systemColor="secondarySystemGroupedBackgroundColor"/>' 'AltStore/Authentication/Authentication.storyboard'
-require 'navigationController.navigationBar.tintColor = .altPrimary' 'SideStore/Handlers/AuthFlowHandler.swift'
-reject 'navigationController.view.tintColor = .altInvertedPrimary' 'SideStore/Handlers/AuthFlowHandler.swift'
+AUTH_HANDLER_FILE="SideStore/Handlers/AuthFlowHandler.swift"
+if [ -f "$SIDESTORE_DIR/SideStore/Handlers/SignInFlowHandler.swift" ]; then
+    AUTH_HANDLER_FILE="SideStore/Handlers/SignInFlowHandler.swift"
+fi
+require 'navigationController.navigationBar.tintColor = .altPrimary' "$AUTH_HANDLER_FILE"
+reject 'navigationController.view.tintColor = .altInvertedPrimary' "$AUTH_HANDLER_FILE"
 require 'return .default' 'AltStore/Authentication/SelectTeamViewController.swift'
 reject 'return .lightContent' 'AltStore/Authentication/SelectTeamViewController.swift'
 require 'value: UIColor.secondaryLabel' 'AltStore/Authentication/ResignAltStoreViewController.swift'
