@@ -228,7 +228,7 @@ require 'viewControllers[tab.rawValue].tabBarItem.title = title' 'AltStore/TabBa
 require 'override func safeAreaInsetsDidChange()' 'AltStore/My Apps/InstalledAppsCollectionHeaderView.swift'
 require 'let horizontalInset = max(self.safeAreaInsets.left, self.safeAreaInsets.right) + 16' 'AltStore/My Apps/InstalledAppsCollectionHeaderView.swift'
 require 'self.navigationItem.largeTitleDisplayMode = .always' 'AltStore/Settings/RefreshAttemptsViewController.swift'
-require 'ScrollView(.vertical)' 'SideStore/Views/Settings/Advanced/WirelessPair/WirelessPairView.swift'
+require 'ScrollView(.vertical)' 'SideStore/Views/Settings/Advanced/PairingFile/WirelessPair/WirelessPairView.swift'
 require 'UIInterfaceOrientationLandscapeLeft' 'AltStore/Info.plist'
 require 'widthSizable="YES" flexibleMaxY="YES"' 'AltStore/Settings/Settings.storyboard'
 require 'viewControllers.indices.contains(Tab.browse.rawValue)' 'AltStore/TabBarController.swift'
