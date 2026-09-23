@@ -239,7 +239,7 @@ reject 'configureEmbeddedLiveContainerButton' 'AltStore/My Apps/MyAppsViewContro
 reject 'liveContainerButton' 'AltStore/My Apps/MyAppsViewController.swift'
 reject 'image="escape" catalog="system"' 'AltStore/iOS/Main.storyboard'
 reject 'UIStackView(arrangedSubviews: [sideloadButton, liveContainerButton])' 'AltStore/My Apps/MyAppsViewController.swift'
-require 'self.tabBarItem.badgeColor = (status == .ready) ? .systemGreen : .systemRed' 'AltStore/My Apps/MyAppsViewController.swift'
+require 'case .unknown: return .systemGray' 'AltStore/My Apps/MyAppsViewController.swift'
 reject 'NSStringFromClass(type(of: $0)).contains("LargeTitle")' 'AltStore/My Apps/MyAppsViewController.swift'
 require 'guard let destinationVC = destinationViewController else' 'AltStore/LaunchViewController.swift'
 reject 'UIStackView.appearance(whenContainedInInstancesOf: [UINavigationBar.self])' 'AltStore/AppDelegate.swift'
