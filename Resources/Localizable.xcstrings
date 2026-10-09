@@ -16514,6 +16514,121 @@
         }
       }
     },
+    "lc.jit.acquisitionContinuesInAnotherLiveContainer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT acquisition will continue in another LiveContainer."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 获取将在另一个 LiveContainer 中继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 獲取將在另一個 LiveContainer 中繼續。"
+          }
+        }
+      }
+    },
+    "lc.jit.acquisitionContinuesInDefaultBrowser" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT acquisition will continue in the default browser."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 获取将在默认浏览器中继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 獲取將在預設瀏覽器中繼續。"
+          }
+        }
+      }
+    },
+    "lc.jit.acquisitionContinuesInSideStore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT acquisition will continue in SideStore."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 获取将在 SideStore 中继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 獲取將在 SideStore 中繼續。"
+          }
+        }
+      }
+    },
+    "lc.jit.acquisitionContinuesInStosDebug" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT acquisition will continue in StosDebug."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 获取将在 StosDebug 中继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 獲取將在 StosDebug 中繼續。"
+          }
+        }
+      }
+    },
+    "lc.jit.acquisitionContinuesInStikDebug" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT acquisition will continue in StikDebug."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 获取将在 StikDebug 中继续。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JIT 獲取將在 StikDebug 中繼續。"
+          }
+        }
+      }
+    },
     "lc.jitlessDiag.appGroupAccessible" : {
       "extractionState" : "manual",
       "localizations" : {

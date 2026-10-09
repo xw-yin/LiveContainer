@@ -283,7 +283,7 @@ extension LCUtils {
                 
                 // open safari to use /launch_app api
                 if let mountStatusUrl = URL(string: "\(JITStresmerEBAddress)/launch_app/\(Bundle.main.bundleIdentifier!)") {
-                    onServerMessage?("JIT acquisition will continue in the default browser.")
+                    onServerMessage?("lc.jit.acquisitionContinuesInDefaultBrowser".loc)
                     await UIApplication.shared.open(mountStatusUrl)
                 }
                 return false
@@ -345,11 +345,11 @@ extension LCUtils {
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
-                onServerMessage?("JIT acquisition will continue in another LiveContainer.")
+                onServerMessage?("lc.jit.acquisitionContinuesInAnotherLiveContainer".loc)
                 
                 await UIApplication.shared.open(launchURL)
             } else {
-                onServerMessage?("JIT acquisition will continue in StosDebug.")
+                onServerMessage?("lc.jit.acquisitionContinuesInStosDebug".loc)
                 
                 await UIApplication.shared.open(URL(string: launchURLStr)!)
             }
@@ -406,15 +406,15 @@ extension LCUtils {
                 LCUtils.appGroupUserDefault.set(freeScheme, forKey: "LCLaunchExtensionScheme")
                 LCUtils.appGroupUserDefault.set(appToLaunch.appInfo.relativeBundlePath, forKey: "LCLaunchExtensionBundleID")
                 LCUtils.appGroupUserDefault.set(Date.now, forKey: "LCLaunchExtensionLaunchDate")
-                onServerMessage?("JIT acquisition will continue in another LiveContainer.")
+                onServerMessage?("lc.jit.acquisitionContinuesInAnotherLiveContainer".loc)
                 
             } else {
                 launchURL = URL(string: launchURLStr)!
-                onServerMessage?("JIT acquisition will continue in StikDebug.")
+                onServerMessage?("lc.jit.acquisitionContinuesInStikDebug".loc)
             }
             await UIApplication.shared.open(launchURL)
         } else if jitEnabler == .SideStore {
-            onServerMessage?("JIT acquisition will continue in SideStore.")
+            onServerMessage?("lc.jit.acquisitionContinuesInSideStore".loc)
             let launchURL = URL(string: "sidestore://enable-jit?bundle-id=\(Bundle.main.bundleIdentifier!)")!
             await UIApplication.shared.open(launchURL)
         }
