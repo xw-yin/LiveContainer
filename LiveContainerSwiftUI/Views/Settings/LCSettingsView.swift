@@ -159,9 +159,6 @@ struct LCSettingsView: View {
                     }
                 }
                 
-                // Debugger-based JIT acquisition is not supported on iOS 26+ (JITLess mode is required instead),
-                // so the JIT enabler picker is hidden there.
-                if #unavailable(iOS 26.0) {
                 Section {
                     if JITEnabler == .SideJITServer || JITEnabler == .JITStreamerEBLegacy {
                         HStack {
@@ -191,7 +188,6 @@ struct LCSettingsView: View {
                     Text("JIT")
                 } footer: {
                     Text("lc.settings.JitDesc".loc)
-                }
                 }
                 
                 Section {
