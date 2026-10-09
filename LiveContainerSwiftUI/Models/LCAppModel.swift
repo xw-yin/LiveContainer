@@ -339,6 +339,12 @@ class LCAppModel: ObservableObject, Hashable {
 #if targetEnvironment(simulator)
         jitNeeded = false
 #endif
+        if #available(iOS 26.0, *) {
+            // Debugger-based JIT acquisition is not supported on iOS 26+;
+            // the bootstrap requires JITLess mode (imported certificate) instead.
+            // Skip the JIT flow so the user gets the JITLess guidance right away.
+            jitNeeded = false
+        }
         if jitNeeded {
             if multitask, #available(iOS 17.4, *) {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
