@@ -5,9 +5,7 @@ mkdir -p tmp
 
 # Use the same executable-to-dylib conversion as upstream LiveContainer. The
 # converter also updates chained-fixup segment indexes after removing PAGEZERO.
-curl --fail --location --retry 3 \
-    --output ./tmp/dylibify \
-    https://github.com/LiveContainer/dylibify/releases/download/1.0/dylibify
+clang -fobjc-arc -framework Foundation ./.github/sidelc/dylibify.m -o ./tmp/dylibify
 chmod +x ./tmp/dylibify
 
 # copy lc to working folder

@@ -12,5 +12,6 @@ tmp/
 .zsign_cache/
 *.ipa
 dylibify*
+!.github/sidelc/dylibify.m
 patch_*.py
 test_patch/
