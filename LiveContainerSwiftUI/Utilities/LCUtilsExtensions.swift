@@ -540,3 +540,38 @@ extension LCUtils {
         }
     }
 }
+
+extension FileManager {
+    /// Removes an item even when a guest app left read-only entries inside it.
+    /// Deleting an entry requires write permission on its parent directory,
+    /// and some guest apps chmod parts of their data folder read-only (e.g.
+    /// save-file protection), which makes a plain `removeItem` fail with a
+    /// permission error. Unlock the tree top-down first, then remove it.
+    func removeItemUnlocking(at url: URL) throws {
+        unlockForDeletion(at: url)
+        if let enumerator = enumerator(at: url, includingPropertiesForKeys: nil, options: []) {
+            // The enumerator is lazy and yields a directory before descending
+            // into it, so unlocking each item as it is yielded re-opens the
+            // subtree level by level.
+            for case let item as URL in enumerator {
+                unlockForDeletion(at: item)
+            }
+        }
+        try removeItem(at: url)
+    }
+
+    private func unlockForDeletion(at url: URL) {
+        var isDirectory: ObjCBool = false
+        guard fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            return
+        }
+        try? setAttributes([.immutableItem: false], ofItemAtPath: url.path)
+        if isDirectory.boolValue {
+            try? setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
+        } else if let attributes = try? attributesOfItem(atPath: url.path),
+                  let permissions = (attributes[.posixPermissions] as? NSNumber)?.intValue,
+                  permissions & 0o200 == 0 {
+            try? setAttributes([.posixPermissions: permissions | 0o644], ofItemAtPath: url.path)
+        }
+    }
+}

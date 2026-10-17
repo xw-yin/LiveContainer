@@ -231,17 +231,26 @@ struct LCDataManagementView : View {
         guard let result = await appFolderRemovalAlert.open(), result else {
             return
         }
-        do {
-            let fm = FileManager()
-            for folder in foldersToDelete {
-                try fm.removeItem(at: LCPath.dataPath.appendingPathComponent(folder))
-                LCUtils.removeAppKeychain(dataUUID: folder)
-                sharedModel.appDataFolderNames.removeAll(where: { s in
-                    return s == folder
-                })
+        // Delete folder by folder: one undeletable folder must not abort the
+        // whole batch, and folders that did get deleted stay deleted.
+        let fm = FileManager()
+        var firstError: Error? = nil
+        for folder in foldersToDelete {
+            do {
+                try fm.removeItemUnlocking(at: LCPath.dataPath.appendingPathComponent(folder))
+            } catch {
+                if firstError == nil {
+                    firstError = error
+                }
+                continue
             }
-        } catch {
-            errorInfo = error.localizedDescription
+            LCUtils.removeAppKeychain(dataUUID: folder)
+            sharedModel.appDataFolderNames.removeAll(where: { s in
+                return s == folder
+            })
+        }
+        if let firstError {
+            errorInfo = firstError.localizedDescription
             errorShow = true
         }
         
