@@ -565,7 +565,9 @@ extension FileManager {
         guard fileExists(atPath: url.path, isDirectory: &isDirectory) else {
             return
         }
-        try? setAttributes([.immutableItem: false], ofItemAtPath: url.path)
+        // FileAttributeKey has no Swift static member for NSFileImmutable;
+        // construct the key from its raw value instead.
+        try? setAttributes([FileAttributeKey(rawValue: "NSFileImmutable"): false], ofItemAtPath: url.path)
         if isDirectory.boolValue {
             try? setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
         } else if let attributes = try? attributesOfItem(atPath: url.path),
