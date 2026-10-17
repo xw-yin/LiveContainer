@@ -13,6 +13,15 @@ struct LCFileBrowserTests {
         throw Failure(message: message)
     }
 
+    // Directory enumeration can return a different directory hint or a /private
+    // alias on macOS. Resolve the parent only, retaining the link's own name.
+    static func sameEntry(_ lhs: URL?, _ rhs: URL) -> Bool {
+        guard let lhs else { return false }
+        let leftParent = lhs.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL
+        let rightParent = rhs.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL
+        return leftParent.pathComponents == rightParent.pathComponents && lhs.lastPathComponent == rhs.lastPathComponent
+    }
+
     static func main() throws {
         let fm = FileManager.default
         let fixture = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -38,10 +47,13 @@ struct LCFileBrowserTests {
         let entries = try LCFileBrowser.load(directory: root, root: root)
         try check(entries.first?.name == "Folder", "directories are sorted first")
         try check(entries.contains { $0.name == ".hidden" }, "hidden files are visible")
-        let linkEntry = try entries.first { $0.url == link }.unwrap("symlink listed")
+        let linkEntry = try entries.first { sameEntry($0.url, link) }.unwrap("symlink listed")
+        let directoryHint = URL(fileURLWithPath: link.path, isDirectory: true)
+        try check(sameEntry(link, directoryHint), "directory hints do not change entry identity")
+        try check(!sameEntry(link, outside), "a link is distinct from its target")
         try check(linkEntry.isSymbolicLink && !linkEntry.isDirectory, "directory links are not navigation routes")
         try LCFileBrowser.validate(link, in: root)
-        try check(try LCFileBrowser.deletionURL(for: linkEntry, root: root) == link, "the link itself can be deleted")
+        try check(sameEntry(try LCFileBrowser.deletionURL(for: linkEntry, root: root), link), "the link itself can be deleted")
         try check(fm.fileExists(atPath: outsideFile.path), "validation preserves target")
 
         try expectFailure("a sibling prefix must not pass containment") {
@@ -64,8 +76,8 @@ struct LCFileBrowserTests {
             _ = try LCFileBrowser.load(directory: outside, root: root)
         }
 
-        let original = try entries.first { $0.url == file }.unwrap("regular file listed")
-        try check(try LCFileBrowser.deletionURL(for: original, root: root) == file, "unchanged item validates")
+        let original = try entries.first { sameEntry($0.url, file) }.unwrap("regular file listed")
+        try check(sameEntry(try LCFileBrowser.deletionURL(for: original, root: root), file), "unchanged item validates")
         try fm.moveItem(at: file, to: root.appendingPathComponent("old-file"))
         try Data("replacement".utf8).write(to: file)
         try expectFailure("replacement must not be deleted using stale confirmation") {
@@ -74,8 +86,8 @@ struct LCFileBrowserTests {
         try fm.removeItem(at: file)
         try check(try LCFileBrowser.deletionURL(for: original, root: root) == nil, "missing entry is already deleted")
 
-        let danglingEntry = try entries.first { $0.url == dangling }.unwrap("dangling link listed")
-        try check(try LCFileBrowser.deletionURL(for: danglingEntry, root: root) == dangling, "dangling link validates without following target")
+        let danglingEntry = try entries.first { sameEntry($0.url, dangling) }.unwrap("dangling link listed")
+        try check(sameEntry(try LCFileBrowser.deletionURL(for: danglingEntry, root: root), dangling), "dangling link validates without following target")
         print("PASS: directory listing, links, hidden files, root/sibling/ancestor containment, replacement checks, missing entries")
     }
 }
