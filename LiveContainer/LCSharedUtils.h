@@ -1,6 +1,8 @@
 @import Foundation;
 
 @interface LCSharedUtils : NSObject
++ (BOOL)removeItemUnlockingAtURL:(NSURL * _Nonnull)url error:(NSError * _Nullable * _Nullable)error NS_SWIFT_NAME(removeItemUnlocking(at:));
++ (NSArray<NSURL *> * _Nullable)contentsForDeletionAtURL:(NSURL * _Nonnull)url error:(NSError * _Nullable * _Nullable)error NS_SWIFT_NAME(contentsForDeletion(at:));
 + (NSString*) teamIdentifier;
 + (NSString *)appGroupID;
 + (NSURL*) appGroupPath;

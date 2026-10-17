@@ -452,7 +452,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
                 for(NSString* content in contents) {
                     [fm moveItemAtPath:[inboxSymlinkPath stringByAppendingPathComponent:content] toPath:[inboxPath stringByAppendingPathComponent:content] error:&error];
                 }
-                [fm removeItemAtPath:inboxSymlinkPath error:&error];
+                [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:inboxSymlinkPath] error:&error];
             }
         }
         
@@ -463,7 +463,7 @@ static NSString* invokeAppMain(NSString *selectedApp, NSString *selectedContaine
         NSDictionary* targetAttribute = [fm attributesOfItemAtPath:inboxSymlinkPath error:&error];
         if(targetAttribute) {
             if(targetAttribute[NSFileType] == NSFileTypeSymbolicLink) {
-                [fm removeItemAtPath:inboxSymlinkPath error:&error];
+                [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:inboxSymlinkPath] error:&error];
             }
         }
 
@@ -839,7 +839,7 @@ int LiveContainerMain(int argc, char *argv[]) {
         NSURL *cookiesURL  = [libraryURL URLByAppendingPathComponent:@"Cookies"];
         // Remove old Caches folder if exists
         if ([fm fileExistsAtPath:cookiesURL.path]) {
-            if ([fm removeItemAtURL:cookiesURL error:&error]) {
+            if ([LCSharedUtils removeItemUnlockingAtURL:cookiesURL error:&error]) {
                 [fm moveItemAtURL:cookies2URL toURL:cookiesURL error:&error];
             } else{
                 NSLog(@"Failed to remove old Cookies folder: %@", error);

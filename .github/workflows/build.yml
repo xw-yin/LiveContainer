@@ -30,7 +30,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'd21f40465ca53b996ad6fbc687edd29082037474' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || '37195b8e713058b265cde2112dd7ef851bc8fb2a' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -56,6 +56,12 @@ jobs:
             echo Using configured scheme: $scheme
           fi
           echo "scheme=$scheme" >> $GITHUB_OUTPUT
+      - name: Test file deletion permissions and symlink isolation
+        run: |
+          xcrun clang -fobjc-arc -Wall -Wextra -Werror -framework Foundation .github/tests/LCFileDeletionTests.m -o "$RUNNER_TEMP/lc-deletion-tests"
+          "$RUNNER_TEMP/lc-deletion-tests"
+          xcrun swiftc -swift-version 5 LiveContainerSwiftUI/Utilities/LCFileBrowser.swift .github/tests/LCFileBrowserTests.swift -o "$RUNNER_TEMP/lc-file-browser-tests"
+          "$RUNNER_TEMP/lc-file-browser-tests"
       - name: Set filetype_parameter
         id: filetype_parameter
         run: |

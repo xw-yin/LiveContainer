@@ -274,13 +274,22 @@ struct LCContainerView : View {
         }
         do {
             let fm = FileManager.default
-            try fm.removeItem(at: container.containerURL)
+            if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                throw "lc.container.inUseBy %@".localizeWithFormat(usingLC)
+            }
+            try container.withSecurityScopedAccess { url in
+                try fm.removeItemUnlocking(at: url)
+            }
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true
             return
         }
         
+        LCUtils.removeAppKeychain(dataUUID: container.folderName)
+        if !container.isShared && container.storageBookMark == nil {
+            sharedModel.appDataFolderNames.removeAll { $0 == container.folderName }
+        }
         dismiss()
         delegate.unbindContainer(container: container)
     }
@@ -320,11 +329,11 @@ struct LCContainerView : View {
         }
         do {
             let fm = FileManager.default
-            for file in try fm.contentsOfDirectory(at: container.containerURL, includingPropertiesForKeys: nil) {
-                if file.lastPathComponent == "LCContainerInfo.plist" {
-                    continue
-                }
-                try fm.removeItem(at: file)
+            if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                throw "lc.container.inUseBy %@".localizeWithFormat(usingLC)
+            }
+            try container.withSecurityScopedAccess { url in
+                try fm.removeDirectoryContentsUnlocking(at: url, preserving: ["LCContainerInfo.plist"])
             }
         } catch {
             errorInfo = error.localizedDescription

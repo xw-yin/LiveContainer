@@ -1,4 +1,5 @@
 #import "LCSharedUtils.h"
+#import "LCFileDeletion.h"
 #import "FoundationPrivate.h"
 #import "UIKitPrivate.h"
 #import "utils.h"
@@ -12,6 +13,14 @@ NSString* FBSOpenApplicationOptionKeyActivateAsClassic = @"__ActivateAsClassic";
 NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 
 @implementation LCSharedUtils
+
++ (BOOL)removeItemUnlockingAtURL:(NSURL *)url error:(NSError **)error {
+    return LCRemoveItemUnlocking(url, error);
+}
+
++ (NSArray<NSURL *> *)contentsForDeletionAtURL:(NSURL *)url error:(NSError **)error {
+    return LCContentsForDeletion(url, error);
+}
 
 + (NSString*) teamIdentifier {
     static NSString* ans = nil;
@@ -381,7 +390,7 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
         NSString *itemPath = [plistLocationTo stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.plist", identifier]];
         if([preference count] == 0) {
             // Attempt to delete the file
-            [fm removeItemAtPath:itemPath error:&error1];
+            [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:itemPath] error:&error1];
             continue;
         }
         [preference writeToFile:itemPath atomically:YES];

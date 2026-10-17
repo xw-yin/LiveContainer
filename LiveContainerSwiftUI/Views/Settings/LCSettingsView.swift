@@ -281,6 +281,11 @@ struct LCSettingsView: View {
                     } label: {
                         Text("lc.settings.dataManagement".loc)
                     }
+                    NavigationLink {
+                        LCFileManagerView()
+                    } label: {
+                        Text("lc.fileManager.title".loc)
+                    }
                 }
                 
                 Section {
@@ -679,10 +684,13 @@ struct LCSettingsView: View {
         do {
             let fm = FileManager.default
             let sidestoreAppGroupURL = LCPath.lcGroupDocPath.deletingLastPathComponent()
-            try fm.removeItem(at: sidestoreAppGroupURL.appendingPathComponent("Database"))
-            try fm.removeItem(at: sidestoreAppGroupURL.appendingPathComponent("Apps"))
+            try fm.removeItemsUnlocking(at: [
+                sidestoreAppGroupURL.appendingPathComponent("Database"),
+                sidestoreAppGroupURL.appendingPathComponent("Apps")
+            ])
         } catch {
-            print("wtf \(error)")
+            errorInfo = error.localizedDescription
+            errorShow = true
         }
     }
     

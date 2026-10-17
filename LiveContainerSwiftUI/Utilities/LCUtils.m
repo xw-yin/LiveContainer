@@ -288,7 +288,7 @@
         } else {
             completionHandler(NO, [NSError errorWithDomain:NSBundle.mainBundle.bundleIdentifier code:2 userInfo:@{NSLocalizedDescriptionKey: @"lc.signer.latestCertificateInvalidErr"}]);
         }
-        [NSFileManager.defaultManager removeItemAtPath:tmpLibPath error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:tmpLibPath] error:nil];
     });
 }
 
@@ -301,7 +301,7 @@
     NSURL *tmpPath = manager.temporaryDirectory;
 
     NSURL *tmpPayloadPath = [tmpPath URLByAppendingPathComponent:@"LiveContainer2/Payload"];
-    [manager removeItemAtURL:tmpPayloadPath error:nil];
+    [LCSharedUtils removeItemUnlockingAtURL:tmpPayloadPath error:nil];
     [manager createDirectoryAtURL:tmpPayloadPath withIntermediateDirectories:YES attributes:nil error:error];
     if (*error) return nil;
     
@@ -418,15 +418,15 @@
     
     // we don't care about errors when removing unnecessary files. errors occur probably because the file does not exist
     // we remove the extension
-    [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"PlugIns"] error:nil];
+    [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"PlugIns"] error:nil];
     // remove all sidestore stuff
     if([NSUserDefaults sideStoreExist]) {
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreSupport.framework"] error:nil];
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStore.framework"] error:nil];
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"] error:nil];
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Intents.intentdefinition"] error:nil];
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"ViewApp.intentdefinition"] error:nil];
-        [manager removeItemAtURL:[appBundlePath URLByAppendingPathComponent:@"Metadata.appintents"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreSupport.framework"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStore.framework"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Intents.intentdefinition"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"ViewApp.intentdefinition"] error:nil];
+        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Metadata.appintents"] error:nil];
         [infoDict removeObjectForKey:@"INIntentsSupported"];
         [infoDict removeObjectForKey:@"NSUserActivityTypes"];
     }
@@ -437,11 +437,11 @@
     NSData *zipData = [[NSClassFromString(@"PKZipArchiver") new] zippedDataForURL:tmpPayloadPath.URLByDeletingLastPathComponent];
     if (!zipData) return nil;
 
-    [manager removeItemAtURL:tmpPayloadPath error:error];
+    [LCSharedUtils removeItemUnlockingAtURL:tmpPayloadPath error:error];
     if (*error) return nil;
     
     if([manager fileExistsAtPath:tmpIPAPath.path]) {
-        [manager removeItemAtURL:tmpIPAPath error:error];
+        [LCSharedUtils removeItemUnlockingAtURL:tmpIPAPath error:error];
         if (*error) return nil;
     }
 

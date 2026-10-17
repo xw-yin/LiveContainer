@@ -160,6 +160,19 @@ class LCContainer : ObservableObject, Hashable {
         infoDict = NSDictionary(contentsOf: infoDictUrl) as? [String : Any]
     }
 
+    /// Keep the bookmark's access alive for the complete file operation.
+    func withSecurityScopedAccess<T>(_ operation: (URL) throws -> T) throws -> T {
+        if storageBookMark != nil && resolvedContainerURL == nil {
+            throw CocoaError(.fileReadNoPermission, userInfo: [NSFilePathErrorKey: containerURL.path])
+        }
+        let url = containerURL
+        let accessed = storageBookMark != nil && url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { url.stopAccessingSecurityScopedResource() }
+        }
+        return try operation(url)
+    }
+
     func loadName() {
         reloadInfoPlist()
         guard let infoDict else {

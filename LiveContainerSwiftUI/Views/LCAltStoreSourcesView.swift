@@ -319,7 +319,7 @@ private extension AltStoreSourcesViewModel {
     nonisolated func removeCache(for url: URL) {
         guard let fileURL = cacheFileURL(for: url) else { return }
         do {
-            try FileManager.default.removeItem(at: fileURL)
+            try FileManager.default.removeItemUnlocking(at: fileURL)
         } catch {
             // Ignore cache removal errors
         }

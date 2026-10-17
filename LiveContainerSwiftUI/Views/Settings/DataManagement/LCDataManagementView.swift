@@ -19,6 +19,7 @@ struct LCDataManagementView : View {
     
     @StateObject private var appFolderRemovalAlert = YesNoHelper()
     @State private var folderRemoveCount = 0
+    @State private var isDeletingData = false
     
     @StateObject private var keyChainRemovalAlert = YesNoHelper()
     @StateObject private var tmpRemovalAlert = YesNoHelper()
@@ -87,6 +88,7 @@ struct LCDataManagementView : View {
                 }
 
             }
+            .disabled(isDeletingData)
             
             Section {
                 Button {
@@ -207,24 +209,22 @@ struct LCDataManagementView : View {
     }
     
     func cleanUpUnusedFolders() async {
-        
-        var folderNameToAppDict : [String:LCAppModel] = [:]
-        for app in sharedModel.apps {
-            for container in app.appInfo.containers {
-                folderNameToAppDict[container.folderName] = app;
-            }
-        }
-        for app in sharedModel.hiddenApps {
-            for container in app.appInfo.containers {
-                folderNameToAppDict[container.folderName] = app;
-            }
-        }
-        
-        var foldersToDelete : [String]  = []
-        for appDataFolderName in sharedModel.appDataFolderNames {
-            if folderNameToAppDict[appDataFolderName] == nil {
-                foldersToDelete.append(appDataFolderName)
-            }
+        guard !isDeletingData else { return }
+        isDeletingData = true
+        defer { isDeletingData = false }
+        let foldersToDelete: [String]
+        do {
+            // Refresh from disk: moved/imported folders and previous partial
+            // deletions must not depend on the list captured at app launch.
+            let names = try LCFileBrowser.load(directory: LCPath.dataPath, root: LCPath.dataPath)
+                .filter { $0.isDirectory || $0.isSymbolicLink }.map(\.name)
+            sharedModel.appDataFolderNames = names
+            let used = boundContainerNames()
+            foldersToDelete = names.filter { !used.contains($0) }
+        } catch {
+            errorInfo = error.localizedDescription
+            errorShow = true
+            return
         }
         folderRemoveCount = foldersToDelete.count
         
@@ -233,15 +233,20 @@ struct LCDataManagementView : View {
         }
         // Delete folder by folder: one undeletable folder must not abort the
         // whole batch, and folders that did get deleted stay deleted.
-        let fm = FileManager()
-        var firstError: Error? = nil
+        var errors: [Error] = []
         for folder in foldersToDelete {
             do {
-                try fm.removeItemUnlocking(at: LCPath.dataPath.appendingPathComponent(folder))
-            } catch {
-                if firstError == nil {
-                    firstError = error
+                // Bindings can change while the confirmation is on screen.
+                guard !boundContainerNames().contains(folder) else { continue }
+                if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: folder) {
+                    throw "lc.container.inUseBy %@".localizeWithFormat(usingLC)
                 }
+                let url = LCPath.dataPath.appendingPathComponent(folder)
+                try await Task.detached(priority: .utility) {
+                    try FileManager.default.removeItemUnlocking(at: url)
+                }.value
+            } catch {
+                errors.append(error)
                 continue
             }
             LCUtils.removeAppKeychain(dataUUID: folder)
@@ -249,11 +254,17 @@ struct LCDataManagementView : View {
                 return s == folder
             })
         }
-        if let firstError {
-            errorInfo = firstError.localizedDescription
+        if !errors.isEmpty {
+            errorInfo = errors.map(\.localizedDescription).joined(separator: "\n\n")
             errorShow = true
         }
         
+    }
+
+    private func boundContainerNames() -> Set<String> {
+        Set((sharedModel.apps + sharedModel.hiddenApps).flatMap { app in
+            app.appInfo.containers.map(\.folderName)
+        })
     }
     
     func removeKeyChain() async {
@@ -275,6 +286,9 @@ struct LCDataManagementView : View {
     }
 
     func clearTemporaryFiles() async {
+        guard !isDeletingData else { return }
+        isDeletingData = true
+        defer { isDeletingData = false }
         guard let result = await tmpRemovalAlert.open(), result else {
             return
         }
@@ -283,7 +297,7 @@ struct LCDataManagementView : View {
         let tmpDirectory = fm.temporaryDirectory
 
         do {
-            let tmpItems = try fm.contentsOfDirectory(at: tmpDirectory, includingPropertiesForKeys: nil)
+            let tmpItems = try LCSharedUtils.contentsForDeletion(at: tmpDirectory)
 
             if tmpItems.isEmpty {
                 successInfo = "lc.settings.noTmpToClean".loc
@@ -291,9 +305,9 @@ struct LCDataManagementView : View {
                 return
             }
 
-            for item in tmpItems {
-                try fm.removeItem(at: item)
-            }
+            try await Task.detached(priority: .utility) {
+                try FileManager.default.removeItemsUnlocking(at: tmpItems)
+            }.value
 
             successInfo = "lc.settings.cleanTmpComplete".loc
             successShow = true
@@ -304,6 +318,9 @@ struct LCDataManagementView : View {
     }
 
     func clearCacheFiles() async {
+        guard !isDeletingData else { return }
+        isDeletingData = true
+        defer { isDeletingData = false }
         guard let result = await cacheRemovalAlert.open(), result else {
             return
         }
@@ -316,39 +333,43 @@ struct LCDataManagementView : View {
         }
         
         var cleanedCount = 0
+        var errors: [Error] = []
 
-        do {
-            for app in allApps {
-                for container in app.uiContainers {
-                    let containerPath = container.containerURL
-                    let guestCachePath = containerPath.appendingPathComponent("Library/Caches")
-                    
-                    if fm.fileExists(atPath: guestCachePath.path) {
-                        let cacheItems = try fm.contentsOfDirectory(at: guestCachePath, includingPropertiesForKeys: nil)
-                        for item in cacheItems {
-                            try fm.removeItem(at: item)
-                        }
-                        cleanedCount += 1
+        for app in allApps {
+            for container in app.uiContainers {
+                do {
+                    if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                        throw "lc.container.inUseBy %@".localizeWithFormat(usingLC)
                     }
+                    try container.withSecurityScopedAccess { containerPath in
+                        let guestCachePath = containerPath.appendingPathComponent("Library/Caches")
+                        let existed = fm.fileExists(atPath: guestCachePath.path)
+                        try fm.removeDirectoryContentsUnlocking(at: guestCachePath, withinRoot: containerPath)
+                        if existed { cleanedCount += 1 }
+                    }
+                } catch {
+                    errors.append(error)
                 }
             }
+        }
+        do {
             if let lcCaches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
                 fm.fileExists(atPath: lcCaches.path) {
-                let cacheItems = try fm.contentsOfDirectory(at: lcCaches, includingPropertiesForKeys: nil)
-                for item in cacheItems {
-                    try fm.removeItem(at: item)
-                }
+                try fm.removeDirectoryContentsUnlocking(at: lcCaches)
                 cleanedCount += 1
             }
-
+        } catch {
+            errors.append(error)
+        }
+        if errors.isEmpty {
             if cleanedCount == 0 {
                 successInfo = "lc.settings.noCacheToClean".loc
             } else {
                 successInfo = "lc.settings.cleanCacheComplete".loc
             }
             successShow = true
-        } catch {
-            errorInfo = error.localizedDescription
+        } else {
+            errorInfo = errors.map(\.localizedDescription).joined(separator: "\n\n")
             errorShow = true
         }
     }

@@ -542,38 +542,44 @@ extension LCUtils {
 }
 
 extension FileManager {
-    /// Removes an item even when a guest app left read-only entries inside it.
-    /// Deleting an entry requires write permission on its parent directory,
-    /// and some guest apps chmod parts of their data folder read-only (e.g.
-    /// save-file protection), which makes a plain `removeItem` fail with a
-    /// permission error. Unlock the tree top-down first, then remove it.
+    /// Shared with Objective-C callers. Missing items are already cleaned up.
     func removeItemUnlocking(at url: URL) throws {
-        unlockForDeletion(at: url)
-        if let enumerator = enumerator(at: url, includingPropertiesForKeys: nil, options: []) {
-            // The enumerator is lazy and yields a directory before descending
-            // into it, so unlocking each item as it is yielded re-opens the
-            // subtree level by level.
-            for case let item as URL in enumerator {
-                unlockForDeletion(at: item)
-            }
-        }
-        try removeItem(at: url)
+        try LCSharedUtils.removeItemUnlocking(at: url)
     }
 
-    private func unlockForDeletion(at url: URL) {
-        var isDirectory: ObjCBool = false
-        guard fileExists(atPath: url.path, isDirectory: &isDirectory) else {
-            return
+    func removeItemUnlocking(atPath path: String) throws {
+        try removeItemUnlocking(at: URL(fileURLWithPath: path))
+    }
+
+    /// Finish the batch and report every failure, retaining successful deletions.
+    func removeItemsUnlocking(at urls: [URL]) throws {
+        var errors: [Error] = []
+        for url in urls {
+            do {
+                try removeItemUnlocking(at: url)
+            } catch {
+                errors.append(error)
+            }
         }
-        // FileAttributeKey has no Swift static member for NSFileImmutable;
-        // construct the key from its raw value instead.
-        try? setAttributes([FileAttributeKey(rawValue: "NSFileImmutable"): false], ofItemAtPath: url.path)
-        if isDirectory.boolValue {
-            try? setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)
-        } else if let attributes = try? attributesOfItem(atPath: url.path),
-                  let permissions = (attributes[.posixPermissions] as? NSNumber)?.intValue,
-                  permissions & 0o200 == 0 {
-            try? setAttributes([.posixPermissions: permissions | 0o644], ofItemAtPath: url.path)
+        try Self.throwDeletionErrors(errors)
+    }
+
+    func removeDirectoryContentsUnlocking(at url: URL, withinRoot root: URL? = nil, preserving names: Set<String> = []) throws {
+        if let root {
+            let rootParts = root.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+            guard url.resolvingSymlinksInPath().standardizedFileURL.pathComponents.starts(with: rootParts) else {
+                throw CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: url.path])
+            }
         }
+        let items = try LCSharedUtils.contentsForDeletion(at: url)
+        try removeItemsUnlocking(at: items.filter { !names.contains($0.lastPathComponent) })
+    }
+
+    static func throwDeletionErrors(_ errors: [Error]) throws {
+        guard !errors.isEmpty else { return }
+        throw NSError(domain: "LCFileDeletion", code: 1, userInfo: [
+            NSLocalizedDescriptionKey: errors.map(\.localizedDescription).joined(separator: "\n\n"),
+            NSUnderlyingErrorKey: errors[0]
+        ])
     }
 }

@@ -242,16 +242,15 @@ struct LCTweakFolderView : View {
     func deleteTweakItem(indexSet: IndexSet) {
         var indexToRemove : [Int] = []
         let fm = FileManager()
-        do {
-            for i in indexSet {
+        var errors: [Error] = []
+        for i in indexSet {
+            do {
                 let tweakItem = tweakItems[i]
-                try fm.removeItem(at: tweakItem.fileUrl)
+                try fm.removeItemUnlocking(at: tweakItem.fileUrl)
                 indexToRemove.append(i)
+            } catch {
+                errors.append(error)
             }
-        } catch {
-            errorShow = true
-            errorInfo = error.localizedDescription
-            return
         }
         if isRoot {
             for iToRemove in indexToRemove {
@@ -262,6 +261,10 @@ struct LCTweakFolderView : View {
         }
 
         tweakItems.remove(atOffsets: IndexSet(indexToRemove))
+        if !errors.isEmpty {
+            errorInfo = errors.map(\.localizedDescription).joined(separator: "\n\n")
+            errorShow = true
+        }
     }
 
     func deleteTweakItem(tweakItem: LCTweakItem) {
@@ -269,7 +272,7 @@ struct LCTweakFolderView : View {
         let fm = FileManager()
         do {
 
-            try fm.removeItem(at: tweakItem.fileUrl)
+            try fm.removeItemUnlocking(at: tweakItem.fileUrl)
             indexToRemove = tweakItems.firstIndex(where: { s in
                 return s == tweakItem
             })

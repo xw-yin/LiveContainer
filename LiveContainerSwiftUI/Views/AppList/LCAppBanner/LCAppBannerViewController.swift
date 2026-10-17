@@ -273,16 +273,37 @@ final class LCAppBannerViewController: UIViewController, UIContextMenuInteractio
             }
 
             let fileManager = FileManager.default
-            try fileManager.removeItem(atPath: bundlePath)
+            for container in containers {
+                if let usingLC = LCSharedUtils.getContainerUsingLCScheme(withFolderName: container.folderName) {
+                    throw "lc.container.inUseBy %@".localizeWithFormat(usingLC)
+                }
+            }
+            try fileManager.removeItemUnlocking(atPath: bundlePath)
             delegate.removeApp(app: configuration.model)
 
             if shouldRemoveAppFolders {
+                var errors: [Error] = []
                 for container in containers {
                     let dataUUID = container.folderName
-                    try fileManager.removeItem(at: LCPath.dataPath.appendingPathComponent(dataUUID))
-                    LCUtils.removeAppKeychain(dataUUID: dataUUID)
-                    DataManager.shared.model.appDataFolderNames.removeAll { $0 == dataUUID }
+                    do {
+                        let usedElsewhere = (DataManager.shared.model.apps + DataManager.shared.model.hiddenApps).contains { app in
+                            app !== configuration.model && app.uiContainers.contains {
+                                $0.containerURL.standardizedFileURL == container.containerURL.standardizedFileURL
+                            }
+                        }
+                        guard !usedElsewhere else { continue }
+                        try container.withSecurityScopedAccess { url in
+                            try fileManager.removeItemUnlocking(at: url)
+                        }
+                        LCUtils.removeAppKeychain(dataUUID: dataUUID)
+                        if !container.isShared && container.storageBookMark == nil {
+                            DataManager.shared.model.appDataFolderNames.removeAll { $0 == dataUUID }
+                        }
+                    } catch {
+                        errors.append(error)
+                    }
                 }
+                try FileManager.throwDeletionErrors(errors)
             }
         } catch {
             showError(error.localizedDescription)
@@ -375,7 +396,7 @@ final class LCAppBannerViewController: UIViewController, UIContextMenuInteractio
         guard let exportTemporaryDirectory else {
             return
         }
-        try? FileManager.default.removeItem(at: exportTemporaryDirectory)
+        try? FileManager.default.removeItemUnlocking(at: exportTemporaryDirectory)
         self.exportTemporaryDirectory = nil
     }
 }

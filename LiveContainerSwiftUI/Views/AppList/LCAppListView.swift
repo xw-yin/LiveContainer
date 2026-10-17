@@ -576,7 +576,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         do {
             self.installprogressVisible = true
             try await installIpaFile(fileUrl)
-            try FileManager.default.removeItem(at: fileUrl)
+            try FileManager.default.removeItemUnlocking(at: fileUrl)
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true
@@ -602,7 +602,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         installProgress.addChild(decompressProgress, withPendingUnitCount: 80)
         let payloadPath = fm.temporaryDirectory.appendingPathComponent("Payload")
         if fm.fileExists(atPath: payloadPath.path) {
-            try fm.removeItem(at: payloadPath)
+            try fm.removeItemUnlocking(at: payloadPath)
         }
         
         // decompress
@@ -669,7 +669,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             guard let installOptionChosen = await installReplaceAlert.open() else {
                 // user cancelled
                 self.installprogressVisible = false
-                try fm.removeItem(at: payloadPath)
+                try fm.removeItemUnlocking(at: payloadPath)
                 return
             }
             
@@ -681,7 +681,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             appRelativePath = installOptionChosen.nameOfFolderToInstall
             appToReplace = installOptionChosen.appToReplace
             if installOptionChosen.isReplace {
-                try fm.removeItem(at: outputFolder)
+                try fm.removeItemUnlocking(at: outputFolder)
             }
         }
         // Move it!
@@ -941,7 +941,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                     shouldDelete = installUrl.deletingLastPathComponent().standardizedFileURL == inboxURL.standardizedFileURL
                 }
                 if shouldDelete {
-                    try fm.removeItem(at: installUrl)
+                    try fm.removeItemUnlocking(at: installUrl)
                 }
             } catch {
                 errorInfo = error.localizedDescription
@@ -954,7 +954,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             let fileManager = FileManager.default
             let destinationURL = fileManager.temporaryDirectory.appendingPathComponent(installUrl.lastPathComponent)
             if fileManager.fileExists(atPath: destinationURL.path) {
-                try fileManager.removeItem(at: destinationURL)
+                try fileManager.removeItemUnlocking(at: destinationURL)
             }
             
             try await downloadHelper.download(url: installUrl, to: destinationURL)
@@ -962,7 +962,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 return
             }
             try await installIpaFile(destinationURL)
-            try fileManager.removeItem(at: destinationURL)
+            try fileManager.removeItemUnlocking(at: destinationURL)
         } catch {
             errorInfo = error.localizedDescription
             errorShow = true

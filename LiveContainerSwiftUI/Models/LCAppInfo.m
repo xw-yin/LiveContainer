@@ -218,8 +218,8 @@
 - (void)clearIconCache {
     NSString* lightModeIconPath = [_bundlePath stringByAppendingPathComponent:@"LCAppIconLight.png"];
     NSString* darkModeIconPath = [_bundlePath stringByAppendingPathComponent:@"LCAppIconDark.png"];
-    [NSFileManager.defaultManager removeItemAtPath:lightModeIconPath error:nil];
-    [NSFileManager.defaultManager removeItemAtPath:darkModeIconPath error:nil];
+    [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:lightModeIconPath] error:nil];
+    [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:darkModeIconPath] error:nil];
     [self setCachedColor:nil];
     [self setCachedColorDark:nil];
     _cachedIcon = nil;
@@ -315,7 +315,7 @@
         NSString *backupPath = [NSString stringWithFormat:@"%@/%@_LiveContainerPatchBackUp", appPath, _infoPlist[@"CFBundleExecutable"]];
         NSError *err;
         [fm copyItemAtPath:execPath toPath:backupPath error:&err];
-        [fm removeItemAtPath:execPath error:&err];
+        [LCSharedUtils removeItemUnlockingAtURL:[NSURL fileURLWithPath:execPath] error:&err];
         [fm moveItemAtPath:backupPath toPath:execPath error:&err];
     }
     
