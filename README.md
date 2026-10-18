@@ -14,7 +14,7 @@
 > For the official, supported version of LiveContainer, please visit the real project page: [https://github.com/LiveContainer/LiveContainer](https://github.com/LiveContainer/LiveContainer)
 <h6 align="center">
 
-Crowdin Project: [![Crowdin](https://badges.crowdin.net/livecontainer/localized.svg)](https://crowdin.com/project/livecontainer) &nbsp;| &nbsp; Documentation:[liveconainer.github.io](https://livecontainer.github.io/docs/intro)
+Crowdin Project: [![Crowdin](https://badges.crowdin.net/livecontainer/localized.svg)](https://crowdin.com/project/livecontainer) &nbsp;| &nbsp; Documentation:[livecontainer.github.io](https://livecontainer.github.io/docs/intro)
 
 # LiveContainer
 
