@@ -242,10 +242,11 @@ void LCOpenWebPage(NSString* webPageUrlString, NSString* originalUrl) {
 }
 
 void LCOpenSideStoreURL(NSURL* sidestoreUrl) {
-    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"]) {
+    if ([NSUserDefaults.lcUserDefaults boolForKey:@"LCSwitchAppWithoutAsking"] || [sidestoreUrl.host isEqualToString:@"refresh-all"] || [sidestoreUrl.host isEqualToString:@"refresh"]) {
         [NSUserDefaults.lcUserDefaults setObject:sidestoreUrl.absoluteString forKey:@"launchAppUrlScheme"];
         [NSUserDefaults.lcUserDefaults setObject:@"builtinSideStore" forKey:@"selected"];
         [NSClassFromString(@"LCSharedUtils") launchToGuestAppWithClassicMode:0];
+        return;
     }
     NSString *message = [@"lc.guestTweak.appSwitchTip %@" localizeWithFormat:@"SideStore"];
     UIWindow *window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
@@ -433,6 +434,11 @@ static LCControlAppURLHandling LCHandleControlAppURL(NSURL *url, NSString** modi
         return LCControlAppURLHandlingPassThrough;
     }
     NSString* urlHost = url.host;
+    
+    if([urlHost isEqualToString:@"refresh-all"] || [urlHost isEqualToString:@"refresh"]) {
+        LCOpenSideStoreURL(url);
+        return LCControlAppURLHandlingStop;
+    }
     
     if([urlHost isEqualToString:@"livecontainer-relaunch"]) {
         return LCControlAppURLHandlingStop;
