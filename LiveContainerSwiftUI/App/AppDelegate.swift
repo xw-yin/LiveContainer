@@ -1,10 +1,17 @@
 import UIKit
 import SwiftUI
 import Intents
+import SideStoreSupport
 
 @objc class AppDelegate: UIResponder, UIApplicationDelegate {
         
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? ) -> Bool {
+        // Register the handler for the built-in SideStore's automatic
+        // refresh task. iOS wakes the host app (never the guest) when a
+        // BGProcessingTask fires, and the handler must be registered
+        // before launch finishes.
+        SideStoreAutomaticRefreshBridge.registerBackgroundTaskHandler()
+
         application.shortcutItems = nil
         UserDefaults.standard.removeObject(forKey: "LCNeedToAcquireJIT")
         

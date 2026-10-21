@@ -20,6 +20,7 @@ __attribute__((swift_attr("@Sendable")))
 
 @protocol RefreshClient
 - (void)refreshAllAppsWithIdentifier:(NSString*)identifier mangledTypeName:(NSString *)mangledTypeName;
+- (void)performAutomaticRefresh;
 @end
 
 @interface LiveProcessSideStoreHandler : NSObject

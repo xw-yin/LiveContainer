@@ -104,6 +104,22 @@ class RefreshHandler: NSObject, RefreshServer {
     static var shared = RefreshHandler()
     
     func startRefresh(identifier: String, mangledName: String) async throws {
+        let client = try await prepareRefreshSession()
+        try await withUnsafeThrowingContinuation { c in
+            self.c = c
+            client.refreshAllApps(withIdentifier: identifier, mangledTypeName: mangledName)
+        }
+    }
+
+    func startAutomaticRefresh() async throws {
+        let client = try await prepareRefreshSession()
+        try await withUnsafeThrowingContinuation { c in
+            self.c = c
+            client.performAutomaticRefresh()
+        }
+    }
+
+    private func prepareRefreshSession() async throws -> RefreshClient {
         if sideStorePid <= 0 || getpgid(sideStorePid) <= 0, let c {
             c.resume(throwing: NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore quit unexpectedly"]))
             self.c = nil
@@ -184,12 +200,7 @@ class RefreshHandler: NSObject, RefreshServer {
         guard let client else {
             throw NSError(domain: "SideStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Built-in SideStore did not establish a refresh connection."])
         }
-
-        try await withUnsafeThrowingContinuation { c in
-            self.c = c
-            client.refreshAllApps(withIdentifier: identifier, mangledTypeName: mangledName)
-        }
-        
+        return client
     }
     
     func updateProgress(_ value: Double) {
