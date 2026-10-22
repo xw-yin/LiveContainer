@@ -1,4 +1,4 @@
-# Host memory setup
+# Host and standalone app memory setup
 
 LiveContainer loads guests with `dlopen`. Memory entitlements belong to the
 LiveContainer or LiveProcess task, not the guest image. Patching a guest's
@@ -43,6 +43,32 @@ restores the previous preference, so ordinary refresh is not blocked. The same
 dialog offers **Resume Ordinary Signing and Refresh** to stop requiring the
 permissions for future operations without changing the currently installed app.
 
+## Standalone installed apps
+
+The per-app menu entry **Get More RAM for This Installed App** targets the app
+installed on the Home Screen. Embedded SideStore also offers the separate host
+entry; its own launch environment never determines the selected app's target.
+On the LiveContainer host's own record only the host entry is offered.
+
+The per-app request is stored under `memoryPermissionRequestedBundleIdentifiers`,
+separately from both the host preference and the obsolete guest injection flag.
+It requests the two memory capabilities for that app, verifies its provisioning
+profile, restores authorized keys in the main executable, and checks the final
+signature and installed bundle identity before sending the IPA. Existing app
+data is retained by the normal reinstall pipeline. No LiveProcess extension is
+required for an independent app, and unrelated extensions do not inherit the
+request. Assigned profiles are checked as supplied rather than silently bypassed.
+
+Successful opt-ins are enforced for subsequent signing, updates, and refreshes
+of the same app. A failed first request restores the previous per-app preference;
+**Resume Ordinary Signing and Refresh** resets only that selected app's request.
+The old `moreRAMEnabledBundleIdentifiers` guest flags are not migrated because
+they were not verified system-installed app permissions.
+
+After installation, fully quit and reopen the target app. Its runtime memory
+must be measured in its own process. SideStore's diagnostics describe SideStore's
+host process and cannot confirm another app's effective limit.
+
 ## Checks
 
 After applying the patches to an initialized SideStore checkout:
@@ -54,7 +80,9 @@ python3 .github/tests/run_host_memory_tests.py /path/to/SideStore
 
 The Swift tests compile the actual profile validator and signature restoration
 guards with portable fixtures. They cover missing, false, and incorrectly typed
-permissions, restoring stripped keys from authorized profiles, and restricting
-extension propagation to LiveProcess. CI runs them before building SideStore.
+permissions, restoring stripped keys from authorized profiles, restricting
+extension propagation to explicit host requests, standalone signatures without
+LiveProcess, preserving the installed identity, and isolated per-app preferences.
+CI runs them before building SideStore.
 An iOS build and device installation are still required to verify the complete
 signing/install flow and the runtime effect.

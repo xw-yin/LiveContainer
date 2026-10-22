@@ -1,8 +1,46 @@
+diff --git a/AltStore/Core/Extensions/UserDefaults+AltStore.swift b/AltStore/Core/Extensions/UserDefaults+AltStore.swift
+index a199579..d7f82b2 100644
+--- a/AltStore/Core/Extensions/UserDefaults+AltStore.swift
++++ b/AltStore/Core/Extensions/UserDefaults+AltStore.swift
+@@ -393,25 +393,17 @@ public extension UserDefaults
+         set { self.set(newValue, forKey: #function) }
+     }
+ 
+-    private var moreRAMEnabledBundleIdentifiersKey: String { "moreRAMEnabledBundleIdentifiers" }
++    private var memoryPermissionBundleIdentifiersKey: String { "memoryPermissionRequestedBundleIdentifiers" }
+ 
+-    /// Bundle identifiers the user enabled "Get More RAM" for. Only consulted
+-    /// when bundled with LiveContainer (see PipelineRunner): the memory
+-    /// entitlements are then injected into the guest's own signature at
+-    /// signing time and re-applied on every refresh.
+-    func isMoreRAMEnabled(forBundleIdentifier bundleIdentifier: String) -> Bool {
+-        (self.array(forKey: self.moreRAMEnabledBundleIdentifiersKey) as? [String])?.contains(bundleIdentifier) ?? false
++    func isMemoryPermissionRequested(for bundleIdentifier: String) -> Bool {
++        (self.array(forKey: memoryPermissionBundleIdentifiersKey) as? [String])?.contains(bundleIdentifier) ?? false
+     }
+ 
+-    func setMoreRAMEnabled(_ enabled: Bool, forBundleIdentifier bundleIdentifier: String) {
+-        var identifiers = self.array(forKey: self.moreRAMEnabledBundleIdentifiersKey) as? [String] ?? []
+-        if enabled {
+-            guard !identifiers.contains(bundleIdentifier) else { return }
+-            identifiers.append(bundleIdentifier)
+-        } else {
+-            identifiers.removeAll { $0 == bundleIdentifier }
+-        }
+-        self.set(identifiers, forKey: self.moreRAMEnabledBundleIdentifiersKey)
++    func setMemoryPermissionRequested(_ requested: Bool, for bundleIdentifier: String) {
++        var identifiers = self.array(forKey: memoryPermissionBundleIdentifiersKey) as? [String] ?? []
++        identifiers.removeAll { $0 == bundleIdentifier }
++        if requested { identifiers.append(bundleIdentifier) }
++        self.set(identifiers, forKey: memoryPermissionBundleIdentifiersKey)
+     }
+     @objc var keepAnisetteHeadersAfterLogout: Bool {
+         get { self.bool(forKey: #function) }
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae..a86db81 100644
+index e6beeae..07557c6 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
-@@ -1796,172 +1796,63 @@ private extension MyAppsViewController
+@@ -1796,172 +1796,97 @@ private extension MyAppsViewController
      }
      
      func enableMoreRAM(for installedApp: InstalledApp) {
@@ -30,10 +68,8 @@ index e6beeae..a86db81 100644
 -            }
 -        } else {
 -            debugLog("Enabling increased memory limit for app \(installedApp.bundleIdentifier) via resign")
-+        guard Bundle.isBundledWithLiveContainer else {
-             self.resign(installedApp)
-+            return
-         }
+-            self.resign(installedApp)
+-        }
 -    }
 -
 -    /// The guest bundle LiveContainer actually launches, looked up by bundle
@@ -55,7 +91,18 @@ index e6beeae..a86db81 100644
 -        }
 -        if let sharedDirectory = FileManager.default.altstoreSharedDirectory {
 -            containerRoots.append(sharedDirectory)
--        }
++        guard installedApp.isActive,
++              !AppManager.shared.isActivelyManagingApp(withBundleID: installedApp.bundleIdentifier) else { return }
++        let explanation = String(format: NSLocalizedString("Request memory permissions for %@, then re-sign and reinstall this app while preserving its data. This applies to the app installed on the Home Screen. Copies launched inside LiveContainer use the host's permissions instead. Missing permissions will stop installation. Completely quit and reopen the app afterward; runtime memory must be checked in that app's own process.", comment: ""), installedApp.name)
++        let alert = UIAlertController(title: NSLocalizedString("Get More RAM for This Installed App", comment: ""),
++                                      message: explanation, preferredStyle: .alert)
++        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
++        if UserDefaults.standard.isMemoryPermissionRequested(for: installedApp.bundleIdentifier) {
++            alert.addAction(UIAlertAction(title: NSLocalizedString("Resume Ordinary Signing and Refresh", comment: ""), style: .default) { _ in
++                UserDefaults.standard.setMemoryPermissionRequested(false, for: installedApp.bundleIdentifier)
++                debugLog("[AppMemory] Stopped requiring memory permissions for \(installedApp.bundleIdentifier); installed permissions are unchanged")
++            })
+         }
 -
 -        var roots = containerRoots.map { $0.appendingPathComponent("LiveContainer/Applications") }
 -        if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).last {
@@ -79,12 +126,32 @@ index e6beeae..a86db81 100644
 -                if parsedID == bundleIdentifier {
 -                    debugLog("[GetMoreRAM] Guest lookup: found \(bundleIdentifier) at \(entry.path)")
 -                    return entry
--                }
--            }
++        alert.addAction(UIAlertAction(title: NSLocalizedString("Request Permissions and Reinstall", comment: ""), style: .default) { [weak self] _ in
++            guard let self,
++                  !AppManager.shared.isActivelyManagingApp(withBundleID: installedApp.bundleIdentifier) else { return }
++            let previouslyRequested = UserDefaults.standard.isMemoryPermissionRequested(for: installedApp.bundleIdentifier)
++            UserDefaults.standard.setMemoryPermissionRequested(true, for: installedApp.bundleIdentifier)
++            debugLog("[AppMemory] Requesting profile-backed memory permissions for \(installedApp.resignedBundleIdentifier)")
++            AppManager.shared.resign(installedApp, presentingViewController: self) { result in
++                DispatchQueue.main.async {
++                    switch result {
++                    case .success:
++                        ToastView(text: NSLocalizedString("App installed; restart required", comment: ""),
++                                  detailText: NSLocalizedString("Completely quit and reopen the installed app. Check runtime memory in that app's own process, not SideStore's diagnostics.", comment: "")).show(in: self)
++                    case .failure(let error):
++                        UserDefaults.standard.setMemoryPermissionRequested(previouslyRequested, for: installedApp.bundleIdentifier)
++                        debugLog("[AppMemory] Memory setup failed for \(installedApp.bundleIdentifier): \(error)")
++                        ToastView(error: error, opensLog: true).show(in: self)
++                    }
++                    self.reconfigureVisibleCells()
+                 }
+             }
 -        }
 -        return nil
--    }
--
++        })
++        self.present(alert, animated: true)
+     }
+ 
 -    /// Patches the LiveContainer-side copy of a guest in place: the binary's
 -    /// own entitlements are kept as the base and the memory keys are unioned
 -    /// in (the GetMoreRAM approach), signed with the active certificate and
@@ -111,18 +178,33 @@ index e6beeae..a86db81 100644
 -        guard let certificate else {
 -            debugLog("[GetMoreRAM] No signable certificate available for \(installedApp.bundleIdentifier); skipping in-place patch")
 -            return false
-+        guard let hostApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext) else {
-+            let error = NSError(domain: "HostMemory", code: 1, userInfo: [NSLocalizedDescriptionKey:
-+                NSLocalizedString("The LiveContainer host record is missing. Open LiveContainer again before requesting memory permissions.", comment: "")])
-+            ToastView(error: error, opensLog: true).show(in: self)
-+            return
-         }
+-        }
 -
 -        guard let guestURL = self.liveContainerGuestURL(forBundleIdentifier: installedApp.bundleIdentifier, teamIdentifier: team.identifier),
 -              let guestApp = ALTApplication(fileURL: guestURL)
 -        else {
 -            debugLog("[GetMoreRAM] No LiveContainer-side copy found for \(installedApp.bundleIdentifier)")
 -            return false
+-        }
+-
+-        // Profiles: prefer each bundle's embedded profile; LiveContainer's
+-        // copies may not embed one, so fall back to the profiles SideStore
+-        // cached when it last signed this app.
+-        var profilesByBundleID: [String: ALTProvisioningProfile] = [:]
+-        if let profile = guestApp.provisioningProfile {
+-            profilesByBundleID[guestApp.bundleIdentifier] = profile
++    func enableHostMoreRAM() {
++        guard Bundle.isBundledWithLiveContainer else { return }
++        guard let hostApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext) else {
++            let error = NSError(domain: "HostMemory", code: 1, userInfo: [NSLocalizedDescriptionKey:
++                NSLocalizedString("The LiveContainer host record is missing. Open LiveContainer again before requesting memory permissions.", comment: "")])
++            ToastView(error: error, opensLog: true).show(in: self)
++            return
+         }
+-        for appExtension in guestApp.appExtensions {
+-            if let profile = appExtension.provisioningProfile {
+-                profilesByBundleID[appExtension.bundleIdentifier] = profile
+-            }
 +        guard !AppManager.shared.isActivelyManagingApp(withBundleID: hostApp.bundleIdentifier) else { return }
 +
 +        // The guest is dlopen'ed into this process. Its on-disk entitlements
@@ -147,19 +229,6 @@ index e6beeae..a86db81 100644
 +                debugLog("[HostMemory] Stopped requiring memory permissions for future signing and refresh; installed permissions are unchanged")
 +            })
          }
--
--        // Profiles: prefer each bundle's embedded profile; LiveContainer's
--        // copies may not embed one, so fall back to the profiles SideStore
--        // cached when it last signed this app.
--        var profilesByBundleID: [String: ALTProvisioningProfile] = [:]
--        if let profile = guestApp.provisioningProfile {
--            profilesByBundleID[guestApp.bundleIdentifier] = profile
--        }
--        for appExtension in guestApp.appExtensions {
--            if let profile = appExtension.provisioningProfile {
--                profilesByBundleID[appExtension.bundleIdentifier] = profile
--            }
--        }
 -        let cachedProfilesDirectory = installedApp.directoryURL.appendingPathComponent("ProvisioningProfiles")
 -        if let files = try? FileManager.default.contentsOfDirectory(at: cachedProfilesDirectory, includingPropertiesForKeys: nil) {
 -            for file in files where file.pathExtension == "mobileprovision" {
@@ -225,7 +294,7 @@ index e6beeae..a86db81 100644
      func enableJIT(for installedApp: InstalledApp) {
          AppManager.shared.enableJIT(for: installedApp) { result in
              DispatchQueue.main.async {
-@@ -2369,33 +2260,16 @@ extension MyAppsViewController
+@@ -2369,33 +2294,20 @@ extension MyAppsViewController
              self.enableJIT(for: installedApp)
          }
          
@@ -234,7 +303,7 @@ index e6beeae..a86db81 100644
 -        // by a legacy tool, and has no user-assigned (fixed) profile, since a
 -        // fixed profile is used verbatim and cannot gain the entitlement.
          let isLegacySideloadedApp = (UserDefaults.standard.legacySideloadedApps ?? []).contains(installedApp.bundleIdentifier)
-         let hasAssignedProfile = ProfileManager.shared.getAssignedProfile(for: installedApp.bundleIdentifier) != nil
+-        let hasAssignedProfile = ProfileManager.shared.getAssignedProfile(for: installedApp.bundleIdentifier) != nil
 -        let supportsMoreRAM = installedApp.isActive && !isLegacySideloadedApp && !hasAssignedProfile
 -        
 -        var moreRAMEnabled = false
@@ -253,23 +322,57 @@ index e6beeae..a86db81 100644
 -        }
 -        
 -        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM", comment: ""), image: UIImage(systemName: "memorychip"), state: moreRAMEnabled ? .on : .off) { (action) in
-+        let supportsMoreRAM = Bundle.isBundledWithLiveContainer || (installedApp.isActive && !isLegacySideloadedApp && !hasAssignedProfile)
++        let isLiveContainerHost = Bundle.isBundledWithLiveContainer &&
++            (installedApp.bundleIdentifier == StoreApp.altstoreAppID || installedApp.resignedBundleIdentifier.isAltStoreAppID)
++        let supportsMoreRAM = installedApp.isActive && !isLegacySideloadedApp && !isLiveContainerHost
 +
-+        // No per-guest checkmark: a file entitlement is not a running task grant.
-+        let memoryTitle = Bundle.isBundledWithLiveContainer ? "Get More RAM for LiveContainer" : "Get More RAM"
-+        let moreRAMAction = UIAction(title: NSLocalizedString(memoryTitle, comment: ""), image: UIImage(systemName: "memorychip")) { _ in
++        // The selected installed app and the LiveContainer host are distinct
++        // targets, even when SideStore itself is running inside LiveContainer.
++        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM for This Installed App", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
              self.enableMoreRAM(for: installedApp)
          }
 -        
++        let hostMemoryAction = UIAction(title: NSLocalizedString("Get More RAM for LiveContainer", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
++            self.enableHostMoreRAM()
++        }
 +
          let backupAction = UIAction(title: NSLocalizedString("Create Backup", comment: ""), image: UIImage(systemName: "doc.on.doc")) { (action) in
              self.backup(installedApp)
          }
+@@ -2552,11 +2464,6 @@ extension MyAppsViewController
+                 actions.append(jitAction)
+             }
+             
+-            if supportsMoreRAM
+-            {
+-                actions.append(moreRAMAction)
+-            }
+-            
+             actions.append(changeIconMenu)
+             
+             if !backupSubmenuActions.isEmpty
+@@ -2595,6 +2502,8 @@ extension MyAppsViewController
+             #endif
+         }
+         
++        if supportsMoreRAM { actions.append(moreRAMAction) }
++        if Bundle.isBundledWithLiveContainer { actions.append(hostMemoryAction) }
+         actions.append(infoAction)
+         
+         // Change the order of entries to make changes to how the context menu is displayed
+@@ -2607,6 +2516,7 @@ extension MyAppsViewController
+             activateAction,
+             jitAction,
+             moreRAMAction,
++            hostMemoryAction,
+             changeIconMenu,
+             backupMenu,
+             infoAction,
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
-index bd48444..2f4f05b 100644
+index bd48444..5955bdc 100644
 --- a/AltStore/zh-Hans.lproj/Localizable.strings
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -2315,3 +2315,19 @@
+@@ -2315,3 +2315,28 @@
  "Enterprise Signed" = "企业签名";
  "Enterprise signed apps don't need 7-day refreshes" = "企业签名的应用无需 7 天刷新";
  "Enterprise" = "企业版";
@@ -289,15 +392,32 @@ index bd48444..2f4f05b 100644
 +"Signed host bundle %@ is missing memory permissions: %@. Installation was stopped." = "签名后的宿主组件 %@ 缺少内存权限：%@。已停止安装。";
 +"Resume Ordinary Signing and Refresh" = "恢复普通签名与刷新";
 +"Memory setup cannot change the installed host bundle identifier. Check the host's custom signing settings." = "内存配置不能改变已安装宿主的包标识，请检查宿主的自定义签名设置。";
++
++// Per-app profile-backed memory setup.
++"Get More RAM for This Installed App" = "为这个独立应用申请更多内存";
++"Request memory permissions for %@, then re-sign and reinstall this app while preserving its data. This applies to the app installed on the Home Screen. Copies launched inside LiveContainer use the host's permissions instead. Missing permissions will stop installation. Completely quit and reopen the app afterward; runtime memory must be checked in that app's own process." = "为 %@ 申请内存权限，然后重签并重新安装该应用，保留应用数据。此操作作用于安装在主屏幕上的独立应用；在 LiveContainer 中运行的副本使用宿主权限。缺少权限时会停止安装。完成后请彻底退出并重新打开目标应用，实际内存效果需要在目标应用自己的进程中验证。";
++"App installed; restart required" = "应用已安装，需要重启";
++"Completely quit and reopen the installed app. Check runtime memory in that app's own process, not SideStore's diagnostics." = "请彻底退出并重新打开已安装的应用。实际内存需要在目标应用进程中验证，SideStore 的诊断不能代表目标应用。";
++"Memory permissions were not granted for %@: %@. Your account or assigned provisioning profile does not provide these permissions. The app was not reinstalled." = "未能为 %@ 获得内存权限：%@。当前账户或指定的描述文件未提供这些权限，未重新安装应用。";
++"Memory setup cannot change the installed app bundle identifier. Check this app's custom signing settings." = "内存配置不能改变已安装应用的包标识，请检查该应用的自定义签名设置。";
++"Signed app bundle %@ is missing memory permissions: %@. Installation was stopped." = "签名后的应用组件 %@ 缺少内存权限：%@。已停止安装。";
 diff --git a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift b/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
-index c96b254..253f853 100644
+index c96b254..6e0877f 100644
 --- a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
 +++ b/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
-@@ -86,11 +86,20 @@ struct EnterpriseAppSigner: Sendable {
+@@ -17,6 +17,7 @@ struct EnterpriseAppSigner: Sendable {
+     let certificate: ALTCertificate
+     var additionalEntitlements: [ALTEntitlement: any Sendable] = [:]
+     var injectedEntitlements: [String: any Sendable] = [:]
++    var includeLiveProcessMemory = false
+ 
+     static func resolvedEntitlements(
+         for app: ALTApplication,
+@@ -86,11 +87,20 @@ struct EnterpriseAppSigner: Sendable {
                  debugLog("[EnterpriseAppSigner] WARNING: '\(app.bundleIdentifier)' is outside wildcard App ID '\(matchedProfile.bundleIdentifier)'. Installation will likely fail.")
              }
  
-+            let isMemoryHost = !app.isExtension || app.fileURL.lastPathComponent == "LiveProcess.appex"
++            let isMemoryHost = !app.isExtension || (includeLiveProcessMemory && app.fileURL.lastPathComponent == "LiveProcess.appex")
 +            let injected = isMemoryHost ? self.injectedEntitlements : [:]
 +            for (key, _) in injected where ["com.apple.developer.kernel.increased-memory-limit",
 +                                            "com.apple.developer.kernel.extended-virtual-addressing",
@@ -317,10 +437,10 @@ index c96b254..253f853 100644
  
              let plist = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
 diff --git a/SideStore/Core/Operations/OperationContexts.swift b/SideStore/Core/Operations/OperationContexts.swift
-index e5daa62..ca8c976 100644
+index e5daa62..e30585c 100644
 --- a/SideStore/Core/Operations/OperationContexts.swift
 +++ b/SideStore/Core/Operations/OperationContexts.swift
-@@ -276,14 +276,11 @@ class InstallAppOperationContext: PipelineOperationContext
+@@ -276,14 +276,20 @@ class InstallAppOperationContext: PipelineOperationContext
      var customBundleIdentifier: String?
      var customInfoPlistByBundleID: [String: [String: any Sendable]] = [:]
      var customEntitlementsByBundleID: [String: [String: any Sendable]] = [:]
@@ -331,16 +451,25 @@ index e5daa62..ca8c976 100644
 -    /// only when bundled with LiveContainer and only for guest apps — never
 -    /// for the host app itself, which is system-installed and validated
 -    /// against its provisioning profile.
-+    // Used only for the host after verifying profile authorization. The signer
-+    // restores stripped memory keys in both the main bundle and LiveProcess.
++    // Restore stripped memory keys only after verifying profile authorization.
++    // Standalone requests cover the main app; host requests also cover LiveProcess.
      var injectedEntitlements: [String: any Sendable] = [:]
 +    var requiresHostMemoryEntitlements = false
-+    static let hostMemoryEntitlements: [ALTEntitlement] = [.increasedMemoryLimit, .extendedVirtualAddressing]
++    var requiresAppMemoryEntitlements = false
++    var expectedMemoryBundleIdentifier: String?
++    var requiresMemoryEntitlements: Bool { requiresHostMemoryEntitlements || requiresAppMemoryEntitlements }
++
++    func needsMemoryPermissions(for app: ALTApplication) -> Bool {
++        requiresMemoryEntitlements && (!app.isExtension ||
++            (requiresHostMemoryEntitlements && app.fileURL.lastPathComponent == "LiveProcess.appex"))
++    }
++
++    static let memoryEntitlements: [ALTEntitlement] = [.increasedMemoryLimit, .extendedVirtualAddressing]
      var isStoreUpdate: Bool = false
      var targetAppBundle: ALTApplication?
  
 diff --git a/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift b/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
-index 3cac441..ef63a91 100644
+index 3cac441..176f810 100644
 --- a/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
 +++ b/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
 @@ -33,6 +33,10 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
@@ -358,9 +487,9 @@ index 3cac441..ef63a91 100644
                      profiles[updatedExtensionBundleId] = overrideProfile
                  }
              }
-+            try validateHostMemoryProfile(overrideProfile, for: targetAppBundle)
++            try validateMemoryProfile(overrideProfile, for: targetAppBundle)
 +            for appExtension in appExtensions {
-+                try validateHostMemoryProfile(overrideProfile, for: appExtension)
++                try validateMemoryProfile(overrideProfile, for: appExtension)
 +            }
              self.setProgress(100)
              self.debugLog("[FetchProvisioningProfiles] Total override profiles prepared: \(profiles.count) -> keys: \(Array(profiles.keys))")
@@ -369,10 +498,10 @@ index 3cac441..ef63a91 100644
  
          self.debugLog("[FetchProvisioningProfiles] Preparing main provisioning profile for \(targetAppBundle.bundleIdentifier)...")
          let profile = try await self.provisionAndFetchProfile(for: targetAppBundle, parentAppBundle: nil, team: team)
-+        try validateHostMemoryProfile(profile, for: targetAppBundle)
++        try validateMemoryProfile(profile, for: targetAppBundle)
 +        if context.useMainProfile {
 +            for appExtension in appExtensions {
-+                try validateHostMemoryProfile(profile, for: appExtension)
++                try validateMemoryProfile(profile, for: appExtension)
 +            }
 +        }
          self.debugLog("[FetchProvisioningProfiles] Main profile prepared successfully for \(effectiveBundleId), expiration: \(String(describing: profile.expirationDate))")
@@ -382,24 +511,23 @@ index 3cac441..ef63a91 100644
                  group.addTask {
                      self.verboseLog("[FetchProvisioningProfiles] Preparing extension profile for \(appExtension.bundleIdentifier)...")
                      let extProfile = try await self.provisionAndFetchProfile(for: appExtension, parentAppBundle: targetAppBundle, team: team)
-+                    try self.validateHostMemoryProfile(extProfile, for: appExtension)
++                    try self.validateMemoryProfile(extProfile, for: appExtension)
                      // Use customized bundle ID if applicable
                      let updatedExtensionBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: effectiveBundleId)
                      self.verboseLog("[FetchProvisioningProfiles] Extension profile prepared for \(updatedExtensionBundleId)")
-@@ -140,6 +155,20 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
+@@ -140,6 +155,19 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
          }
      }
      
-+    private func validateHostMemoryProfile(_ profile: ALTProvisioningProfile, for app: ALTApplication) throws {
-+        guard context.requiresHostMemoryEntitlements,
-+              !app.isExtension || app.fileURL.lastPathComponent == "LiveProcess.appex" else { return }
-+        let missing = InstallAppOperationContext.hostMemoryEntitlements.filter {
++    private func validateMemoryProfile(_ profile: ALTProvisioningProfile, for app: ALTApplication) throws {
++        guard context.needsMemoryPermissions(for: app) else { return }
++        let missing = InstallAppOperationContext.memoryEntitlements.filter {
 +            (profile.entitlements[$0.rawValue] as? Bool) != true
 +        }
 +        guard missing.isEmpty else {
-+            let reason = String(format: NSLocalizedString("Memory permissions were not granted for %@: %@. Your account or assigned provisioning profile does not provide these permissions. LiveContainer was not reinstalled.", comment: ""),
++            let reason = String(format: NSLocalizedString("Memory permissions were not granted for %@: %@. Your account or assigned provisioning profile does not provide these permissions. The app was not reinstalled.", comment: ""),
 +                                app.name, missing.map(\.rawValue).joined(separator: ", "))
-+            debugLog("[HostMemory] \(reason)")
++            debugLog("[MemoryPermissions] \(reason)")
 +            throw OperationError.invalidParameters(reason)
 +        }
 +    }
@@ -407,14 +535,22 @@ index 3cac441..ef63a91 100644
      private func provisionAndFetchProfile(for targetAppBundle: ALTApplication,
                                            parentAppBundle: ALTApplication?,
                                            team: ALTTeam) async throws -> ALTProvisioningProfile {
-@@ -238,6 +267,14 @@ private extension FetchProvisioningProfilesOperation{
+@@ -235,9 +263,22 @@ private extension FetchProvisioningProfilesOperation{
+         var entitlements = self.context.customEntitlementsByBundleID[bundleID]
+             ?? targetAppBundle.entitlements
+         for (key, value) in context.additionalEntitlements {
++            // A main-app opt-in must not request new memory capabilities for
++            // unrelated widgets/extensions. Preserve their own requests.
++            if context.requiresMemoryEntitlements, !context.needsMemoryPermissions(for: targetAppBundle),
++               (InstallAppOperationContext.memoryEntitlements + [.increasedDebuggingMemoryLimit]).contains(key) {
++                continue
++            }
              entitlements[key] = value
          }
          
-+        if context.requiresHostMemoryEntitlements,
-+           !targetAppBundle.isExtension || targetAppBundle.fileURL.lastPathComponent == "LiveProcess.appex" {
++        if context.needsMemoryPermissions(for: targetAppBundle) {
 +            entitlements.removeValue(forKey: ALTEntitlement.increasedDebuggingMemoryLimit.rawValue)
-+            for key in InstallAppOperationContext.hostMemoryEntitlements {
++            for key in InstallAppOperationContext.memoryEntitlements {
 +                entitlements[key.rawValue] = true
 +            }
 +        }
@@ -422,17 +558,17 @@ index 3cac441..ef63a91 100644
          guard let allowedFeatures = team.type.allowedFeatures else {
              throw OperationError.invalidParameters("Cannot update features for unknown team type.")
          }
-@@ -294,6 +331,8 @@ private extension FetchProvisioningProfilesOperation{
+@@ -294,6 +335,8 @@ private extension FetchProvisioningProfilesOperation{
              self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
              return updated
          } catch let originalError {
-+            // An explicit host-memory request must not silently drop permissions.
-+            guard !context.requiresHostMemoryEntitlements else { throw originalError }
++            // An explicit memory-permission request must not silently drop permissions.
++            guard !context.needsMemoryPermissions(for: targetAppBundle) else { throw originalError }
              // Free teams previously could not register the memory features at
              // all, so they were silently dropped before ever reaching the
              // portal. Now that they are attempted, a portal rejection must
 diff --git a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
-index 2445cb1..211924b 100644
+index 2445cb1..5043f23 100644
 --- a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 +++ b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 @@ -38,6 +38,10 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
@@ -446,48 +582,83 @@ index 2445cb1..211924b 100644
          let appBundleURL = try await self.prepareAppBundle(for: appBundle, profiles: profiles, appexBundleIds: context.appexBundleIds ?? [:])
          
          self.setProgress(40)
-@@ -47,6 +51,22 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
+@@ -47,6 +51,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
              throw OperationError.invalidApp(reason: "Could not load resigned app bundle at '\(resignedAppURL.lastPathComponent)'")
          }
          
-+        if context.requiresHostMemoryEntitlements {
-+            guard let liveProcess = resignedAppBundle.appExtensions.first(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }) else {
-+                throw OperationError.invalidParameters(NSLocalizedString("LiveProcess was removed before signing. Memory setup was stopped before installation.", comment: ""))
-+            }
-+            for app in [resignedAppBundle, liveProcess] {
-+                let missing = InstallAppOperationContext.hostMemoryEntitlements.filter {
-+                    (app.entitlements[$0.rawValue] as? Bool) != true
-+                }
-+                guard missing.isEmpty else {
-+                    throw OperationError.invalidParameters(String(format: NSLocalizedString("Signed host bundle %@ is missing memory permissions: %@. Installation was stopped.", comment: ""),
-+                                                                  app.name, missing.map(\.rawValue).joined(separator: ", ")))
-+                }
-+            }
-+            debugLog("[HostMemory] Host and LiveProcess profiles and signatures verified; installation still requires a process restart")
-+        }
++        try validateMemorySignatures(in: resignedAppBundle)
 +
          self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedAppBundle.bundleIdentifier).")
          self.setProgress(100)
          
+@@ -54,6 +60,30 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
+     }
+ 
+     
++    private func validateMemorySignatures(in app: ALTApplication) throws {
++        guard context.requiresMemoryEntitlements else { return }
++        if let expectedID = context.expectedMemoryBundleIdentifier, app.bundleIdentifier != expectedID {
++            throw OperationError.invalidParameters(NSLocalizedString("Memory setup cannot change the installed app bundle identifier. Check this app's custom signing settings.", comment: ""))
++        }
++        var targets = [app]
++        if context.requiresHostMemoryEntitlements {
++            guard let liveProcess = app.appExtensions.first(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }) else {
++                throw OperationError.invalidParameters(NSLocalizedString("LiveProcess was removed before signing. Memory setup was stopped before installation.", comment: ""))
++            }
++            targets.append(liveProcess)
++        }
++        for target in targets {
++            let missing = InstallAppOperationContext.memoryEntitlements.filter {
++                (target.entitlements[$0.rawValue] as? Bool) != true
++            }
++            guard missing.isEmpty else {
++                throw OperationError.invalidParameters(String(format: NSLocalizedString("Signed app bundle %@ is missing memory permissions: %@. Installation was stopped.", comment: ""),
++                                                              target.name, missing.map(\.rawValue).joined(separator: ", ")))
++            }
++        }
++        debugLog("[MemoryPermissions] Requested profiles and signatures verified; installation still requires a process restart")
++    }
++
+     private func prepareAppBundle(for targetAppBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
+ 
+         let bundleIdentifier = context.targetBundleIdentifier
+@@ -201,12 +231,12 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
+         if profiles.contains(where: { $0.isWildcard }) || (isImportedIdentity && self.context.useMainProfile) {
+             // Enterprise: wildcard profiles (or imported single-profile with extensions) need per-bundle resolution.
+             self.debugLog("[ResignAppOperation] Using EnterpriseAppSigner for wildcard/imported profile(s) (team \(team.identifier))")
+-            let signer = EnterpriseAppSigner(certificate: certificate, additionalEntitlements: self.context.additionalEntitlements, injectedEntitlements: self.context.injectedEntitlements)
++            let signer = EnterpriseAppSigner(certificate: certificate, additionalEntitlements: self.context.additionalEntitlements, injectedEntitlements: self.context.injectedEntitlements, includeLiveProcessMemory: context.requiresHostMemoryEntitlements)
+             try await signer.signApp(at: fileURL, provisioningProfiles: profiles)
+             return fileURL
+         }
+         let signer = ALTSigner(team: team, certificate: certificate)
+-        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, injectedEntitlements: self.context.injectedEntitlements, progress: nil)
++        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, injectedEntitlements: self.context.injectedEntitlements, preserveAppEntitlements: false, includeLiveProcessMemory: context.requiresHostMemoryEntitlements, progress: nil)
+         return fileURL
+     }
+     
 diff --git a/SideStore/Core/Operations/PipelineRunner.swift b/SideStore/Core/Operations/PipelineRunner.swift
-index cd1c41c..3fa3e5d 100644
+index cd1c41c..ef65c90 100644
 --- a/SideStore/Core/Operations/PipelineRunner.swift
 +++ b/SideStore/Core/Operations/PipelineRunner.swift
-@@ -410,7 +410,20 @@ final class PipelineRunner: Sendable
+@@ -410,7 +410,23 @@ final class PipelineRunner: Sendable
      
      private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp
      {
 -        let pipelineSteps = PipelineStepDefinition.steps(for: operation)
 +        let isHostAppOperation = operation.bundleIdentifier == StoreApp.altstoreAppID || operation.bundleIdentifier.isAltStoreAppID
-+        let signsOrRefreshesHost: Bool
++        let signsOrRefreshesApp: Bool
 +        switch operation {
 +        case .install, .reinstall, .update, .resign, .refresh:
-+            signsOrRefreshesHost = true
++            signsOrRefreshesApp = true
 +        default:
-+            signsOrRefreshesHost = false
++            signsOrRefreshesApp = false
 +        }
-+        let requiresHostMemory = Bundle.isBundledWithLiveContainer && isHostAppOperation && signsOrRefreshesHost &&
++        let requiresHostMemory = Bundle.isBundledWithLiveContainer && isHostAppOperation && signsOrRefreshesApp &&
 +            UserDefaults.standard.bool(forKey: "liveContainerHostMemoryRequested")
++        let requiresAppMemory = signsOrRefreshesApp &&
++            !(Bundle.isBundledWithLiveContainer && isHostAppOperation) &&
++            UserDefaults.standard.isMemoryPermissionRequested(for: operation.bundleIdentifier)
 +        // LiveProcess must survive the user's ordinary extension-removal setting.
 +        let pipelineSteps = PipelineStepDefinition.steps(for: operation).filter {
 +            !requiresHostMemory || $0.step != .removeAppExtensions
@@ -495,7 +666,7 @@ index cd1c41c..3fa3e5d 100644
          let context = InstallAppOperationContext(
              pipelineSteps: pipelineSteps,
              bundleIdentifier: operation.bundleIdentifier,
-@@ -423,22 +436,15 @@ final class PipelineRunner: Sendable
+@@ -423,22 +439,16 @@ final class PipelineRunner: Sendable
          context.isCellularRefreshGroup = group.isCellularRefreshGroup
          context.groupOperationsCount = operationsCount
  
@@ -516,10 +687,11 @@ index cd1c41c..3fa3e5d 100644
 -                ALTEntitlement.increasedDebuggingMemoryLimit.rawValue: true
 -            ]
 +        context.requiresHostMemoryEntitlements = requiresHostMemory
-+        if requiresHostMemory {
++        context.requiresAppMemoryEntitlements = requiresAppMemory
++        if context.requiresMemoryEntitlements {
 +            // Debugging memory is optional and can be rejected independently.
 +            context.additionalEntitlements.removeValue(forKey: .increasedDebuggingMemoryLimit)
-+            for key in InstallAppOperationContext.hostMemoryEntitlements {
++            for key in InstallAppOperationContext.memoryEntitlements {
 +                context.additionalEntitlements[key] = true
 +                // Restores stripped binary keys only after the profile checks.
 +                context.injectedEntitlements[key.rawValue] = true
@@ -527,7 +699,7 @@ index cd1c41c..3fa3e5d 100644
          }
  
          switch operation {
-@@ -468,6 +474,20 @@ final class PipelineRunner: Sendable
+@@ -468,6 +478,29 @@ final class PipelineRunner: Sendable
              }
          }
          
@@ -541,7 +713,16 @@ index cd1c41c..3fa3e5d 100644
 +                throw OperationError.invalidParameters(NSLocalizedString("Cannot identify the installed LiveContainer host. Memory setup was stopped before signing.", comment: ""))
 +            }
 +            context.targetAppBundle = host
++            context.expectedMemoryBundleIdentifier = hostID
 +            context.customBundleIdentifier = hostID
++            context.appendTeamID = false
++        }
++
++        if requiresAppMemory, case .resign = operation, let app = context.installedApp {
++            // Keep this installed app's identity; never substitute the host
++            // or append another team suffix.
++            context.expectedMemoryBundleIdentifier = app.resignedBundleIdentifier
++            context.customBundleIdentifier = app.resignedBundleIdentifier
 +            context.appendTeamID = false
 +        }
 +

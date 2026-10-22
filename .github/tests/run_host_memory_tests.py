@@ -14,14 +14,26 @@ def main():
     sidestore = pathlib.Path(sys.argv[1]).resolve()
     fetch = (sidestore / "SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift").read_text(encoding="utf-8")
     signer = (sidestore / "Dependencies/SideSign/Sources/CodeSigning/CodeSignerAPI.swift").read_text(encoding="utf-8")
-    validator = "    private func validateHostMemoryProfile" + between(
-        fetch, "    private func validateHostMemoryProfile", "    private func provisionAndFetchProfile")
+    contexts = (sidestore / "SideStore/Core/Operations/OperationContexts.swift").read_text(encoding="utf-8")
+    resign = (sidestore / "SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift").read_text(encoding="utf-8")
+    defaults = (sidestore / "AltStore/Core/Extensions/UserDefaults+AltStore.swift").read_text(encoding="utf-8")
+    validator = "    private func validateMemoryProfile" + between(
+        fetch, "    private func validateMemoryProfile", "    private func provisionAndFetchProfile")
+    signatures = "    private func validateMemorySignatures" + between(
+        resign, "    private func validateMemorySignatures", "    private func prepareAppBundle")
+    scope = "    func needsMemoryPermissions" + between(
+        contexts, "    func needsMemoryPermissions", "    static let memoryEntitlements")
+    preferences = "    private var memoryPermissionBundleIdentifiersKey:" + between(
+        defaults, "    private var memoryPermissionBundleIdentifiersKey:", "    @objc var keepAnisetteHeadersAfterLogout:")
     signing = "            let memoryKeys =" + between(
         signer, "            let memoryKeys =", '            verboseLog("[SideSign] Filtered entitlements')
     extension = "                let processMemory =" + between(
         signer, "                let processMemory =", "                try prepare(ext,")
     fixtures = pathlib.Path(__file__).with_name("HostMemoryProfileTests.swift").read_text(encoding="utf-8")
     fixtures = fixtures.replace("    // PROFILE_VALIDATOR_SOURCE", validator)
+    fixtures = fixtures.replace("    // SIGNATURE_VALIDATOR_SOURCE", signatures)
+    fixtures = fixtures.replace("    // MEMORY_SCOPE_SOURCE", scope)
+    fixtures = fixtures.replace("    // APP_MEMORY_PREFERENCES_SOURCE", preferences)
     fixtures = fixtures.replace("    // SIGNER_VALIDATOR_SOURCE", signing)
     fixtures = fixtures.replace("    // PROCESS_MEMORY_SOURCE", extension)
     with tempfile.TemporaryDirectory(prefix="host-memory-tests-") as directory:
