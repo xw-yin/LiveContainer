@@ -179,6 +179,7 @@ struct LCJITLessDiagnoseView : View {
     @State var errorInfo = ""
     @State var successShow = false
     @State var successInfo = ""
+    @State private var memoryReport = ""
     
     @EnvironmentObject private var sharedModel : SharedModel
     
@@ -298,6 +299,24 @@ struct LCJITLessDiagnoseView : View {
                     
                 }
                                 
+                Section("Memory Diagnostics".loc) {
+                    Text(memoryReport)
+                        .font(.system(.footnote, design: .monospaced))
+                        .textSelection(.enabled)
+                    Button("Refresh Memory Diagnostics".loc) {
+                        memoryReport = LCSharedUtils.memoryDiagnostics()["report"] as? String ?? "Unknown"
+                    }
+                    Button("lc.common.copy".loc) {
+                        UIPasteboard.general.string = memoryReport
+                    }
+                    Text("These values describe the running host process. Guest app entitlements do not change its memory limit.".loc)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .onAppear {
+                    memoryReport = LCSharedUtils.memoryDiagnostics()["report"] as? String ?? "Unknown"
+                }
+
                 Section {
                     Button {
                         testJITLessMode()

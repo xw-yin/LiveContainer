@@ -40,6 +40,16 @@ reject_host() {
 }
 
 # Keep the runtime bundle, registration identity, source, and icon behavior aligned.
+require 'AppManager.shared.resign(hostApp, presentingViewController: self)' 'AltStore/My Apps/MyAppsViewController.swift'
+reject 'func patchMoreRAMInLiveContainer' 'AltStore/My Apps/MyAppsViewController.swift'
+reject 'func liveContainerGuestURL' 'AltStore/My Apps/MyAppsViewController.swift'
+reject 'isMoreRAMEnabled(forBundleIdentifier:' 'SideStore/Core/Operations/PipelineRunner.swift'
+require 'try validateHostMemoryProfile(profile, for: targetAppBundle)' 'SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift'
+require 'guard !context.requiresHostMemoryEntitlements else { throw originalError }' 'SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift'
+require 'for app in [resignedAppBundle, liveProcess]' 'SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift'
+require 'Provisioning profile does not grant' 'Dependencies/SideSign/Sources/CodeSigning/CodeSignerAPI.swift'
+require_host 'SecTaskCopyValueForEntitlement(task,' 'LiveContainer/LCSharedUtils.m'
+require_host '[HostMemory]' 'LiveContainer/LCBootstrap.m'
 require 'static let isBundledWithLiveContainer' 'Shared/Extensions/Bundle+AltStore.swift'
 require 'static var realMainBundle' 'Shared/Extensions/Bundle+AltStore.swift'
 require 'embeddedLiveContainerApplication' 'AltStore/Core/Model/DatabaseManager/DatabaseManager.swift'

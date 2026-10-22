@@ -3,6 +3,9 @@
 #import "FoundationPrivate.h"
 #import "UIKitPrivate.h"
 #import "utils.h"
+#import <mach/mach.h>
+#import <os/proc.h>
+#import <unistd.h>
 @import MachO;
 
 extern NSUserDefaults *lcUserDefaults;
@@ -13,6 +16,46 @@ NSString* FBSOpenApplicationOptionKeyActivateAsClassic = @"__ActivateAsClassic";
 NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 
 @implementation LCSharedUtils
+
++ (NSDictionary<NSString *, id> *)memoryDiagnostics {
+    NSArray<NSString *> *keys = @[
+        @"com.apple.developer.kernel.increased-memory-limit",
+        @"com.apple.developer.kernel.extended-virtual-addressing",
+        @"com.apple.developer.kernel.increased-debugging-memory-limit"
+    ];
+    NSMutableDictionary *entitlements = [NSMutableDictionary dictionary];
+    NSMutableArray<NSString *> *lines = [NSMutableArray array];
+    NSString *process = [lcMainBundle.bundleURL.lastPathComponent isEqualToString:@"LiveProcess.appex"] ? @"LiveProcess" : @"LiveContainer";
+    [lines addObject:[NSString stringWithFormat:@"Process: %@ (PID %d)", process, getpid()]];
+    void *task = SecTaskCreateFromSelf(NULL);
+    for (NSString *key in keys) {
+        CFErrorRef error = NULL;
+        CFTypeRef value = task ? SecTaskCopyValueForEntitlement(task, (__bridge CFStringRef)key, &error) : NULL;
+        // Read the running task, never the guest's Mach-O or spoofed Bundle.main.
+        id enabled = (!task || error) ? NSNull.null : @NO;
+        if (value && CFGetTypeID(value) == CFBooleanGetTypeID()) {
+            enabled = @(CFBooleanGetValue((CFBooleanRef)value));
+        }
+        entitlements[key] = enabled;
+        NSString *state = [enabled isKindOfClass:NSNumber.class] ? ([enabled boolValue] ? @"yes" : @"no") : @"unknown";
+        [lines addObject:[NSString stringWithFormat:@"%@: %@", key, state]];
+        if (value) CFRelease(value);
+        if (error) CFRelease(error);
+    }
+    if (task) CFRelease(task);
+
+    uint64_t available = os_proc_available_memory();
+    [lines addObject:[NSString stringWithFormat:@"Available memory now: %.1f MiB (not the configured limit)", available / 1048576.0]];
+    NSMutableDictionary *result = [@{@"process": process, @"pid": @(getpid()), @"entitlements": entitlements, @"availableBytes": @(available)} mutableCopy];
+    task_vm_info_data_t info = {0};
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&info, &count) == KERN_SUCCESS && count >= TASK_VM_INFO_REV1_COUNT) {
+        result[@"footprintBytes"] = @(info.phys_footprint);
+        [lines addObject:[NSString stringWithFormat:@"Physical footprint: %.1f MiB", info.phys_footprint / 1048576.0]];
+    }
+    result[@"report"] = [lines componentsJoinedByString:@"\n"];
+    return result;
+}
 
 + (BOOL)removeItemUnlockingAtURL:(NSURL *)url error:(NSError **)error {
     return LCRemoveItemUnlocking(url, error);

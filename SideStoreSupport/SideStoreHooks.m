@@ -51,6 +51,10 @@
 
 @implementation NSBundle(SideStoreHooks)
 
+- (NSDictionary *)lc_memoryDiagnostics {
+    return LCSharedUtils.memoryDiagnostics;
+}
+
 + (NSString*)hook_appbundleIdentifier {
     return @"com.kdt.livecontainer";
 }

@@ -1,0 +1,38 @@
+diff --git a/Sources/CodeSigning/CodeSignerAPI.swift b/Sources/CodeSigning/CodeSignerAPI.swift
+index 31e7690..a64eb49 100644
+--- a/Sources/CodeSigning/CodeSignerAPI.swift
++++ b/Sources/CodeSigning/CodeSignerAPI.swift
+@@ -145,12 +145,15 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
+                 }
+             }
+ 
+-            // Caller-injected entitlements are unioned in after the profile∩binary
+-            // filtering: they are written into the binary's signature even when the
+-            // provisioning profile does not carry them. Only safe for bundles that
+-            // are not validated against their profile at install time (e.g.
+-            // LiveContainer guests); callers are responsible for scoping this.
++            // Restoring a stripped memory key is safe only when the Apple-signed
++            // profile actually grants it. A guest signature cannot grant host RAM.
++            let memoryKeys = ["com.apple.developer.kernel.increased-memory-limit",
++                              "com.apple.developer.kernel.extended-virtual-addressing",
++                              "com.apple.developer.kernel.increased-debugging-memory-limit"]
+             for (key, value) in injectedEntitlements {
++                if memoryKeys.contains(key), (matchedProfile.entitlements[key] as? Bool) != true {
++                    throw SignerError.invalidApp(cause: "Provisioning profile does not grant \(key) for \(app.bundleIdentifier)")
++                }
+                 filteredEntitlements[key] = value
+             }
+ 
+@@ -180,7 +183,11 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
+ 
+             for ext in appBundle.appExtensions {
+                 verboseLog("[SideSign] Found app extension: \(ext.bundleIdentifier) at \(ext.fileURL.path)")
+-                try prepare(ext)
++                let processMemory = ext.fileURL.lastPathComponent == "LiveProcess.appex" ? injectedEntitlements.filter {
++                    ["com.apple.developer.kernel.increased-memory-limit",
++                     "com.apple.developer.kernel.extended-virtual-addressing"].contains($0.key)
++                } : [:]
++                try prepare(ext, injectedEntitlements: processMemory)
+             }
+ 
+             let keyData = try keyStore.exportP12()

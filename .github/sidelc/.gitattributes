@@ -1,0 +1,2 @@
+# Patch context preserves the original blank lines and filename separator tabs.
+*.patch text eol=lf -whitespace

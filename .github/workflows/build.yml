@@ -30,7 +30,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || '83fd54ab7fe38588ac6b61982251ebc3339c3eca' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'dc05569387146c4c51af8c2a5dc1516daa952062' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
@@ -88,6 +88,8 @@ jobs:
           test "$(git -C SideStoreBuild rev-parse HEAD)" = "$sidestore_revision"
           echo "Building SideStore revision: $sidestore_revision"
           git -C SideStoreBuild submodule update --init --recursive --depth 1
+          bash "$GITHUB_WORKSPACE/.github/sidelc/apply_host_memory.sh" SideStoreBuild
+          python3 "$GITHUB_WORKSPACE/.github/tests/run_host_memory_tests.py" SideStoreBuild
           "$GITHUB_WORKSPACE/.github/sidelc/verify_integration.sh" SideStoreBuild
           if [ -d "SideStoreBuild/Dependencies/SideSign" ]; then
             git -C SideStoreBuild/Dependencies/SideSign rev-parse HEAD
