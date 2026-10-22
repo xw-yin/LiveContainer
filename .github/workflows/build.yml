@@ -30,7 +30,7 @@ jobs:
     env:
       scheme: LiveContainer
       archive_path: archive
-      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || '7b95ab34c047721aceb512950dc8ff89bccb334f' }}
+      sidestore_revision: ${{ github.event.inputs.sidestore_revision || github.event.client_payload.sidestore_revision || 'b21cd3cf0e2457bb9cca6930f26c1123b17ba294' }}
     outputs:
       scheme: ${{ steps.scheme.outputs.scheme }}
       archive_path: ${{ env.archive_path }}
