@@ -36,8 +36,20 @@ index a1995799..d7f82b2f 100644
      }
      @objc var keepAnisetteHeadersAfterLogout: Bool {
          get { self.bool(forKey: #function) }
+diff --git a/AltStore/Info.plist b/AltStore/Info.plist
+index 8fe0cc03..dab4a4c5 100644
+--- a/AltStore/Info.plist
++++ b/AltStore/Info.plist
+@@ -238,6 +238,7 @@
+ 	<key>BGTaskSchedulerPermittedIdentifiers</key>
+ 	<array>
+ 		<string>com.SideStore.SideStore.automatic-refresh</string>
++		<string>$(PRODUCT_BUNDLE_IDENTIFIER).install.*</string>
+ 	</array>
+ 	<key>NSLocationWhenInUseUsageDescription</key>
+ 	<string>SideStore uses location updates to keep background operations active.</string>
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae0..a459939a 100644
+index e6beeae0..82625ad3 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -985,9 +985,77 @@ private extension MyAppsViewController
@@ -480,6 +492,68 @@ index bd484440..92e5ee9e 100644
 +"Please enable the SideStore WireGuard VPN before sideloading apps." = "签名安装应用前，请在系统设置中开启 SideStore WireGuard VPN。";
 +"Device Communication Error" = "设备通信异常";
 +"Cannot establish connection to local device service. Please check that SideStore VPN is connected, or toggle the VPN off and on in Settings." = "无法连接到本地设备通信服务。请检查 SideStore VPN 是否已连接，或在系统设置中重新开关一次 VPN。";
+diff --git a/SideStore/AppConstants.swift b/SideStore/AppConstants.swift
+index b84fcf92..ecd10a94 100644
+--- a/SideStore/AppConstants.swift
++++ b/SideStore/AppConstants.swift
+@@ -96,8 +96,8 @@ public enum AppConstants {
+ 
+         public enum Servers {
+             public static let defaultSource        = "https://servers.sidestore.io/servers.json"
+-            public static let defaultServerURL     = "https://win.ani.sidestore.io"
+-            public static let secondaryServerURL   = "https://ani.jkcoxson.com"
++            public static let defaultServerURL     = "https://new.ani.sidestore.io"
++            public static let secondaryServerURL   = "https://mac-ani.jkcoxson.com"
+             public static let connectivityCheckURL = URL(string: "https://www.apple.com/library/test/success.html")!
+         }
+ 
+diff --git a/SideStore/Core/Anisette/AnisetteProvider.swift b/SideStore/Core/Anisette/AnisetteProvider.swift
+index d3640308..05c93cb6 100644
+--- a/SideStore/Core/Anisette/AnisetteProvider.swift
++++ b/SideStore/Core/Anisette/AnisetteProvider.swift
+@@ -27,7 +27,11 @@ enum AnisetteProvider {
+ 
+     private static func fetchRemote(handler: AnisetteServerHandler? = nil) async throws -> ALTAnisetteData {
+         let serverUrlStrings = await AnisetteServersManager.shared.getActiveServerURLs()
+-        let servers = serverUrlStrings.compactMap { URL(string: $0) }
++        let filteredStrings = serverUrlStrings.filter { urlStr in
++            !urlStr.contains("win.ani.sidestore.io") && urlStr != "https://ani.sidestore.io"
++        }
++        let effectiveStrings = filteredStrings.isEmpty ? [AppConstants.Anisette.Servers.defaultServerURL] : filteredStrings
++        let servers = effectiveStrings.compactMap { URL(string: $0) }
+         guard !servers.isEmpty else {
+             throw AnisetteError.noServersConfigured
+         }
+diff --git a/SideStore/Core/Anisette/AnisetteServersManager.swift b/SideStore/Core/Anisette/AnisetteServersManager.swift
+index 4c3d34be..b35c471e 100644
+--- a/SideStore/Core/Anisette/AnisetteServersManager.swift
++++ b/SideStore/Core/Anisette/AnisetteServersManager.swift
+@@ -56,9 +56,10 @@ public actor AnisetteServersManager {
+     // MARK: - Local Persistence & In-Memory Caching
+ 
+     public static let defaultInitialServers: [AnisetteServerItem] = [
+-        AnisetteServerItem(name: "SideStore (Windows ADI)", address: AppConstants.Anisette.Servers.defaultServerURL, isHidden: false),
+-        AnisetteServerItem(name: "Jkcoxson (Windows)", address: AppConstants.Anisette.Servers.secondaryServerURL, isHidden: false),
+-        AnisetteServerItem(name: "SideStore (.io)", address: "https://ani.sidestore.io", isHidden: false)
++        AnisetteServerItem(name: "SideStore (New Mac ADI)", address: AppConstants.Anisette.Servers.defaultServerURL, isHidden: false),
++        AnisetteServerItem(name: "Jkcoxson (Mac)", address: AppConstants.Anisette.Servers.secondaryServerURL, isHidden: false),
++        AnisetteServerItem(name: "iLoader (Mac)", address: "https://ani.iloader.app", isHidden: false),
++        AnisetteServerItem(name: "StikStore (Mac)", address: "https://ani.stikstore.app", isHidden: false)
+     ]
+ 
+     public func loadLocalServers() -> [AnisetteServerItem] {
+@@ -68,9 +69,9 @@ public actor AnisetteServersManager {
+ 
+         let fileManager = FileManager.default
+ 
+-        // Migrate default menuAnisetteURL if still pointed to ani.sidestore.io
++        // Migrate default menuAnisetteURL if still pointed to ani.sidestore.io or win.ani.sidestore.io
+         let currentURL = UserDefaults.standard.menuAnisetteURL
+-        if currentURL.isEmpty || currentURL.contains("ani.sidestore.io") {
++        if currentURL.isEmpty || currentURL.contains("win.ani.sidestore.io") || currentURL == "https://ani.sidestore.io" {
+             UserDefaults.standard.menuAnisetteURL = AppConstants.Anisette.Servers.defaultServerURL
+         }
+ 
 diff --git a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift b/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
 index c96b254d..c81d2493 100644
 --- a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
@@ -802,7 +876,7 @@ index 2445cb11..5043f23c 100644
      }
      
 diff --git a/SideStore/Core/Operations/PipelineRunner.swift b/SideStore/Core/Operations/PipelineRunner.swift
-index cd1c41ca..2b8cfb5b 100644
+index cd1c41ca..fbc05f7f 100644
 --- a/SideStore/Core/Operations/PipelineRunner.swift
 +++ b/SideStore/Core/Operations/PipelineRunner.swift
 @@ -164,7 +164,17 @@ final class PipelineRunner: Sendable
@@ -824,11 +898,26 @@ index cd1c41ca..2b8cfb5b 100644
          } catch let opError as OperationError {
              group.error = opError
              group.context.error = opError
-@@ -410,7 +420,23 @@ final class PipelineRunner: Sendable
+@@ -410,7 +420,38 @@ final class PipelineRunner: Sendable
      
      private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp
      {
 -        let pipelineSteps = PipelineStepDefinition.steps(for: operation)
++        var backgroundTaskID = UIBackgroundTaskIdentifier.invalid
++        await MainActor.run {
++            backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "SideStore.Pipeline") {
++                UIApplication.shared.endBackgroundTask(backgroundTaskID)
++                backgroundTaskID = .invalid
++            }
++        }
++        defer {
++            let taskToRelease = backgroundTaskID
++            if taskToRelease != .invalid {
++                Task { @MainActor in
++                    UIApplication.shared.endBackgroundTask(taskToRelease)
++                }
++            }
++        }
 +        let isHostAppOperation = operation.bundleIdentifier == StoreApp.altstoreAppID || operation.bundleIdentifier.isAltStoreAppID
 +        let signsOrRefreshesApp: Bool
 +        switch operation {
@@ -849,7 +938,7 @@ index cd1c41ca..2b8cfb5b 100644
          let context = InstallAppOperationContext(
              pipelineSteps: pipelineSteps,
              bundleIdentifier: operation.bundleIdentifier,
-@@ -423,22 +449,16 @@ final class PipelineRunner: Sendable
+@@ -423,22 +464,16 @@ final class PipelineRunner: Sendable
          context.isCellularRefreshGroup = group.isCellularRefreshGroup
          context.groupOperationsCount = operationsCount
  
@@ -882,7 +971,7 @@ index cd1c41ca..2b8cfb5b 100644
          }
  
          switch operation {
-@@ -468,6 +488,29 @@ final class PipelineRunner: Sendable
+@@ -468,6 +503,29 @@ final class PipelineRunner: Sendable
              }
          }
          
