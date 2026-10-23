@@ -103,7 +103,7 @@ index e6beeae0..a459939a 100644
 +            }
 +            group.addTask {
 +                try await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
-+                throw MinimuxerError.notReachable("Connection timed out after \(timeoutSeconds)s")
++                throw NSError(domain: "Minimuxer", code: -1, userInfo: [NSLocalizedDescriptionKey: "Connection timed out after \(timeoutSeconds)s"])
 +            }
 +            let first = try await group.next() ?? false
 +            group.cancelAll()
