@@ -21,12 +21,14 @@ LiveContainer checkout contains the complete change.
    targets the actual installed host, keeps its bundle ID and LiveProcess, and
    uses the existing staged self-reinstall pipeline. It does not modify the
    running installation in place or delete app data.
-4. The request requires `increased-memory-limit` and
-   `extended-virtual-addressing` in the host and LiveProcess provisioning
-   profiles, then verifies both signed binaries before sending the IPA for
-   installation. A stripped binary key is restored only when the profile grants
-   it. Debugging memory is not required. Missing permissions, missing LiveProcess,
-   or an unidentified host stops the operation with an error.
+4. The request registers `INCREASED_MEMORY_LIMIT` using Apple's v1 capability
+   API (GetMoreRAM-style), requires `increased-memory-limit` in the host and
+   LiveProcess provisioning profiles, then verifies both signed binaries before
+   sending the IPA for installation. A stripped binary key is restored only
+   when the profile grants it. Debugging memory and extended virtual addressing
+   (which Apple does not grant to free accounts) are not required. Missing
+   permissions, missing LiveProcess, or an unidentified host stops the operation
+   with an error.
 5. Fully reopen LiveContainer and restart guest processes after installation.
    Copy the new diagnostics report. Compare runtime entitlements and measurements
    on the same device and launch mode. Every host/LiveProcess startup also logs

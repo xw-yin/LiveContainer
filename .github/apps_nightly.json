@@ -32,7 +32,6 @@
           "com.apple.security.application-groups",
           "get-task-allow",
           "keychain-access-groups",
-          "com.apple.developer.kernel.extended-virtual-addressing",
           "com.apple.developer.kernel.increased-memory-limit",
           "com.apple.developer.healthkit.background-delivery",
           "com.apple.developer.healthkit",

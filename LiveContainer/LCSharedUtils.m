@@ -20,7 +20,6 @@ NSString* FBSOpenApplicationOptionKeyPayloadURL = @"__PayloadURL";
 + (NSDictionary<NSString *, id> *)memoryDiagnostics {
     NSArray<NSString *> *keys = @[
         @"com.apple.developer.kernel.increased-memory-limit",
-        @"com.apple.developer.kernel.extended-virtual-addressing",
         @"com.apple.developer.kernel.increased-debugging-memory-limit"
     ];
     NSMutableDictionary *entitlements = [NSMutableDictionary dictionary];

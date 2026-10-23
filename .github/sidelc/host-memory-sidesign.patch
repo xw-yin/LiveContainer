@@ -1,5 +1,5 @@
 diff --git a/Sources/CodeSigning/CodeSignerAPI.swift b/Sources/CodeSigning/CodeSignerAPI.swift
-index 31e7690..cedbcd4 100644
+index 31e7690..4d623d4 100644
 --- a/Sources/CodeSigning/CodeSignerAPI.swift
 +++ b/Sources/CodeSigning/CodeSignerAPI.swift
 @@ -69,6 +69,12 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
@@ -15,7 +15,7 @@ index 31e7690..cedbcd4 100644
      {
          debugLog("[SideSign] AppBundleSigner.signApp called")
          verboseLog("[SideSign] URL: \(appURL.path), Profiles: \(profiles.map { "\($0.name) (\($0.bundleIdentifier))" })")
-@@ -145,12 +151,15 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
+@@ -145,12 +151,14 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
                  }
              }
  
@@ -27,7 +27,6 @@ index 31e7690..cedbcd4 100644
 +            // Restoring a stripped memory key is safe only when the Apple-signed
 +            // profile actually grants it. A guest signature cannot grant host RAM.
 +            let memoryKeys = ["com.apple.developer.kernel.increased-memory-limit",
-+                              "com.apple.developer.kernel.extended-virtual-addressing",
 +                              "com.apple.developer.kernel.increased-debugging-memory-limit"]
              for (key, value) in injectedEntitlements {
 +                if memoryKeys.contains(key), (matchedProfile.entitlements[key] as? Bool) != true {
@@ -36,14 +35,13 @@ index 31e7690..cedbcd4 100644
                  filteredEntitlements[key] = value
              }
  
-@@ -180,7 +189,11 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
+@@ -180,7 +188,10 @@ public struct AppBundleSigner: CodeSignerAPI, Sendable {
  
              for ext in appBundle.appExtensions {
                  verboseLog("[SideSign] Found app extension: \(ext.bundleIdentifier) at \(ext.fileURL.path)")
 -                try prepare(ext)
 +                let processMemory = includeLiveProcessMemory && ext.fileURL.lastPathComponent == "LiveProcess.appex" ? injectedEntitlements.filter {
-+                    ["com.apple.developer.kernel.increased-memory-limit",
-+                     "com.apple.developer.kernel.extended-virtual-addressing"].contains($0.key)
++                    $0.key == "com.apple.developer.kernel.increased-memory-limit"
 +                } : [:]
 +                try prepare(ext, injectedEntitlements: processMemory)
              }

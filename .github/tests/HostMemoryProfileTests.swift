@@ -10,8 +10,7 @@ final class InstallAppOperationContext {
     var requiresMemoryEntitlements: Bool { requiresHostMemoryEntitlements || requiresAppMemoryEntitlements }
     // MEMORY_SCOPE_SOURCE
     static let memoryEntitlements = [
-        MemoryKey(rawValue: "com.apple.developer.kernel.increased-memory-limit"),
-        MemoryKey(rawValue: "com.apple.developer.kernel.extended-virtual-addressing")
+        MemoryKey(rawValue: "com.apple.developer.kernel.increased-memory-limit")
     ]
 }
 struct ALTProvisioningProfile { var entitlements: [String: Any] }

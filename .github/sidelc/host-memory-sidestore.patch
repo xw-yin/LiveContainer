@@ -1,5 +1,5 @@
 diff --git a/AltStore/Core/Extensions/UserDefaults+AltStore.swift b/AltStore/Core/Extensions/UserDefaults+AltStore.swift
-index a199579..d7f82b2 100644
+index a1995799..d7f82b2f 100644
 --- a/AltStore/Core/Extensions/UserDefaults+AltStore.swift
 +++ b/AltStore/Core/Extensions/UserDefaults+AltStore.swift
 @@ -393,25 +393,17 @@ public extension UserDefaults
@@ -37,7 +37,7 @@ index a199579..d7f82b2 100644
      @objc var keepAnisetteHeadersAfterLogout: Bool {
          get { self.bool(forKey: #function) }
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae..07557c6 100644
+index e6beeae0..07557c61 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -1796,172 +1796,97 @@ private extension MyAppsViewController
@@ -369,7 +369,7 @@ index e6beeae..07557c6 100644
              backupMenu,
              infoAction,
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
-index bd48444..5955bdc 100644
+index bd484440..5955bdc9 100644
 --- a/AltStore/zh-Hans.lproj/Localizable.strings
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
 @@ -2315,3 +2315,28 @@
@@ -402,7 +402,7 @@ index bd48444..5955bdc 100644
 +"Memory setup cannot change the installed app bundle identifier. Check this app's custom signing settings." = "内存配置不能改变已安装应用的包标识，请检查该应用的自定义签名设置。";
 +"Signed app bundle %@ is missing memory permissions: %@. Installation was stopped." = "签名后的应用组件 %@ 缺少内存权限：%@。已停止安装。";
 diff --git a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift b/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
-index c96b254..6e0877f 100644
+index c96b254d..c81d2493 100644
 --- a/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
 +++ b/SideStore/Core/Enterprise/EnterpriseAppSigner.swift
 @@ -17,6 +17,7 @@ struct EnterpriseAppSigner: Sendable {
@@ -413,14 +413,13 @@ index c96b254..6e0877f 100644
  
      static func resolvedEntitlements(
          for app: ALTApplication,
-@@ -86,11 +87,20 @@ struct EnterpriseAppSigner: Sendable {
+@@ -86,11 +87,19 @@ struct EnterpriseAppSigner: Sendable {
                  debugLog("[EnterpriseAppSigner] WARNING: '\(app.bundleIdentifier)' is outside wildcard App ID '\(matchedProfile.bundleIdentifier)'. Installation will likely fail.")
              }
  
 +            let isMemoryHost = !app.isExtension || (includeLiveProcessMemory && app.fileURL.lastPathComponent == "LiveProcess.appex")
 +            let injected = isMemoryHost ? self.injectedEntitlements : [:]
 +            for (key, _) in injected where ["com.apple.developer.kernel.increased-memory-limit",
-+                                            "com.apple.developer.kernel.extended-virtual-addressing",
 +                                            "com.apple.developer.kernel.increased-debugging-memory-limit"].contains(key) {
 +                guard (matchedProfile.entitlements[key] as? Bool) == true else {
 +                    throw SignerError.invalidApp(cause: "Provisioning profile does not grant \(key) for \(app.bundleIdentifier)")
@@ -437,7 +436,7 @@ index c96b254..6e0877f 100644
  
              let plist = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
 diff --git a/SideStore/Core/Operations/OperationContexts.swift b/SideStore/Core/Operations/OperationContexts.swift
-index e5daa62..e30585c 100644
+index e5daa629..48b3def7 100644
 --- a/SideStore/Core/Operations/OperationContexts.swift
 +++ b/SideStore/Core/Operations/OperationContexts.swift
 @@ -276,14 +276,20 @@ class InstallAppOperationContext: PipelineOperationContext
@@ -464,12 +463,12 @@ index e5daa62..e30585c 100644
 +            (requiresHostMemoryEntitlements && app.fileURL.lastPathComponent == "LiveProcess.appex"))
 +    }
 +
-+    static let memoryEntitlements: [ALTEntitlement] = [.increasedMemoryLimit, .extendedVirtualAddressing]
++    static let memoryEntitlements: [ALTEntitlement] = [.increasedMemoryLimit]
      var isStoreUpdate: Bool = false
      var targetAppBundle: ALTApplication?
  
 diff --git a/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift b/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
-index 3cac441..176f810 100644
+index 3cac441a..14d8723a 100644
 --- a/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
 +++ b/SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift
 @@ -33,6 +33,10 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
@@ -535,7 +534,80 @@ index 3cac441..176f810 100644
      private func provisionAndFetchProfile(for targetAppBundle: ALTApplication,
                                            parentAppBundle: ALTApplication?,
                                            team: ALTTeam) async throws -> ALTProvisioningProfile {
-@@ -235,9 +263,22 @@ private extension FetchProvisioningProfilesOperation{
+@@ -230,14 +258,95 @@ private extension FetchProvisioningProfilesOperation{
+         }
+     }
+     
++    private func enableIncreasedMemoryLimitV1(for appID: ALTAppID, team: ALTTeam) async {
++        do {
++            let session = try await AuthManager.shared.getAuthenticatedSession()
++            guard let url = URL(string: "https://developerservices2.apple.com/services/v1/bundleIds/\(appID.identifier)") else { return }
++            var request = URLRequest(url: url)
++            request.httpMethod = "PATCH"
++            let body: [String: Any] = [
++                "data": [
++                    "type": "bundleIds",
++                    "id": appID.identifier,
++                    "attributes": [
++                        "identifier": appID.bundleIdentifier,
++                        "teamId": team.identifier,
++                        "seedId": team.identifier,
++                        "bundleType": "bundle",
++                        "name": appID.name,
++                        "hasExclusiveManagedCapabilities": false
++                    ],
++                    "relationships": [
++                        "bundleIdCapabilities": [
++                            "data": [
++                                [
++                                    "type": "bundleIdCapabilities",
++                                    "attributes": ["enabled": true, "settings": [] as [Any]],
++                                    "relationships": [
++                                        "capability": [
++                                            "data": ["type": "capabilities", "id": "INCREASED_MEMORY_LIMIT"]
++                                        ]
++                                    ]
++                                ]
++                            ]
++                        ]
++                    ]
++                ]
++            ]
++            request.httpBody = try JSONSerialization.data(withJSONObject: body)
++            request.setValue("application/vnd.api+json", forHTTPHeaderField: "Content-Type")
++            request.setValue("application/vnd.api+json", forHTTPHeaderField: "Accept")
++            request.setValue("Xcode", forHTTPHeaderField: "User-Agent")
++            request.setValue("com.apple.gs.xcode.auth", forHTTPHeaderField: "X-Apple-App-Info")
++            request.setValue(session.xcodeVersion, forHTTPHeaderField: "X-Xcode-Version")
++            request.setValue(session.dsid, forHTTPHeaderField: "X-Apple-I-Identity-Id")
++            request.setValue(session.authToken, forHTTPHeaderField: "X-Apple-GS-Token")
++            let a = session.anisetteData
++            request.setValue(a.machineID, forHTTPHeaderField: "X-Apple-I-MD-M")
++            request.setValue(a.oneTimePassword, forHTTPHeaderField: "X-Apple-I-MD")
++            request.setValue(a.localUserID, forHTTPHeaderField: "X-Apple-I-MD-LU")
++            request.setValue("\(a.routingInfo)", forHTTPHeaderField: "X-Apple-I-MD-RINFO")
++            request.setValue(a.deviceID, forHTTPHeaderField: "X-Mme-Device-Id")
++            request.setValue(a.clientInfo, forHTTPHeaderField: "X-MMe-Client-Info")
++            request.setValue(a.clientTime, forHTTPHeaderField: "X-Apple-I-Client-Time")
++            request.setValue(a.locale, forHTTPHeaderField: "X-Apple-Locale")
++            request.setValue(a.locale, forHTTPHeaderField: "X-Apple-I-Locale")
++            request.setValue(a.timeZone, forHTTPHeaderField: "X-Apple-I-TimeZone")
++
++            let (data, response) = try await URLSession.shared.data(for: request)
++            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
++            if statusCode >= 200 && statusCode < 300 {
++                self.debugLog("[MemoryPermissions] Successfully registered INCREASED_MEMORY_LIMIT for \(appID.bundleIdentifier) via Apple v1 API")
++            } else {
++                let respStr = String(data: data, encoding: .utf8) ?? ""
++                self.debugLog("[MemoryPermissions] Apple v1 API returned status \(statusCode) for \(appID.bundleIdentifier): \(respStr)")
++            }
++        } catch {
++            self.debugLog("[MemoryPermissions] Failed to register memory capability via v1 API for \(appID.bundleIdentifier): \(error)")
++        }
++    }
++
+     func updateFeatures(for appID: ALTAppID, targetAppBundle: ALTApplication, team: ALTTeam) async throws -> ALTAppID {
+         let bundleID = targetAppBundle.bundleIdentifier
          var entitlements = self.context.customEntitlementsByBundleID[bundleID]
              ?? targetAppBundle.entitlements
          for (key, value) in context.additionalEntitlements {
@@ -558,17 +630,30 @@ index 3cac441..176f810 100644
          guard let allowedFeatures = team.type.allowedFeatures else {
              throw OperationError.invalidParameters("Cannot update features for unknown team type.")
          }
-@@ -294,6 +335,8 @@ private extension FetchProvisioningProfilesOperation{
-             self.verboseLog("[FetchProvisioningProfiles] Updated features for App ID \(updated.bundleIdentifier).")
-             return updated
-         } catch let originalError {
-+            // An explicit memory-permission request must not silently drop permissions.
-+            guard !context.needsMemoryPermissions(for: targetAppBundle) else { throw originalError }
-             // Free teams previously could not register the memory features at
-             // all, so they were silently dropped before ever reaching the
+@@ -285,6 +394,9 @@ private extension FetchProvisioningProfilesOperation{
+             return appID 
+         }
+         
++        if context.needsMemoryPermissions(for: targetAppBundle) {
++            await enableIncreasedMemoryLimitV1(for: appID, team: team)
++        }
+         // set for requesting and send request
+         var appID = appID
+         appID.features = targetFeatures
+@@ -299,9 +411,10 @@ private extension FetchProvisioningProfilesOperation{
              // portal. Now that they are attempted, a portal rejection must
+             // degrade to that same dropped behavior instead of failing the
+             // whole install (needs proper testing).
+-            let optionalMemoryFeatures: Set<ALTFeature> = [.increasedMemoryLimit, .extendedVirtualAddressing, .increasedDebuggingMemoryLimit]
++            let optionalMemoryFeatures: Set<ALTFeature> = [.increasedMemoryLimit, .increasedDebuggingMemoryLimit]
+             let attemptedMemoryFeatures = optionalMemoryFeatures.filter { targetFeatures[$0] != nil }
+             guard team.type == .free, !attemptedMemoryFeatures.isEmpty else {
++                guard !context.needsMemoryPermissions(for: targetAppBundle) else { throw originalError }
+                 self.debugLog("[FetchProvisioningProfiles] Failed to update features for App ID \(appID.bundleIdentifier). \(originalError.localizedDescription)")
+                 throw originalError
+             }
 diff --git a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
-index 2445cb1..5043f23 100644
+index 2445cb11..5043f23c 100644
 --- a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 +++ b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 @@ -38,6 +38,10 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
@@ -638,7 +723,7 @@ index 2445cb1..5043f23 100644
      }
      
 diff --git a/SideStore/Core/Operations/PipelineRunner.swift b/SideStore/Core/Operations/PipelineRunner.swift
-index cd1c41c..ef65c90 100644
+index cd1c41ca..ef65c90b 100644
 --- a/SideStore/Core/Operations/PipelineRunner.swift
 +++ b/SideStore/Core/Operations/PipelineRunner.swift
 @@ -410,7 +410,23 @@ final class PipelineRunner: Sendable
