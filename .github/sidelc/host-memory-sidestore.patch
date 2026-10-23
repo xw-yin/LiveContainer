@@ -49,7 +49,7 @@ index 8fe0cc03..dab4a4c5 100644
  	<key>NSLocationWhenInUseUsageDescription</key>
  	<string>SideStore uses location updates to keep background operations active.</string>
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae0..82625ad3 100644
+index e6beeae0..a4b43c22 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -985,9 +985,77 @@ private extension MyAppsViewController
@@ -388,7 +388,7 @@ index e6beeae0..82625ad3 100644
      func enableJIT(for installedApp: InstalledApp) {
          AppManager.shared.enableJIT(for: installedApp) { result in
              DispatchQueue.main.async {
-@@ -2369,33 +2362,19 @@ extension MyAppsViewController
+@@ -2369,33 +2362,22 @@ extension MyAppsViewController
              self.enableJIT(for: installedApp)
          }
          
@@ -418,8 +418,11 @@ index e6beeae0..82625ad3 100644
 -        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM", comment: ""), image: UIImage(systemName: "memorychip"), state: moreRAMEnabled ? .on : .off) { (action) in
 -            self.enableMoreRAM(for: installedApp)
 +        let isLiveContainerHost = Bundle.isBundledWithLiveContainer &&
-+            (installedApp.bundleIdentifier == StoreApp.altstoreAppID || installedApp.resignedBundleIdentifier.isAltStoreAppID)
-+        let supportsMoreRAM = installedApp.isActive && !isLegacySideloadedApp
++            (installedApp.bundleIdentifier == StoreApp.altstoreAppID ||
++             installedApp.resignedBundleIdentifier.isAltStoreAppID ||
++             installedApp.bundleIdentifier == Bundle.realMainBundle.bundleIdentifier ||
++             installedApp.resignedBundleIdentifier == Bundle.realMainBundle.bundleIdentifier)
++        let supportsMoreRAM = isLiveContainerHost || (installedApp.isActive && !isLegacySideloadedApp)
 +
 +        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
 +            if isLiveContainerHost {
@@ -433,7 +436,7 @@ index e6beeae0..82625ad3 100644
          let backupAction = UIAction(title: NSLocalizedString("Create Backup", comment: ""), image: UIImage(systemName: "doc.on.doc")) { (action) in
              self.backup(installedApp)
          }
-@@ -2552,11 +2531,6 @@ extension MyAppsViewController
+@@ -2552,11 +2534,6 @@ extension MyAppsViewController
                  actions.append(jitAction)
              }
              
@@ -445,7 +448,7 @@ index e6beeae0..82625ad3 100644
              actions.append(changeIconMenu)
              
              if !backupSubmenuActions.isEmpty
-@@ -2595,6 +2569,7 @@ extension MyAppsViewController
+@@ -2595,6 +2572,7 @@ extension MyAppsViewController
              #endif
          }
          
@@ -589,7 +592,7 @@ index c96b254d..c81d2493 100644
  
              let plist = try PropertyListSerialization.data(fromPropertyList: entitlements, format: .xml, options: 0)
 diff --git a/SideStore/Core/Operations/OperationContexts.swift b/SideStore/Core/Operations/OperationContexts.swift
-index e5daa629..48b3def7 100644
+index e5daa629..6997306c 100644
 --- a/SideStore/Core/Operations/OperationContexts.swift
 +++ b/SideStore/Core/Operations/OperationContexts.swift
 @@ -276,14 +276,20 @@ class InstallAppOperationContext: PipelineOperationContext
@@ -613,7 +616,7 @@ index e5daa629..48b3def7 100644
 +
 +    func needsMemoryPermissions(for app: ALTApplication) -> Bool {
 +        requiresMemoryEntitlements && (!app.isExtension ||
-+            (requiresHostMemoryEntitlements && app.fileURL.lastPathComponent == "LiveProcess.appex"))
++            app.fileURL.lastPathComponent == "LiveProcess.appex")
 +    }
 +
 +    static let memoryEntitlements: [ALTEntitlement] = [.increasedMemoryLimit]
@@ -806,7 +809,7 @@ index 3cac441a..14d8723a 100644
                  throw originalError
              }
 diff --git a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
-index 2445cb11..5043f23c 100644
+index 2445cb11..3cb45315 100644
 --- a/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 +++ b/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift
 @@ -38,6 +38,10 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
@@ -829,7 +832,7 @@ index 2445cb11..5043f23c 100644
          self.debugLog("[ResignAppOperation] Resigned app \(self.context.bundleIdentifier) to \(resignedAppBundle.bundleIdentifier).")
          self.setProgress(100)
          
-@@ -54,6 +60,30 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
+@@ -54,6 +60,29 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
      }
  
      
@@ -839,11 +842,10 @@ index 2445cb11..5043f23c 100644
 +            throw OperationError.invalidParameters(NSLocalizedString("Memory setup cannot change the installed app bundle identifier. Check this app's custom signing settings.", comment: ""))
 +        }
 +        var targets = [app]
-+        if context.requiresHostMemoryEntitlements {
-+            guard let liveProcess = app.appExtensions.first(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }) else {
-+                throw OperationError.invalidParameters(NSLocalizedString("LiveProcess was removed before signing. Memory setup was stopped before installation.", comment: ""))
-+            }
++        if let liveProcess = app.appExtensions.first(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }) {
 +            targets.append(liveProcess)
++        } else if context.requiresHostMemoryEntitlements {
++            throw OperationError.invalidParameters(NSLocalizedString("LiveProcess was removed before signing. Memory setup was stopped before installation.", comment: ""))
 +        }
 +        for target in targets {
 +            let missing = InstallAppOperationContext.memoryEntitlements.filter {
@@ -860,23 +862,27 @@ index 2445cb11..5043f23c 100644
      private func prepareAppBundle(for targetAppBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
  
          let bundleIdentifier = context.targetBundleIdentifier
-@@ -201,12 +231,12 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
+@@ -201,12 +230,16 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
          if profiles.contains(where: { $0.isWildcard }) || (isImportedIdentity && self.context.useMainProfile) {
              // Enterprise: wildcard profiles (or imported single-profile with extensions) need per-bundle resolution.
              self.debugLog("[ResignAppOperation] Using EnterpriseAppSigner for wildcard/imported profile(s) (team \(team.identifier))")
 -            let signer = EnterpriseAppSigner(certificate: certificate, additionalEntitlements: self.context.additionalEntitlements, injectedEntitlements: self.context.injectedEntitlements)
-+            let signer = EnterpriseAppSigner(certificate: certificate, additionalEntitlements: self.context.additionalEntitlements, injectedEntitlements: self.context.injectedEntitlements, includeLiveProcessMemory: context.requiresHostMemoryEntitlements)
++            let includeLiveProcessMemory = context.requiresHostMemoryEntitlements ||
++                (context.requiresMemoryEntitlements && appBundle.appExtensions.contains(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }))
++            let signer = EnterpriseAppSigner(certificate: certificate, additionalEntitlements: self.context.additionalEntitlements, injectedEntitlements: self.context.injectedEntitlements, includeLiveProcessMemory: includeLiveProcessMemory)
              try await signer.signApp(at: fileURL, provisioningProfiles: profiles)
              return fileURL
          }
++        let includeLiveProcessMemory = context.requiresHostMemoryEntitlements ||
++            (context.requiresMemoryEntitlements && appBundle.appExtensions.contains(where: { $0.fileURL.lastPathComponent == "LiveProcess.appex" }))
          let signer = ALTSigner(team: team, certificate: certificate)
 -        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, injectedEntitlements: self.context.injectedEntitlements, progress: nil)
-+        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, injectedEntitlements: self.context.injectedEntitlements, preserveAppEntitlements: false, includeLiveProcessMemory: context.requiresHostMemoryEntitlements, progress: nil)
++        try await signer.signApp(at: fileURL, provisioningProfiles: profiles, injectedEntitlements: self.context.injectedEntitlements, preserveAppEntitlements: false, includeLiveProcessMemory: includeLiveProcessMemory, progress: nil)
          return fileURL
      }
      
 diff --git a/SideStore/Core/Operations/PipelineRunner.swift b/SideStore/Core/Operations/PipelineRunner.swift
-index cd1c41ca..fbc05f7f 100644
+index cd1c41ca..be1220bf 100644
 --- a/SideStore/Core/Operations/PipelineRunner.swift
 +++ b/SideStore/Core/Operations/PipelineRunner.swift
 @@ -164,7 +164,17 @@ final class PipelineRunner: Sendable
@@ -898,7 +904,7 @@ index cd1c41ca..fbc05f7f 100644
          } catch let opError as OperationError {
              group.error = opError
              group.context.error = opError
-@@ -410,7 +420,38 @@ final class PipelineRunner: Sendable
+@@ -410,7 +420,39 @@ final class PipelineRunner: Sendable
      
      private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp
      {
@@ -932,13 +938,14 @@ index cd1c41ca..fbc05f7f 100644
 +            !(Bundle.isBundledWithLiveContainer && isHostAppOperation) &&
 +            UserDefaults.standard.isMemoryPermissionRequested(for: operation.bundleIdentifier)
 +        // LiveProcess must survive the user's ordinary extension-removal setting.
++        let retainsLiveProcess = requiresHostMemory || requiresAppMemory
 +        let pipelineSteps = PipelineStepDefinition.steps(for: operation).filter {
-+            !requiresHostMemory || $0.step != .removeAppExtensions
++            !retainsLiveProcess || $0.step != .removeAppExtensions
 +        }
          let context = InstallAppOperationContext(
              pipelineSteps: pipelineSteps,
              bundleIdentifier: operation.bundleIdentifier,
-@@ -423,22 +464,16 @@ final class PipelineRunner: Sendable
+@@ -423,22 +465,16 @@ final class PipelineRunner: Sendable
          context.isCellularRefreshGroup = group.isCellularRefreshGroup
          context.groupOperationsCount = operationsCount
  
@@ -971,7 +978,7 @@ index cd1c41ca..fbc05f7f 100644
          }
  
          switch operation {
-@@ -468,6 +503,29 @@ final class PipelineRunner: Sendable
+@@ -468,6 +504,29 @@ final class PipelineRunner: Sendable
              }
          }
          
