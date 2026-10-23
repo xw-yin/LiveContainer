@@ -37,7 +37,7 @@ index a1995799..d7f82b2f 100644
      @objc var keepAnisetteHeadersAfterLogout: Bool {
          get { self.bool(forKey: #function) }
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae0..110bea7a 100644
+index e6beeae0..a459939a 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
 @@ -985,9 +985,77 @@ private extension MyAppsViewController
@@ -376,7 +376,7 @@ index e6beeae0..110bea7a 100644
      func enableJIT(for installedApp: InstalledApp) {
          AppManager.shared.enableJIT(for: installedApp) { result in
              DispatchQueue.main.async {
-@@ -2369,33 +2362,20 @@ extension MyAppsViewController
+@@ -2369,33 +2362,19 @@ extension MyAppsViewController
              self.enableJIT(for: installedApp)
          }
          
@@ -404,24 +404,24 @@ index e6beeae0..110bea7a 100644
 -        }
 -        
 -        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM", comment: ""), image: UIImage(systemName: "memorychip"), state: moreRAMEnabled ? .on : .off) { (action) in
+-            self.enableMoreRAM(for: installedApp)
 +        let isLiveContainerHost = Bundle.isBundledWithLiveContainer &&
 +            (installedApp.bundleIdentifier == StoreApp.altstoreAppID || installedApp.resignedBundleIdentifier.isAltStoreAppID)
-+        let supportsMoreRAM = installedApp.isActive && !isLegacySideloadedApp && !isLiveContainerHost
++        let supportsMoreRAM = installedApp.isActive && !isLegacySideloadedApp
 +
-+        // The selected installed app and the LiveContainer host are distinct
-+        // targets, even when SideStore itself is running inside LiveContainer.
-+        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM for This Installed App", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
-             self.enableMoreRAM(for: installedApp)
++        let moreRAMAction = UIAction(title: NSLocalizedString("Get More RAM", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
++            if isLiveContainerHost {
++                self.enableHostMoreRAM()
++            } else {
++                self.enableMoreRAM(for: installedApp)
++            }
          }
 -        
-+        let hostMemoryAction = UIAction(title: NSLocalizedString("Get More RAM for LiveContainer", comment: ""), image: UIImage(systemName: "memorychip")) { _ in
-+            self.enableHostMoreRAM()
-+        }
 +
          let backupAction = UIAction(title: NSLocalizedString("Create Backup", comment: ""), image: UIImage(systemName: "doc.on.doc")) { (action) in
              self.backup(installedApp)
          }
-@@ -2552,11 +2532,6 @@ extension MyAppsViewController
+@@ -2552,11 +2531,6 @@ extension MyAppsViewController
                  actions.append(jitAction)
              }
              
@@ -433,23 +433,14 @@ index e6beeae0..110bea7a 100644
              actions.append(changeIconMenu)
              
              if !backupSubmenuActions.isEmpty
-@@ -2595,6 +2570,8 @@ extension MyAppsViewController
+@@ -2595,6 +2569,7 @@ extension MyAppsViewController
              #endif
          }
          
 +        if supportsMoreRAM { actions.append(moreRAMAction) }
-+        if Bundle.isBundledWithLiveContainer { actions.append(hostMemoryAction) }
          actions.append(infoAction)
          
          // Change the order of entries to make changes to how the context menu is displayed
-@@ -2607,6 +2584,7 @@ extension MyAppsViewController
-             activateAction,
-             jitAction,
-             moreRAMAction,
-+            hostMemoryAction,
-             changeIconMenu,
-             backupMenu,
-             infoAction,
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
 index bd484440..92e5ee9e 100644
 --- a/AltStore/zh-Hans.lproj/Localizable.strings
