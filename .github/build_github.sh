@@ -11,12 +11,11 @@ chmod +x ./tmp/dylibify
 # copy lc to working folder
 cp -R "$archive_path.xcarchive/Products/Applications" Payload
 
-# temporarily move SideStore support framework to tmp before zip
-mv Payload/LiveContainer.app/Frameworks/SideStoreSupport.framework ./tmp
+# The host UI links SideStoreSupport even without the embedded SideStore guest.
+# Keep this runtime dependency in both IPA variants, as well as exported clones.
 
 zip -r "$scheme.ipa" "Payload" -x "._*" -x ".DS_Store" -x "__MACOSX"
 
-mv ./tmp/SideStoreSupport.framework Payload/LiveContainer.app/Frameworks
 
 # put sidestore related keys into Info.plist and settings bundle
 /usr/libexec/PlistBuddy -c 'Add :ALTAppGroups array' ./Payload/LiveContainer.app/Info.plist

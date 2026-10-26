@@ -419,9 +419,9 @@
     // we don't care about errors when removing unnecessary files. errors occur probably because the file does not exist
     // we remove the extension
     [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"PlugIns"] error:nil];
-    // remove all sidestore stuff
+    // Remove the embedded guest, but keep SideStoreSupport.framework: the UI
+    // links it for host intents/refresh support even in a clone without SideStore.
     if([NSUserDefaults sideStoreExist]) {
-        [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreSupport.framework"] error:nil];
         [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStore.framework"] error:nil];
         [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Frameworks/SideStoreApp.framework"] error:nil];
         [LCSharedUtils removeItemUnlockingAtURL:[appBundlePath URLByAppendingPathComponent:@"Intents.intentdefinition"] error:nil];

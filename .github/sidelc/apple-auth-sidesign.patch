@@ -1,0 +1,153 @@
+diff --git a/Sources/DeveloperPortal/Authentication.swift b/Sources/DeveloperPortal/Authentication.swift
+--- a/Sources/DeveloperPortal/Authentication.swift
++++ b/Sources/DeveloperPortal/Authentication.swift
+@@ -372,7 +372,7 @@
+ 
+         let (data, response): (Data, URLResponse)
+         do {
+-            (data, response) = try await session.data(for: request)
++            (data, response) = try await performLoginRequest(request)
+         } catch {
+             debugLog("[SideSign] sendAuthenticationRequest network error: \(error)")
+             throw error
+@@ -380,6 +380,10 @@
+ 
+         let httpResponse = response as? HTTPURLResponse
+         let statusCode = httpResponse?.statusCode ?? 0
++
++        if statusCode == 429 {
++            throw ServerError.badServerResponse(reason: "Apple has rate-limited sign-in (HTTP 429). Wait before retrying; changing Anisette or signing certificates is not required.", jsonPayload: "")
++        }
+ 
+         guard !data.isEmpty else {
+             debugLog("[SideSign] Auth endpoint returned 0 bytes (HTTP \(statusCode))")
+@@ -722,7 +726,7 @@
+             verboseLog("[SideSign] sendTrustedDevice2FACodeRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
+         }
+ 
+-        let (data, response) = try await session.data(for: request)
++        let (data, response) = try await performLoginRequest(request)
+         let httpResponse = response as? HTTPURLResponse
+         let statusCode = httpResponse?.safeStatusCode ?? 0
+         try throwIfXMLUIErrorAlert(in: data, statusCode: statusCode, actionName: "sendTrustedDevice2FACodeRequest")
+@@ -749,22 +753,22 @@
+             return "1"
+         }()
+ 
+-        let serverInfo: [String: any Sendable] = [
+-            "mode": requestedMode,
+-            "phoneNumber.id": sanitizedPhoneID
+-        ]
+-
+-        var request = makeTwoFactorAuthRequest(url: Constants.URLs.phonePutURL(mode: requestedMode), context: context)
+-        request.httpMethod = "POST"
+-        request.httpBody = try PropertyListSerialization.data(fromPropertyList: [
+-            "serverInfo": serverInfo
+-        ], format: .xml, options: 0)
++        guard let phoneID = Int(sanitizedPhoneID) else {
++            throw ServerError.badServerResponse(reason: "Invalid trusted phone identifier", jsonPayload: "")
++        }
++        var request = makeTwoFactorAuthRequest(url: URL(string: "https://gsa.apple.com/auth/verify/phone")!, context: context)
++        request.httpMethod = "PUT"
++        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
++        request.setValue("application/json", forHTTPHeaderField: "Accept")
++        request.httpBody = try JSONSerialization.data(withJSONObject: [
++            "phoneNumber": ["id": phoneID], "mode": requestedMode
++        ])
+ 
+         if let allHeaders = request.allHTTPHeaderFields {
+             verboseLog("[SideSign] sendPhone2FACodeRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
+         }
+ 
+-        let (data, response) = try await session.data(for: request)
++        let (data, response) = try await performLoginRequest(request)
+         let httpResponse = response as? HTTPURLResponse
+         let statusCode = httpResponse?.safeStatusCode ?? 0
+ 
+@@ -852,7 +856,7 @@
+         }
+ 
+         debugLog("[SideSign] Verifying trusted device security code...")
+-        let (verifyData, verifyResponse) = try await session.data(for: verifyRequest)
++        let (verifyData, verifyResponse) = try await performLoginRequest(verifyRequest)
+         let verifyHttpResponse = verifyResponse as? HTTPURLResponse
+         let verifyStatusCode = verifyHttpResponse?.safeStatusCode ?? 0
+ 
+@@ -876,7 +880,7 @@
+         }
+ 
+         debugLog("[SideSign] Verifying secondary security code...")
+-        let (verifyData, verifyResponse) = try await session.data(for: verifyRequest)
++        let (verifyData, verifyResponse) = try await performLoginRequest(verifyRequest)
+         let verifyHttpResponse = verifyResponse as? HTTPURLResponse
+         let verifyStatusCode = verifyHttpResponse?.safeStatusCode ?? 0
+ 
+@@ -951,7 +955,7 @@
+             "Accept": "application/x-buddyml",
+             "Accept-Language": "en-us",
+             "Content-Type": "application/x-plist",
+-            "User-Agent": h.developerServices.userAgent,
++            "User-Agent": a.userAgent.isEmpty ? h.appleAuth.userAgent : a.userAgent,
+             "X-Apple-App-Info": h.grandSlam.authApp,
+             "X-Xcode-Version": context.xcodeVersion,
+             "X-Apple-Identity-Token": encodedIdentityToken,
+@@ -971,8 +975,40 @@
+         return request
+     }
+ 
++    // Retries the original request verbatim. Rebuilding a 2FA request here
++    // would lose security-code / JSON headers and could change client identity.
++    private func performLoginRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
++        var attempt = 0
++        while true {
++            try Task.checkCancellation()
++            let result = try await session.data(for: request)
++            let http = result.1 as? HTTPURLResponse
++            guard let delay = AppleLoginRequestPolicy.retryDelay(
++                statusCode: http?.statusCode ?? 0, attempt: attempt,
++                retryAfter: http?.value(forHTTPHeaderField: "Retry-After")) else { return result }
++            debugLog("[AppleLogin] Transient HTTP \(http?.statusCode ?? 0); retry \(attempt + 1) with the same request identity")
++            try await Task.sleep(nanoseconds: delay)
++            attempt += 1
++        }
++    }
++
+     private func parsePlistOrJSON(_ data: Data) -> [String: any Sendable]? {
+            (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: any Sendable]
+         ?? (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: any Sendable]
+     }
+ }
++
++// BEGIN APPLE LOGIN REQUEST POLICY
++enum AppleLoginRequestPolicy {
++    static func retryDelay(statusCode: Int, attempt: Int, retryAfter: String?) -> UInt64? {
++        guard statusCode == 429 || statusCode == 503, (0..<2).contains(attempt) else { return nil }
++        if let text = retryAfter, !text.isEmpty {
++            // Unknown/date-based or long throttles are reported rather than
++            // retried earlier than the server permits.
++            guard let seconds = Double(text), seconds.isFinite, (0...15).contains(seconds) else { return nil }
++            return UInt64(seconds * 1_000_000_000)
++        }
++        return [2_000_000_000, 5_000_000_000][attempt]
++    }
++}
++// END APPLE LOGIN REQUEST POLICY
+diff --git a/Sources/DeveloperPortal/DeveloperPortalAPI.swift b/Sources/DeveloperPortal/DeveloperPortalAPI.swift
+--- a/Sources/DeveloperPortal/DeveloperPortalAPI.swift
++++ b/Sources/DeveloperPortal/DeveloperPortalAPI.swift
+@@ -255,8 +255,13 @@
+ 
+     let session: URLSession
+ 
+-    public init(session: URLSession = .shared, customHeaders: SideSignHeaders = SideSignHeaders()) {
+-        self.session = session
++    public init(session: URLSession? = nil, customHeaders: SideSignHeaders = SideSignHeaders()) {
++        let configuration = URLSessionConfiguration.ephemeral
++        configuration.urlCache = nil
++        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
++        configuration.timeoutIntervalForRequest = 60
++        configuration.timeoutIntervalForResource = 120
++        self.session = session ?? URLSession(configuration: configuration)
+         self.cachedCustomHeaders = customHeaders
+     }
+ 

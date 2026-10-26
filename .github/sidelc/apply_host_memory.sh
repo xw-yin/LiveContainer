@@ -11,4 +11,8 @@ git -C "$SIDESTORE_DIR" apply --check "$PATCH_DIR/host-memory-sidestore.patch"
 git -C "$SIGNER_DIR" apply --check "$PATCH_DIR/host-memory-sidesign.patch"
 git -C "$SIDESTORE_DIR" apply "$PATCH_DIR/host-memory-sidestore.patch"
 git -C "$SIGNER_DIR" apply "$PATCH_DIR/host-memory-sidesign.patch"
+git -C "$SIDESTORE_DIR" apply --check "$PATCH_DIR/apple-auth-sidestore.patch"
+git -C "$SIGNER_DIR" apply --check "$PATCH_DIR/apple-auth-sidesign.patch"
+git -C "$SIDESTORE_DIR" apply "$PATCH_DIR/apple-auth-sidestore.patch"
+git -C "$SIGNER_DIR" apply "$PATCH_DIR/apple-auth-sidesign.patch"
 echo 'Applied profile-backed host and standalone app memory setup.'

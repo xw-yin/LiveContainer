@@ -79,6 +79,8 @@ jobs:
           filetype_parameter: ${{ steps.filetype_parameter.outputs.filetype_parameter }}
           file_to_build: ${{ steps.file_to_build.outputs.file_to_build }}
         run: xcodebuild archive -archivePath "$archive_path" -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -sdk iphoneos -arch arm64 -configuration Release | xcpretty && exit ${PIPESTATUS[0]}
+      - name: Verify clone runtime dependencies
+        run: python3 .github/tests/verify_clone_runtime.py "$archive_path.xcarchive/Products/Applications/LiveContainer.app" LiveContainerSwiftUI/Utilities/LCUtils.m
       - name: Build Patched SideStore
         run: |
           brew install ldid xcbeautify || true
@@ -90,6 +92,7 @@ jobs:
           git -C SideStoreBuild submodule update --init --recursive --depth 1
           bash "$GITHUB_WORKSPACE/.github/sidelc/apply_host_memory.sh" SideStoreBuild
           python3 "$GITHUB_WORKSPACE/.github/tests/run_host_memory_tests.py" SideStoreBuild
+          python3 "$GITHUB_WORKSPACE/.github/tests/run_apple_login_tests.py" SideStoreBuild
           "$GITHUB_WORKSPACE/.github/sidelc/verify_integration.sh" SideStoreBuild
           if [ -d "SideStoreBuild/Dependencies/SideSign" ]; then
             git -C SideStoreBuild/Dependencies/SideSign rev-parse HEAD
@@ -144,6 +147,8 @@ jobs:
           SIDESTORE_IPA_PATH: ${{ github.workspace }}/SideStore.patched.ipa
         run: |
           sh .github/build_github.sh
+          python3 .github/tests/verify_clone_runtime.py "$scheme.ipa" LiveContainerSwiftUI/Utilities/LCUtils.m
+          python3 .github/tests/verify_clone_runtime.py "$scheme+SideStore.ipa" LiveContainerSwiftUI/Utilities/LCUtils.m
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v7

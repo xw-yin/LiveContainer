@@ -1,0 +1,359 @@
+diff --git a/SideStore/Core/Anisette/AnisetteProvider.swift b/SideStore/Core/Anisette/AnisetteProvider.swift
+--- a/SideStore/Core/Anisette/AnisetteProvider.swift
++++ b/SideStore/Core/Anisette/AnisetteProvider.swift
+@@ -1,95 +1,132 @@
+-//
+-//  AnisetteProvider.swift
+-//  SideStore
+-//
+-//  Created by Magesh K on 8/9/26.
+-//  Copyright © 2026 SideStore. All rights reserved.
+-//
+-
++// Mac ADI login: bind server metadata, provisioning identity and returned data
++// together. Never change the developer certificate when changing Anisette.
+ import Foundation
+ import SideSign
+ 
+ enum AnisetteProvider {
++    private static func migrateRemoteLoginIfNeeded() async {
++        let defaults = UserDefaults.standard
++        guard !defaults.bool(forKey: AppleAnisetteLoginPolicy.migrationKey) else { return }
++        defaults.useOnDeviceAnisette = false
++        defaults.disableAnisetteRotation = true
++        defaults.menuAnisetteURL = AppConstants.Anisette.Servers.defaultServerURL
++        var config = await AnisetteConfigManager.shared.loadConfig()
++        if AppleAnisetteLoginPolicy.isLegacyIdentity(config.clientInfo) {
++            config.clientInfo = ""
++            config.userAgent = ""
++            await AnisetteConfigManager.shared.saveConfig(config)
++        }
++        // Keep the installation/device identifier, account, P12 and certificate
++        // keychain entries. Only the old ADI provisioning blob is replaced once.
++        AnisetteConfigManager.shared.anisetteAdiBlob = nil
++        SideSign.AnisetteDataManager.shared.clearCache()
++        defaults.removeObject(forKey: AppleAnisetteLoginPolicy.identityKey)
++        defaults.set(true, forKey: AppleAnisetteLoginPolicy.migrationKey)
++        debugLog("[AppleLogin] Migrated remote Mac ADI settings; signing certificates were retained")
++    }
++
+     static func fetch(handler: AnisetteServerHandler? = nil) async throws -> ALTAnisetteData {
++        await migrateRemoteLoginIfNeeded()
+         if UserDefaults.standard.useOnDeviceAnisette {
+-            debugLog("[AnisetteProvider] Fetching anisette via On-Device Anisette (ODA)...")
++            do { return try await OnDeviceAnisetteManager.shared.fetchAnisetteData() }
++            catch is CancellationError { throw CancellationError() }
++            catch { debugLog("[AppleLogin] On-device Anisette failed; trying remote Mac ADI") }
++        }
++        return try await fetchRemote()
++    }
++
++    private static func fetchRemote() async throws -> ALTAnisetteData {
++        let defaults = UserDefaults.standard
++        let configured = await AnisetteServersManager.shared.getActiveServerURLs()
++        let selected = defaults.menuAnisetteURL.isEmpty ? AppConstants.Anisette.Servers.defaultServerURL : defaults.menuAnisetteURL
++        var seen = Set<String>()
++        let candidates = ([selected] + configured + [AppConstants.Anisette.Servers.defaultServerURL,
++                                                    AppConstants.Anisette.Servers.secondaryServerURL]).compactMap { value -> URL? in
++            guard let url = URL(string: value), url.scheme == "https", let host = url.host,
++                  host != "win.ani.sidestore.io", host != "ani.sidestore.io",
++                  seen.insert(value.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()).inserted else { return nil }
++            return url
++        }
++        let servers = defaults.disableAnisetteRotation ? Array(candidates.prefix(1)) : candidates
++        guard !servers.isEmpty else { throw AnisetteError.noServersConfigured }
++        let provider = SideSign.AnisetteDataManager.shared
++        let identifier = await AnisetteConfigManager.shared.resolveDeviceIdentifier()
++        var lastError: Error = AnisetteError.noServersConfigured
++        for server in servers {
++            try Task.checkCancellation()
+             do {
+-                return try await OnDeviceAnisetteManager.shared.fetchAnisetteData()
+-            } catch {
+-                debugLog("[AnisetteProvider] On-Device Anisette failed (\(error.localizedDescription)). Falling back to remote servers...")
+-                return try await fetchRemote(handler: handler)
++                // Negotiate metadata for EACH attempt, not only the first host.
++                let metadata = try await SideSign.RemoteAnisetteDataProvider(serverURL: server).fetchClientInfo()
++                let identity = try AppleAnisetteLoginPolicy.identity(clientInfo: metadata.clientInfo, userAgent: metadata.userAgent)
++                let fingerprint = identity.cacheKey(server: server)
++                let sameIdentity = defaults.string(forKey: AppleAnisetteLoginPolicy.identityKey) == fingerprint
++                if !sameIdentity { provider.clearCache() }
++                var headers = await AnisetteConfigManager.shared.makeRequestHeaders()
++                headers.clientInfo = identity.clientInfo
++                headers.userAgent = identity.userAgent
++                let blob = sameIdentity ? AnisetteConfigManager.shared.anisetteAdiBlob.flatMap { Data(base64Encoded: $0) } : nil
++                let result = try await provider.fetchAnisetteData(mode: .remote(server: server), identifier: identifier,
++                                                                 existingAdiBlob: blob, headers: headers)
++                guard result.data.clientInfo == identity.clientInfo, result.data.userAgent == identity.userAgent else {
++                    throw DeveloperPortalError.invalidAnisetteData(cause: "Returned Anisette identity differs from the selected server identity")
++                }
++                provider.setMode(.remote(server: server))
++                defaults.menuAnisetteURL = server.absoluteString
++                defaults.set(fingerprint, forKey: AppleAnisetteLoginPolicy.identityKey)
++                if let blob = result.newAdiBlob { AnisetteConfigManager.shared.anisetteAdiBlob = blob.base64EncodedString() }
++                debugLog("[AppleLogin] Mac ADI acquired from \(server.host ?? "server"); developer certificate unchanged")
++                return result.data
++            } catch is CancellationError { throw CancellationError() }
++            catch {
++                lastError = error
++                debugLog("[AppleLogin] Anisette attempt failed for \(server.host ?? "server"): \(error.localizedDescription)")
+             }
+-        } else {
+-            debugLog("[AnisetteProvider] Fetching anisette via remote server...")
+-            return try await fetchRemote(handler: handler)
++        }
++        throw lastError
++    }
++}
++
++// BEGIN APPLE ANISETTE LOGIN POLICY
++// Authentication identity is independent from developer signing certificates.
++enum AppleAnisetteLoginPolicy {
++    static let migrationKey = "AppleLogin.macADI.v1"
++    static let identityKey = "AppleLogin.remoteIdentity"
++    static let macClientInfo = "<Mac15,7> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
++    static let macUserAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
++
++    struct Identity: Equatable {
++        let clientInfo: String
++        let userAgent: String
++        func cacheKey(server: URL) -> String {
++            server.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased() + "|" + clientInfo + "|" + userAgent
+         }
+     }
+-
+-    private static func fetchRemote(handler: AnisetteServerHandler? = nil) async throws -> ALTAnisetteData {
+-        let serverUrlStrings = await AnisetteServersManager.shared.getActiveServerURLs()
+-        let filteredStrings = serverUrlStrings.filter { urlStr in
+-            !urlStr.contains("win.ani.sidestore.io") && urlStr != "https://ani.sidestore.io"
++    enum IdentityError: LocalizedError {
++        case unsupportedServerIdentity
++        var errorDescription: String? { "This Anisette server did not advertise a Mac identity. Choose a Mac ADI server." }
++    }
++    static func identity(clientInfo: String, userAgent: String) throws -> Identity {
++        let info = clientInfo.trimmingCharacters(in: .whitespacesAndNewlines)
++        let lower = info.lowercased()
++        guard lower.contains("mac"), !lower.contains("windows"), !lower.contains("android") else {
++            throw IdentityError.unsupportedServerIdentity
+         }
+-        let effectiveStrings = filteredStrings.isEmpty ? [AppConstants.Anisette.Servers.defaultServerURL] : filteredStrings
+-        let servers = effectiveStrings.compactMap { URL(string: $0) }
+-        guard !servers.isEmpty else {
+-            throw AnisetteError.noServersConfigured
++        let pattern = "(?:Mac OS X|macOS);(\\d+)\\.(\\d+)"
++        let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
++        if let match = regex.firstMatch(in: info, range: NSRange(info.startIndex..., in: info)),
++           let majorRange = Range(match.range(at: 1), in: info), let minorRange = Range(match.range(at: 2), in: info),
++           let major = Int(info[majorRange]), let minor = Int(info[minorRange]), major == 10, minor < 13 {
++            return Identity(clientInfo: macClientInfo, userAgent: macUserAgent)
+         }
+-
+-        let lastServer = UserDefaults.standard.menuAnisetteURL
+-        let startIndex = servers.firstIndex(where: { $0.absoluteString == lastServer }) ?? 0
+-
+-        let provider = SideSign.AnisetteDataManager.shared
+-        let existingBlob = AnisetteConfigManager.shared.anisetteAdiBlob.flatMap { Data(base64Encoded: $0) }
+-        let identifier = await AnisetteConfigManager.shared.resolveDeviceIdentifier()
+-        let headers = await AnisetteConfigManager.shared.makeRequestHeaders()
+-
+-        let (anisetteData, newAdiBlob) = try await provider.fetchAnisetteDataWithFailover(
+-            servers: UserDefaults.standard.disableAnisetteRotation ? [servers[startIndex]] : servers,
+-            startIndex: startIndex,
+-            identifier: identifier,
+-            existingAdiBlob: existingBlob,
+-            headers: headers,
+-            onError: { error in
+-                if let anisetteError = error as? SideSign.AnisetteError {
+-                    switch anisetteError {
+-                    case .incorrectlyProvisioned:
+-                        debugLog("[AnisetteProvider] State de-synced / corrupt ADI blob detected. Purging stored adi.pb...")
+-                        AnisetteConfigManager.shared.anisetteAdiBlob = nil
+-                        return true
+-                    case .badServerResponse(_, let payload) where payload.contains("-45061"):
+-                        debugLog("[AnisetteProvider] State de-synced / corrupt ADI blob detected (-45061). Purging stored adi.pb...")
+-                        AnisetteConfigManager.shared.anisetteAdiBlob = nil
+-                        return true
+-                    case .outdatedV1Server(let serverURL, _):
+-                        if UserDefaults.standard.defaultServerURL == serverURL.absoluteString {
+-                            return true
+-                        }
+-                        if let handler = handler {
+-                            let shouldContinue = try await handler.warnOutdatedAnisetteServer()
+-                            if shouldContinue {
+-                                UserDefaults.standard.defaultServerURL = serverURL.absoluteString
+-                            }
+-                            return shouldContinue
+-                        }
+-                    default:
+-                        break
+-                    }
+-                }
+-                return false
+-            },
+-            onSuccess: { successfulServer in
+-                // SideSign's SIM resync uses activeMode to locate this server.
+-                provider.setMode(.remote(server: successfulServer))
+-                UserDefaults.standard.menuAnisetteURL = successfulServer.absoluteString
+-                debugLog("[AnisetteProvider] Successfully fetched Anisette data from \(successfulServer.absoluteString)")
+-            }
+-        )
+-
+-        if let freshBlob = newAdiBlob {
+-            AnisetteConfigManager.shared.anisetteAdiBlob = freshBlob.base64EncodedString()
++        let agent = userAgent.trimmingCharacters(in: .whitespacesAndNewlines)
++        guard !agent.lowercased().contains("windows"), !agent.lowercased().contains("android") else {
++            throw IdentityError.unsupportedServerIdentity
+         }
+-
+-        return anisetteData
++        return Identity(clientInfo: info, userAgent: agent.isEmpty ? macUserAgent : agent)
++    }
++    static func isLegacyIdentity(_ info: String) -> Bool {
++        let lower = info.lowercased()
++        return lower.contains("windows") || lower.contains("android") || lower.contains("pixel") || lower.contains("dt.xcode")
+     }
+ }
++// END APPLE ANISETTE LOGIN POLICY
+diff --git a/SideStore/Core/Anisette/AnisetteConfigManager.swift b/SideStore/Core/Anisette/AnisetteConfigManager.swift
+--- a/SideStore/Core/Anisette/AnisetteConfigManager.swift
++++ b/SideStore/Core/Anisette/AnisetteConfigManager.swift
+@@ -130,23 +130,9 @@
+             return config
+         }()
+ 
+-        var resolvedClientInfo = (udClientInfo?.isEmpty == false ? udClientInfo : fileConfig?.clientInfo) ?? AppConstants.Anisette.defaultClientInfo
+-        if resolvedClientInfo.contains("Pixel") || resolvedClientInfo.contains("Android") || resolvedClientInfo.contains("MacBookPro18,3") || resolvedClientInfo.contains("macOS;26.6") || resolvedClientInfo.contains("dt.Xcode") {
+-            debugLog("[AnisetteConfigManager] Migrating legacy/blocked client_info to Windows default")
+-            resolvedClientInfo = AppConstants.Anisette.defaultClientInfo
+-            if udClientInfo != nil {
+-                ud.customAnisetteClientInfo = resolvedClientInfo
+-            }
+-        }
+-
+-        var resolvedUserAgent = (udUserAgent?.isEmpty == false ? udUserAgent : fileConfig?.userAgent) ?? AppConstants.Anisette.defaultUserAgent
+-        if resolvedUserAgent.contains("Macintosh; Intel Mac OS X 26_6") || resolvedUserAgent.contains("OS X 26.6") || resolvedUserAgent.contains("dt.Xcode") {
+-            debugLog("[AnisetteConfigManager] Migrating legacy macOS/Xcode user agent to Windows default")
+-            resolvedUserAgent = AppConstants.Anisette.defaultUserAgent
+-            if udUserAgent != nil {
+-                ud.customAnisetteUserAgent = resolvedUserAgent
+-            }
+-        }
++        let resolvedClientInfo = (udClientInfo?.isEmpty == false ? udClientInfo : fileConfig?.clientInfo) ?? AppConstants.Anisette.defaultClientInfo
++
++        let resolvedUserAgent = (udUserAgent?.isEmpty == false ? udUserAgent : fileConfig?.userAgent) ?? AppConstants.Anisette.defaultUserAgent
+ 
+         let resolvedDeviceID     = (udDeviceID?.isEmpty == false ? udDeviceID : fileConfig?.customDeviceID)
+         let resolvedLocalUserID  = (udLocalUserID?.isEmpty == false ? udLocalUserID : fileConfig?.customLocalUserID)
+diff --git a/SideStore/Core/Certificates/CertificateManager.swift b/SideStore/Core/Certificates/CertificateManager.swift
+--- a/SideStore/Core/Certificates/CertificateManager.swift
++++ b/SideStore/Core/Certificates/CertificateManager.swift
+@@ -183,7 +183,7 @@
+     }
+     
+     public func getLocalCertificate(serialNumber: String) -> ALTCertificate? {
+-        if let active = self.activeCertificate, active.serialNumber == serialNumber {
++        if let active = self.activeCertificate, SigningCertificateIdentity.matches(active.serialNumber, serialNumber) {
+             return active.certificate
+         }
+         if let data = Keychain.shared[certificateSerial: serialNumber] {
+@@ -271,12 +271,14 @@
+     }
+ 
+     private func loadEmbeddedCertificate(for serialNumber: String, fallbackPassword: String?) -> ALTCertificate? {
+-        let targetBundle = Bundle.main
++        let targetBundle = Bundle.isBundledWithLiveContainer ? Bundle.realMainBundle : Bundle.main
+         if FileManager.default.fileExists(atPath: targetBundle.certificateURL.path),
+            let data = try? Data(contentsOf: targetBundle.certificateURL)
+         {
+             let possiblePasswords: [(name: String, value: String?)] = [
+                 ("incomingCertSerial", serialNumber),
++                ("hostCertSerial", targetBundle.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String),
++                ("hostDeviceIdentifier", targetBundle.object(forInfoDictionaryKey: "ALTDeviceID") as? String),
+                 ("fallbackPassword", fallbackPassword),
+                 ("activeCertSerial", activeCertificate?.certificate.serialNumber),
+                 ("machineIdentifier", activeCertificate?.certificate.machineIdentifier),
+@@ -289,8 +291,8 @@
+             for (pwdName, password) in possiblePasswords {
+                 verboseLog("[CertificateManager] getSignableCertificate: Attempting decryption with password source '\(pwdName)'...")
+                 if let cert = try? ALTCertificate(p12Data: data, password: password) {
+-                    signableCert = cert
+-                    if cert.serialNumber.lowercased() == serialNumber.lowercased() {
++                    if serialNumber.isEmpty || SigningCertificateIdentity.matches(cert.serialNumber, serialNumber) {
++                        signableCert = cert
+                         debugLog("[CertificateManager] getSignableCertificate: Decrypted embedded p12 using '\(pwdName)' with matching serial '\(cert.serialNumber)'.")
+                         break
+                     } else {
+@@ -445,3 +447,20 @@
+         }
+     }
+ }
++
++// BEGIN SIGNING CERTIFICATE IDENTITY POLICY
++enum SigningCertificateIdentity {
++    static func matches(_ lhs: String, _ rhs: String) -> Bool {
++        !lhs.isEmpty && !rhs.isEmpty && lhs.caseInsensitiveCompare(rhs) == .orderedSame
++    }
++    static func preferredSerials(running: String?, active: String?, portal: [String]) -> [String] {
++        var seen = Set<String>()
++        return [running, active].compactMap { candidate in
++            guard let candidate, !candidate.isEmpty,
++                  portal.contains(where: { matches($0, candidate) }),
++                  seen.insert(candidate.lowercased()).inserted else { return nil }
++            return candidate
++        }
++    }
++}
++// END SIGNING CERTIFICATE IDENTITY POLICY
+diff --git a/SideStore/Core/Auth/Flows/CertificateProvisioningFlow.swift b/SideStore/Core/Auth/Flows/CertificateProvisioningFlow.swift
+--- a/SideStore/Core/Auth/Flows/CertificateProvisioningFlow.swift
++++ b/SideStore/Core/Auth/Flows/CertificateProvisioningFlow.swift
+@@ -79,31 +79,25 @@
+         let portalCertificates = try await DeveloperPortalProxy.shared.fetchCertificates(team: team)
+         self.portalCertificates = portalCertificates
+         
+-        let mainBundleCertSerial = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String
+-        
+-        if let activeCert = CertificateManager.shared.activeCertificate,
+-           let certificate = portalCertificates.first(where: { $0.serialNumber == activeCert.serialNumber }) 
+-        {
+-            var keyStoreCert = activeCert.certificate
+-            keyStoreCert.machineIdentifier = certificate.machineIdentifier
++        let manager = CertificateManager.shared
++        let runningBundle = Bundle.isBundledWithLiveContainer ? Bundle.realMainBundle : Bundle.main
++        // Bundle.main is the embedded SideStore framework. Its ad-hoc image
++        // and ALTCertificateID do not describe the installed host signature.
++        let runningSerial = manager.getSigningCertificate(at: runningBundle.bundleURL)?.serialNumber
++            ?? (runningBundle.object(forInfoDictionaryKey: Bundle.Info.certificateID) as? String)
++        let candidates = SigningCertificateIdentity.preferredSerials(
++            running: runningSerial, active: manager.activeCertificate?.serialNumber,
++            portal: portalCertificates.map(\.serialNumber))
++        for serial in candidates {
++            guard let portalCertificate = portalCertificates.first(where: { SigningCertificateIdentity.matches($0.serialNumber, serial) }),
++                  var certificate = manager.getSignableCertificate(for: serial, fallbackPassword: portalCertificate.machineIdentifier),
++                  SigningCertificateIdentity.matches(certificate.serialNumber, serial) else { continue }
++            certificate.machineIdentifier = portalCertificate.machineIdentifier
++            debugLog("[SigningIdentity] Reusing valid existing certificate \(certificate.serialNumber); Anisette identity does not select a signing certificate")
++            return certificate
++        }
++        debugLog("[SigningIdentity] No reusable unrevoked certificate/private key. Certificate provisioning requires the existing selection/revocation flow.")
+ 
+-            if let mainBundleCertSerial = mainBundleCertSerial, 
+-                mainBundleCertSerial.lowercased() != activeCert.serialNumber.lowercased() 
+-            {
+-                debugLog("[CertificateProvisioningFlow] Active certificate (\(activeCert.serialNumber)) and running bundle certificate (\(mainBundleCertSerial)) mismatch detected. Running Bundle Certificate is still active on the Paid account portal. Using active Keychain certificate.")
+-            }
+-            return keyStoreCert
+-        }
+-        
+-        if let mainBundleCertSerial = mainBundleCertSerial,
+-           let certificate = portalCertificates.first(where: { $0.serialNumber.lowercased() == mainBundleCertSerial.lowercased() }),
+-           var cert = CertificateManager.shared.getSignableCertificate(for: mainBundleCertSerial, fallbackPassword: certificate.machineIdentifier) 
+-        {
+-            cert.machineIdentifier = certificate.machineIdentifier
+-            debugLog("[CertificateProvisioningFlow] Using running bundle certificate (\(cert.serialNumber)) with valid private key from signable cache.")
+-            return cert
+-        }
+-        
+         if portalCertificates.isEmpty {
+             return try await self.requestCertificate(for: team)
+         } else {
