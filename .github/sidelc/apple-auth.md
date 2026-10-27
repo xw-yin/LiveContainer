@@ -10,7 +10,8 @@ identity rewriting, changing the signing API, or replacing the signer dependency
   discards the old ADI provisioning blob. It preserves the installation/device
   identifier, account, developer certificate and private key. Legacy identity
   overrides are cleared without deleting other Anisette configuration fields.
-- A user can explicitly select on-device Anisette again after migration.
+- Legacy on-device Anisette (ODA) is fully deprecated and bypassed; all requests
+  route through stable remote Mac ADI endpoints.
 - Every remote server attempt fetches that server's client information. Old
   macOS 10.12 identities are upgraded to the modern Mac identity; Windows/Android
   metadata is rejected instead of being mixed with Mac provisioning.
