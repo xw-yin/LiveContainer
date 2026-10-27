@@ -23,7 +23,7 @@ def main():
         "TWO_FACTOR_FACTORY_SOURCE": "    private func makeTwoFactorAuthRequest" + section(auth, "    private func makeTwoFactorAuthRequest", "    // Retries the original request"),
         "LOGIN_REQUEST_SOURCE": "    private func performLoginRequest" + section(auth, "    private func performLoginRequest", "    private func parsePlistOrJSON"),
         "GSA_HEADERS_SOURCE": "        let userAgent =" + section(auth, "        let userAgent =", "        headers.forEach"),
-        "PHONE_REQUEST_SOURCE": "        guard let phoneID =" + section(auth, "        guard let phoneID =", "        if let allHeaders = request.allHTTPHeaderFields"),
+        "PHONE_REQUEST_SOURCE": "        guard let targetPhoneID =" + section(auth, "        guard let targetPhoneID =", "        if let allHeaders = request.allHTTPHeaderFields"),
     }
     fixture = pathlib.Path(__file__).with_name("AppleLoginTests.swift").read_text(encoding="utf-8")
     for marker, source in replacements.items():
