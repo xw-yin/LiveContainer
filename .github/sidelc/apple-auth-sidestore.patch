@@ -351,3 +351,100 @@ diff --git a/SideStore/Core/Auth/Flows/CertificateProvisioningFlow.swift b/SideS
          if portalCertificates.isEmpty {
              return try await self.requestCertificate(for: team)
          } else {
+diff --git a/AltStore/Settings/SettingsViewController.swift b/AltStore/Settings/SettingsViewController.swift
+--- a/AltStore/Settings/SettingsViewController.swift
++++ b/AltStore/Settings/SettingsViewController.swift
+@@ -87,10 +87,13 @@ extension SettingsViewController
+         case enterpriseSigning      // row 13 - Enterprise Signing
+ 
+         static var allCases: [AdvancedSettingsRow] {
+-            var rows: [AdvancedSettingsRow] = [.sendFeedback, .refreshAttempts, .refreshSideJITServer, .pairingFileManagement]
+-            if !UserDefaults.standard.useOnDeviceAnisette {
+-                rows.append(.anisetteServers)
+-            }
++            var rows: [AdvancedSettingsRow] = [
++                .sendFeedback,
++                .refreshAttempts,
++                .refreshSideJITServer,
++                .pairingFileManagement,
++                .anisetteServers
++            ]
+             rows.append(contentsOf: [
+                 .connectionConfig,
+                 .networkDiscovery,
+diff --git a/SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift b/SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift
+--- a/SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift
++++ b/SideStore/Views/Settings/Advanced/UserCustomizations/UserCustomizationsView.swift
+@@ -120,72 +120,6 @@ struct UserCustomizationsView: View {
+                         .padding(.horizontal, 16)
+                     
+                     VStack(spacing: 0) {
+-                        toggleRow(
+-                            title: "On-Device Anisette",
+-                            subtitle: "Run ADI emulation directly on device instead of remote servers",
+-                            isOn: Binding(
+-                                get: { useOnDeviceAnisette },
+-                                set: { newValue in
+-                                    useOnDeviceAnisette = newValue
+-                                    showAnisetteRestartConfirmation = true
+-                                }
+-                            )
+-                        )
+-                        
+-                        if useOnDeviceAnisette {
+-                            divider
+-                            
+-                            HStack {
+-                                VStack(alignment: .leading, spacing: 2) {
+-                                    Text(NSLocalizedString("Libraries Status", comment: ""))
+-                                        .font(.system(size: 17, weight: .bold))
+-                                        .foregroundColor(.primary)
+-                                    Text(NSLocalizedString("Local macOS emulation libraries for ADI", comment: ""))
+-                                        .font(.system(size: 12, weight: .regular))
+-                                        .foregroundColor(.secondary)
+-                                }
+-                                Spacer()
+-                                HStack(spacing: 6) {
+-                                    Circle()
+-                                        .fill(odaIsReady ? Color.green : Color.orange)
+-                                        .frame(width: 8, height: 8)
+-                                    Text(odaIsReady ? NSLocalizedString("Ready", comment: "") : NSLocalizedString("Not Downloaded", comment: ""))
+-                                        .font(.system(size: 14, weight: .semibold))
+-                                        .foregroundColor(odaIsReady ? .green : .orange)
+-                                }
+-                            }
+-                            .padding(.horizontal, 16)
+-                            .padding(.vertical, 10)
+-                            .frame(minHeight: 50)
+-                            
+-                            divider
+-                            
+-                            HStack {
+-                                VStack(alignment: .leading, spacing: 2) {
+-                                    Text(NSLocalizedString("Local Provisioning (adi.pb)", comment: ""))
+-                                        .font(.system(size: 17, weight: .bold))
+-                                        .foregroundColor(.primary)
+-                                    Text(NSLocalizedString("Apple ID hardware token stored in Keychain", comment: ""))
+-                                        .font(.system(size: 12, weight: .regular))
+-                                        .foregroundColor(.secondary)
+-                                }
+-                                Spacer()
+-                                HStack(spacing: 6) {
+-                                    Circle()
+-                                        .fill(hasAdiPb ? Color.green : Color.secondary)
+-                                        .frame(width: 8, height: 8)
+-                                    Text(hasAdiPb ? String(format: NSLocalizedString("Provisioned (%d B)", comment: ""), adiPbSize) : NSLocalizedString("Not Provisioned", comment: ""))
+-                                        .font(.system(size: 14, weight: .semibold))
+-                                        .foregroundColor(hasAdiPb ? .green : .secondary)
+-                                }
+-                            }
+-                            .padding(.horizontal, 16)
+-                            .padding(.vertical, 10)
+-                            .frame(minHeight: 50)
+-                        }
+-                        
+-                        divider
+-                        
+                         NavigationLink(destination: AnisetteDataView()) {
+                             HStack {
+                                 Text("Anisette Client Configuration")
