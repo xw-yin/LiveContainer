@@ -49,89 +49,10 @@ index 8fe0cc03..dab4a4c5 100644
  	<key>NSLocationWhenInUseUsageDescription</key>
  	<string>SideStore uses location updates to keep background operations active.</string>
 diff --git a/AltStore/My Apps/MyAppsViewController.swift b/AltStore/My Apps/MyAppsViewController.swift
-index e6beeae0..a4b43c22 100644
+index a63ce604..6cfb8dc6 100644
 --- a/AltStore/My Apps/MyAppsViewController.swift	
 +++ b/AltStore/My Apps/MyAppsViewController.swift	
-@@ -985,9 +985,77 @@ private extension MyAppsViewController
-     
-     @IBAction func sideloadApp(_ sender: UIBarButtonItem)
-     {
-+        sender.isIndicatingActivity = true
-+        Task { @MainActor [weak self] in
-+            guard let self else { return }
-+            defer { sender.isIndicatingActivity = false }
-+
-+            #if !targetEnvironment(simulator)
-+            let mode = await getDeviceConnectionMode()
-+            if mode == .localVPN && !minimuxer.network.isUTunAvailable {
-+                let alert = UIAlertController(
-+                    title: NSLocalizedString("SideStore VPN Not Connected", comment: ""),
-+                    message: NSLocalizedString("Please enable the SideStore WireGuard VPN before sideloading apps.", comment: ""),
-+                    preferredStyle: .alert
-+                )
-+                alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
-+                self.present(alert, animated: true)
-+                return
-+            }
-+
-+            var ready = false
-+            do {
-+                ready = try await self.verifyDeviceReadiness(timeoutSeconds: 3.0)
-+            } catch {
-+                debugLog("[Preflight] Initial device readiness check failed: \(error). Attempting minimuxer restart...")
-+            }
-+
-+            if !ready {
-+                do {
-+                    try await minimuxerRestart()
-+                    try? await Task.sleep(nanoseconds: 500_000_000)
-+                    ready = try await self.verifyDeviceReadiness(timeoutSeconds: 3.0)
-+                } catch {
-+                    debugLog("[Preflight] Device readiness retry after restart failed: \(error)")
-+                }
-+            }
-+
-+            guard ready else {
-+                let alert = UIAlertController(
-+                    title: NSLocalizedString("Device Communication Error", comment: ""),
-+                    message: NSLocalizedString("Cannot establish connection to local device service. Please check that SideStore VPN is connected, or toggle the VPN off and on in Settings.", comment: ""),
-+                    preferredStyle: .alert
-+                )
-+                alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
-+                self.present(alert, animated: true)
-+                return
-+            }
-+            #endif
-+
-+            self.presentSideloadSourceSelection(barButtonItem: sender)
-+        }
-+    }
-+
-+    private func verifyDeviceReadiness(timeoutSeconds: Double) async throws -> Bool {
-+        try await withThrowingTaskGroup(of: Bool.self) { group in
-+            group.addTask {
-+                try await ensureMinimuxerReady()
-+                return true
-+            }
-+            group.addTask {
-+                try await Task.sleep(nanoseconds: UInt64(timeoutSeconds * 1_000_000_000))
-+                throw NSError(domain: "Minimuxer", code: -1, userInfo: [NSLocalizedDescriptionKey: "Connection timed out after \(timeoutSeconds)s"])
-+            }
-+            let first = try await group.next() ?? false
-+            group.cancelAll()
-+            return first
-+        }
-+    }
-+
-+    private func presentSideloadSourceSelection(barButtonItem: UIBarButtonItem) {
-         InstallAppDialog.presentSourceSelection(
-             from: self,
--            barButtonItem: sender,
-+            barButtonItem: barButtonItem,
-             onChooseFiles: { [weak self] in
-                 #if !os(tvOS)
-                 self?.presentDocumentPicker()
-@@ -1796,172 +1864,97 @@ private extension MyAppsViewController
+@@ -1864,183 +1864,90 @@ private extension MyAppsViewController
      }
      
      func enableMoreRAM(for installedApp: InstalledApp) {
@@ -185,15 +106,64 @@ index e6beeae0..a4b43c22 100644
 +                        ToastView(error: error, opensLog: true).show(in: self)
 +                    }
 +                    self.reconfigureVisibleCells()
++        })
++        self.present(alert, animated: true)
++    func enableHostMoreRAM() {
++        guard Bundle.isBundledWithLiveContainer else { return }
++        guard let hostApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext) else {
++            let error = NSError(domain: "HostMemory", code: 1, userInfo: [NSLocalizedDescriptionKey:
++                NSLocalizedString("The LiveContainer host record is missing. Open LiveContainer again before requesting memory permissions.", comment: "")])
++            ToastView(error: error, opensLog: true).show(in: self)
++            return
++        guard !AppManager.shared.isActivelyManagingApp(withBundleID: hostApp.bundleIdentifier) else { return }
++
++        // The guest is dlopen'ed into this process. Its on-disk entitlements
++        // cannot grant the host a larger footprint or virtual address space.
++        let selector = NSSelectorFromString("lc_memoryDiagnostics")
++        let diagnostics: String
++        if Bundle.realMainBundle.responds(to: selector),
++           let snapshot = Bundle.realMainBundle.perform(selector)?.takeUnretainedValue() as? [String: Any],
++           let report = snapshot["report"] as? String {
++            diagnostics = report
++            debugLog("[HostMemory] \(report)")
++        } else {
++            diagnostics = NSLocalizedString("Running process memory diagnostics are unavailable.", comment: "")
++        }
++        let explanation = NSLocalizedString("Memory permissions apply to LiveContainer and LiveProcess, and affect all apps running inside them. This will request new provisioning profiles and reinstall LiveContainer while preserving its data. LiveContainer may quit during installation. Reopen it and fully restart guest apps afterward. Unsupported permissions will be reported as an error.", comment: "")
++        let alert = UIAlertController(title: NSLocalizedString("Get More RAM for LiveContainer", comment: ""),
++                                      message: explanation + "\n\n" + diagnostics, preferredStyle: .alert)
++        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
++        if UserDefaults.standard.bool(forKey: "liveContainerHostMemoryRequested") {
++            alert.addAction(UIAlertAction(title: NSLocalizedString("Resume Ordinary Signing and Refresh", comment: ""), style: .default) { _ in
++                UserDefaults.standard.set(false, forKey: "liveContainerHostMemoryRequested")
++                debugLog("[HostMemory] Stopped requiring memory permissions for future signing and refresh; installed permissions are unchanged")
++            })
++        alert.addAction(UIAlertAction(title: NSLocalizedString("Request Permissions and Reinstall", comment: ""), style: .default) { [weak self] _ in
++            guard let self else { return }
++            let previouslyRequested = UserDefaults.standard.bool(forKey: "liveContainerHostMemoryRequested")
++            UserDefaults.standard.set(true, forKey: "liveContainerHostMemoryRequested")
++            debugLog("[HostMemory] Requesting profile-backed memory permissions for host \(hostApp.resignedBundleIdentifier), including LiveProcess")
++            AppManager.shared.resign(hostApp, presentingViewController: self) { result in
++                DispatchQueue.main.async {
++                    switch result {
++                    case .success:
++                        ToastView(text: NSLocalizedString("Host installed; restart required", comment: ""),
++                                  detailText: NSLocalizedString("Reopen LiveContainer and check Memory Diagnostics. Installation success alone does not confirm a higher memory limit.", comment: "")).show(in: self)
++                    case .failure(let error):
++                        UserDefaults.standard.set(previouslyRequested, forKey: "liveContainerHostMemoryRequested")
++                        debugLog("[HostMemory] Host memory setup failed: \(error)")
++                        ToastView(error: error, opensLog: true).show(in: self)
++                    }
++                    self.reconfigureVisibleCells()
                  }
              }
 -        } else {
 -            debugLog("Enabling increased memory limit for app \(installedApp.bundleIdentifier) via resign")
 -            self.resign(installedApp)
 -        }
+-    }
 +        })
 +        self.present(alert, animated: true)
-     }
  
 -    /// The guest bundle LiveContainer actually launches, looked up by bundle
 -    /// identifier in LiveContainer's "Applications" roots. LiveContainer
@@ -214,14 +184,7 @@ index e6beeae0..a4b43c22 100644
 -        }
 -        if let sharedDirectory = FileManager.default.altstoreSharedDirectory {
 -            containerRoots.append(sharedDirectory)
-+    func enableHostMoreRAM() {
-+        guard Bundle.isBundledWithLiveContainer else { return }
-+        guard let hostApp = InstalledApp.fetchAltStore(in: DatabaseManager.shared.viewContext) else {
-+            let error = NSError(domain: "HostMemory", code: 1, userInfo: [NSLocalizedDescriptionKey:
-+                NSLocalizedString("The LiveContainer host record is missing. Open LiveContainer again before requesting memory permissions.", comment: "")])
-+            ToastView(error: error, opensLog: true).show(in: self)
-+            return
-         }
+-        }
 -
 -        var roots = containerRoots.map { $0.appendingPathComponent("LiveContainer/Applications") }
 -        if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).last {
@@ -242,7 +205,13 @@ index e6beeae0..a4b43c22 100644
 -            for entry in entries where entry.pathExtension == "app" {
 -                let parsedID = ALTApplication(fileURL: entry)?.bundleIdentifier
 -                debugLog("[GetMoreRAM] Guest lookup: candidate \(entry.lastPathComponent) -> \(parsedID ?? "nil")")
--                if parsedID == bundleIdentifier {
+-                // LiveContainer rewrites the guest bundle's Info.plist
+-                // bundle identifier to the host's (classic-mode guests are
+-                // registered under the host identity), so the on-disk
+-                // folder name — "<bundleID>.app", or "<bundleID>_<timestamp>.app"
+-                // for duplicate installs — is the reliable match key.
+-                let folderName = entry.deletingPathExtension().lastPathComponent
+-                if folderName == bundleIdentifier || folderName.hasPrefix(bundleIdentifier + "_") || parsedID == bundleIdentifier {
 -                    debugLog("[GetMoreRAM] Guest lookup: found \(bundleIdentifier) at \(entry.path)")
 -                    return entry
 -                }
@@ -307,10 +276,15 @@ index e6beeae0..a4b43c22 100644
 -            }
 -        }
 -
--        guard let mainProfile = profilesByBundleID[guestApp.bundleIdentifier] else {
+-        // The LiveContainer copy's Info.plist identifier is the host's, so
+-        // its embedded profile is keyed by that; fall back to the profile
+-        // SideStore cached under the app's own bundle identifier.
+-        let mainProfile = profilesByBundleID[guestApp.bundleIdentifier] ?? profilesByBundleID[installedApp.bundleIdentifier]
+-        guard let mainProfile else {
 -            debugLog("[GetMoreRAM] No provisioning profile available for \(installedApp.bundleIdentifier)")
 -            return false
 -        }
+-        debugLog("[GetMoreRAM] Using profile \(mainProfile.bundleIdentifier) (team \(mainProfile.teamIdentifier)) for in-place patch of \(installedApp.bundleIdentifier)")
 -        // Re-signing with the active (personal) certificate is only valid
 -        // when the guest's profile belongs to that team; enterprise-signed
 -        // guests keep the pipeline route.
@@ -337,58 +311,13 @@ index e6beeae0..a4b43c22 100644
 -        } catch {
 -            debugLog("Failed to patch LiveContainer guest \(installedApp.bundleIdentifier): \(error)")
 -            return false
-+        guard !AppManager.shared.isActivelyManagingApp(withBundleID: hostApp.bundleIdentifier) else { return }
-+
-+        // The guest is dlopen'ed into this process. Its on-disk entitlements
-+        // cannot grant the host a larger footprint or virtual address space.
-+        let selector = NSSelectorFromString("lc_memoryDiagnostics")
-+        let diagnostics: String
-+        if Bundle.realMainBundle.responds(to: selector),
-+           let snapshot = Bundle.realMainBundle.perform(selector)?.takeUnretainedValue() as? [String: Any],
-+           let report = snapshot["report"] as? String {
-+            diagnostics = report
-+            debugLog("[HostMemory] \(report)")
-+        } else {
-+            diagnostics = NSLocalizedString("Running process memory diagnostics are unavailable.", comment: "")
-+        }
-+        let explanation = NSLocalizedString("Memory permissions apply to LiveContainer and LiveProcess, and affect all apps running inside them. This will request new provisioning profiles and reinstall LiveContainer while preserving its data. LiveContainer may quit during installation. Reopen it and fully restart guest apps afterward. Unsupported permissions will be reported as an error.", comment: "")
-+        let alert = UIAlertController(title: NSLocalizedString("Get More RAM for LiveContainer", comment: ""),
-+                                      message: explanation + "\n\n" + diagnostics, preferredStyle: .alert)
-+        alert.addAction(UIAlertAction(title: NSLocalizedString("Cancel", comment: ""), style: .cancel))
-+        if UserDefaults.standard.bool(forKey: "liveContainerHostMemoryRequested") {
-+            alert.addAction(UIAlertAction(title: NSLocalizedString("Resume Ordinary Signing and Refresh", comment: ""), style: .default) { _ in
-+                UserDefaults.standard.set(false, forKey: "liveContainerHostMemoryRequested")
-+                debugLog("[HostMemory] Stopped requiring memory permissions for future signing and refresh; installed permissions are unchanged")
-+            })
-         }
-+        alert.addAction(UIAlertAction(title: NSLocalizedString("Request Permissions and Reinstall", comment: ""), style: .default) { [weak self] _ in
-+            guard let self else { return }
-+            let previouslyRequested = UserDefaults.standard.bool(forKey: "liveContainerHostMemoryRequested")
-+            UserDefaults.standard.set(true, forKey: "liveContainerHostMemoryRequested")
-+            debugLog("[HostMemory] Requesting profile-backed memory permissions for host \(hostApp.resignedBundleIdentifier), including LiveProcess")
-+            AppManager.shared.resign(hostApp, presentingViewController: self) { result in
-+                DispatchQueue.main.async {
-+                    switch result {
-+                    case .success:
-+                        ToastView(text: NSLocalizedString("Host installed; restart required", comment: ""),
-+                                  detailText: NSLocalizedString("Reopen LiveContainer and check Memory Diagnostics. Installation success alone does not confirm a higher memory limit.", comment: "")).show(in: self)
-+                    case .failure(let error):
-+                        UserDefaults.standard.set(previouslyRequested, forKey: "liveContainerHostMemoryRequested")
-+                        debugLog("[HostMemory] Host memory setup failed: \(error)")
-+                        ToastView(error: error, opensLog: true).show(in: self)
-+                    }
-+                    self.reconfigureVisibleCells()
-+                }
-+            }
-+        })
-+        self.present(alert, animated: true)
-     }
+-        }
+-    }
 -    
-+
      func enableJIT(for installedApp: InstalledApp) {
          AppManager.shared.enableJIT(for: installedApp) { result in
              DispatchQueue.main.async {
-@@ -2369,33 +2362,22 @@ extension MyAppsViewController
+@@ -2448,33 +2355,22 @@ extension MyAppsViewController
              self.enableJIT(for: installedApp)
          }
          
@@ -436,7 +365,7 @@ index e6beeae0..a4b43c22 100644
          let backupAction = UIAction(title: NSLocalizedString("Create Backup", comment: ""), image: UIImage(systemName: "doc.on.doc")) { (action) in
              self.backup(installedApp)
          }
-@@ -2552,11 +2534,6 @@ extension MyAppsViewController
+@@ -2631,11 +2527,6 @@ extension MyAppsViewController
                  actions.append(jitAction)
              }
              
@@ -448,7 +377,7 @@ index e6beeae0..a4b43c22 100644
              actions.append(changeIconMenu)
              
              if !backupSubmenuActions.isEmpty
-@@ -2595,6 +2572,7 @@ extension MyAppsViewController
+@@ -2674,6 +2565,7 @@ extension MyAppsViewController
              #endif
          }
          
@@ -457,14 +386,13 @@ index e6beeae0..a4b43c22 100644
          
          // Change the order of entries to make changes to how the context menu is displayed
 diff --git a/AltStore/zh-Hans.lproj/Localizable.strings b/AltStore/zh-Hans.lproj/Localizable.strings
-index bd484440..92e5ee9e 100644
+index a8da126f..92e5ee9e 100644
 --- a/AltStore/zh-Hans.lproj/Localizable.strings
 +++ b/AltStore/zh-Hans.lproj/Localizable.strings
-@@ -2315,3 +2315,34 @@
- "Enterprise Signed" = "企业签名";
+@@ -2316,6 +2316,31 @@
  "Enterprise signed apps don't need 7-day refreshes" = "企业签名的应用无需 7 天刷新";
  "Enterprise" = "企业版";
-+
+ 
 +// Host memory permissions and runtime diagnostics.
 +"Get More RAM for LiveContainer" = "为 LiveContainer 配置更多内存";
 +"The LiveContainer host record is missing. Open LiveContainer again before requesting memory permissions." = "找不到 LiveContainer 宿主记录，请重新打开 LiveContainer 后再申请内存权限。";
@@ -490,11 +418,9 @@ index bd484440..92e5ee9e 100644
 +"Memory setup cannot change the installed app bundle identifier. Check this app's custom signing settings." = "内存配置不能改变已安装应用的包标识，请检查该应用的自定义签名设置。";
 +"Signed app bundle %@ is missing memory permissions: %@. Installation was stopped." = "签名后的应用组件 %@ 缺少内存权限：%@。已停止安装。";
 +
-+// Preflight connection checks
-+"SideStore VPN Not Connected" = "SideStore VPN 未连接";
-+"Please enable the SideStore WireGuard VPN before sideloading apps." = "签名安装应用前，请在系统设置中开启 SideStore WireGuard VPN。";
-+"Device Communication Error" = "设备通信异常";
-+"Cannot establish connection to local device service. Please check that SideStore VPN is connected, or toggle the VPN off and on in Settings." = "无法连接到本地设备通信服务。请检查 SideStore VPN 是否已连接，或在系统设置中重新开关一次 VPN。";
+ // Preflight connection checks
+ "SideStore VPN Not Connected" = "SideStore VPN 未连接";
+ "Please enable the SideStore WireGuard VPN before sideloading apps." = "签名安装应用前，请在系统设置中开启 SideStore WireGuard VPN。";
 diff --git a/SideStore/AppConstants.swift b/SideStore/AppConstants.swift
 index b84fcf92..ecd10a94 100644
 --- a/SideStore/AppConstants.swift
@@ -879,29 +805,10 @@ index 2445cb11..5043f23c 100644
      }
      
 diff --git a/SideStore/Core/Operations/PipelineRunner.swift b/SideStore/Core/Operations/PipelineRunner.swift
-index cd1c41ca..fbc05f7f 100644
+index a5bcdb94..fbc05f7f 100644
 --- a/SideStore/Core/Operations/PipelineRunner.swift
 +++ b/SideStore/Core/Operations/PipelineRunner.swift
-@@ -164,7 +164,17 @@ final class PipelineRunner: Sendable
-         
-         /* Minimuxer Readiness Check */
-         do {
--            try await ensureMinimuxerReady()
-+            try await withThrowingTaskGroup(of: Void.self) { taskGroup in
-+                taskGroup.addTask {
-+                    try await ensureMinimuxerReady()
-+                }
-+                taskGroup.addTask {
-+                    try await Task.sleep(nanoseconds: 12_000_000_000)
-+                    throw OperationError.notReachable(reason: "Timed out waiting for device connection. Please verify SideStore VPN is active.")
-+                }
-+                _ = try await taskGroup.next()
-+                taskGroup.cancelAll()
-+            }
-         } catch let opError as OperationError {
-             group.error = opError
-             group.context.error = opError
-@@ -410,7 +420,38 @@ final class PipelineRunner: Sendable
+@@ -420,7 +420,38 @@ final class PipelineRunner: Sendable
      
      private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp
      {
@@ -941,7 +848,7 @@ index cd1c41ca..fbc05f7f 100644
          let context = InstallAppOperationContext(
              pipelineSteps: pipelineSteps,
              bundleIdentifier: operation.bundleIdentifier,
-@@ -423,22 +464,16 @@ final class PipelineRunner: Sendable
+@@ -433,22 +464,16 @@ final class PipelineRunner: Sendable
          context.isCellularRefreshGroup = group.isCellularRefreshGroup
          context.groupOperationsCount = operationsCount
  
@@ -974,7 +881,7 @@ index cd1c41ca..fbc05f7f 100644
          }
  
          switch operation {
-@@ -468,6 +503,29 @@ final class PipelineRunner: Sendable
+@@ -478,6 +503,29 @@ final class PipelineRunner: Sendable
              }
          }
          
