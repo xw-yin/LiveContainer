@@ -8,13 +8,14 @@
 #import "../LiveContainer/Localization.h"
 #import "utils.h"
 
-@interface DecoratedAppSceneViewController()
+@interface DecoratedAppSceneViewController() <UIGestureRecognizerDelegate>
 @property(nonatomic) NSArray* activatedVerticalConstraints;
 @property(nonatomic) NSString* dataUUID;
 @property(nonatomic) int pid;
 @property(nonatomic) CGRect originalFrame;
 @property(nonatomic) UIBarButtonItem *maximizeButton;
 @property(nonatomic) bool isAppTerminationRequested;
+@property(nonatomic) BOOL terminatedScreenShown;
 @end
 
 @implementation DecoratedAppSceneViewController
@@ -30,6 +31,14 @@
     _appSceneVC = [[AppSceneViewController alloc] initWithBundleId:bundleId dataUUID:dataUUID delegate:self];
     self.title = windowName;
     [self setupDecoratedView];
+
+    // Tapping the terminated screen relaunches the app (see relaunchTerminatedApp).
+    // cancelsTouchesInView stays NO so the window bar buttons keep working; the
+    // handler itself ignores taps that land on the navigation bar.
+    UITapGestureRecognizer *terminatedTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTerminatedTap:)];
+    terminatedTapGesture.cancelsTouchesInView = NO;
+    terminatedTapGesture.delegate = self;
+    [self.view addGestureRecognizer:terminatedTapGesture];
     
     [MultitaskDockManager.shared addRunningApp:windowName appUUID:dataUUID view:self.view];
     
@@ -102,10 +111,22 @@
     frame.origin = CGPointMake(rootViewCenter.x - frame.size.width / 2, rootViewCenter.y - frame.size.height / 2);
     
     if(_isMaximized) {
-        CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, self.view.window.safeAreaInsets);
-        // save origin as normalized coordinates
-        frame.origin.x /= maxFrame.size.width;
-        frame.origin.y /= maxFrame.size.height;
+        // At init time the view may not be in a window yet, so window.frame can be
+        // CGRectZero; normalizing by a zero maxFrame would persist inf/NaN origins
+        // and later restore the window at a garbage position (e.g. under the
+        // status bar). Fall back to the screen bounds in that case.
+        CGRect windowFrame = self.view.window.frame;
+        UIEdgeInsets windowInsets = self.view.window.safeAreaInsets;
+        if(CGRectIsEmpty(windowFrame)) {
+            windowFrame = UIScreen.mainScreen.bounds;
+            windowInsets = UIEdgeInsetsZero;
+        }
+        CGRect maxFrame = UIEdgeInsetsInsetRect(windowFrame, windowInsets);
+        if(!CGRectIsEmpty(maxFrame)) {
+            // save origin as normalized coordinates
+            frame.origin.x /= maxFrame.size.width;
+            frame.origin.y /= maxFrame.size.height;
+        }
         self.originalFrame = frame;
     } else {
         self.view.frame = frame;
@@ -239,6 +260,59 @@
     }];
 }
 
+// Clamp a window frame so the window (and its navigation bar buttons) always
+// stays reachable: fully below the status bar / inside the safe area
+// vertically, and with at least 30pt visible horizontally (mirroring the
+// out-of-bounds allowance in updateWindowedFrameWithSettings).
+- (CGRect)clampFrameToSafeArea:(CGRect)frame {
+    UIWindow *window = self.view.window;
+    if(!window || CGRectIsEmpty(window.bounds)) {
+        return frame;
+    }
+    CGRect maxFrame = UIEdgeInsetsInsetRect(window.frame, window.safeAreaInsets);
+    if(CGRectIsEmpty(maxFrame)) {
+        return frame;
+    }
+    frame.size.width = MIN(frame.size.width, maxFrame.size.width);
+    frame.size.height = MIN(frame.size.height, maxFrame.size.height);
+    frame.origin.y = MAX(maxFrame.origin.y, MIN(frame.origin.y, CGRectGetMaxY(maxFrame) - frame.size.height));
+    CGFloat oobOffset = MAX(30, frame.size.width - 30);
+    frame.origin.x = MAX(maxFrame.origin.x - oobOffset, MIN(frame.origin.x, CGRectGetMaxX(maxFrame) - frame.size.width + oobOffset));
+    return frame;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
+- (void)handleTerminatedTap:(UITapGestureRecognizer *)sender {
+    if(!_terminatedScreenShown || sender.state != UIGestureRecognizerStateEnded) {
+        return;
+    }
+    // Taps on the navigation bar belong to the window buttons (close etc.)
+    CGPoint location = [sender locationInView:self.view];
+    if(CGRectContainsPoint(self.navigationBar.frame, location)) {
+        return;
+    }
+    [self relaunchTerminatedApp];
+}
+
+// The app process was killed (e.g. by jetsam while backgrounded) and its window
+// is showing the terminated screen. Relaunch it through the normal app launch
+// path: tear this window down like the skip-terminated-screen flow does, then
+// ask MultitaskRelaunchManager to run the app again in multitask mode.
+- (void)relaunchTerminatedApp {
+    _terminatedScreenShown = NO;
+    MultitaskDockManager *dock = [MultitaskDockManager shared];
+    [dock removeRunningApp:self.dataUUID];
+    [UIView transitionWithView:self.view duration:0.4 options:UIViewAnimationOptionTransitionCurlUp animations:^{
+        self.view.hidden = YES;
+    } completion:^(BOOL b){
+        [self.view removeFromSuperview];
+    }];
+    [MultitaskRelaunchManager relaunchAppOnUserRequestWithBundleId:self.appSceneVC.bundleId dataUUID:self.dataUUID];
+}
+
 - (void)closeWindow {
     _isAppTerminationRequested = true;
     if([_appSceneVC isAppRunning]) {
@@ -286,6 +360,7 @@
         };
         CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, self.view.window.safeAreaInsets);
         CGRect newFrame = CGRectMake(self.originalFrame.origin.x * maxFrame.size.width, self.originalFrame.origin.y * maxFrame.size.height, self.originalFrame.size.width, self.originalFrame.size.height);
+        newFrame = [self clampFrameToSafeArea:newFrame];
         [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
             self.view.frame = newFrame;
             self.view.layer.borderWidth = 1;
@@ -342,6 +417,7 @@
             [MultitaskRelaunchManager scheduleRelaunchIfNeededWithBundleId:self.appSceneVC.bundleId dataUUID:self.dataUUID isManualTermination:isManual];
         }
     } else {
+        _terminatedScreenShown = YES;
         UILabel *label = [[UILabel alloc] initWithFrame:self.view.bounds];
         label.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         label.lineBreakMode = NSLineBreakByWordWrapping;
@@ -465,6 +541,9 @@
     [sender setTranslation:CGPointZero inView:self.view];
 
     self.view.center = CGPointMake(self.view.center.x + point.x, self.view.center.y + point.y);
+    // Never let a drag park the window under the status bar, where its
+    // navigation bar buttons become unreachable.
+    self.view.frame = [self clampFrameToSafeArea:self.view.frame];
     [self updateOriginalFrame];
 }
 
@@ -477,7 +556,7 @@
     CGRect frame = self.view.frame;
     frame.size.width = MAX(50, frame.size.width + point.x);
     frame.size.height = MAX(50, frame.size.height + point.y);
-    self.view.frame = frame;
+    self.view.frame = [self clampFrameToSafeArea:frame];
     [self updateOriginalFrame];
 }
 
@@ -485,6 +564,12 @@
     [super touchesBegan:touches withEvent:event];
     // FIXME: how to bring view to front when touching the passthrough view?
     [self.view.superview bringSubviewToFront:self.view];
+    // Heal a window that ended up under the status bar (e.g. its frame was
+    // restored while the window/safe area was in a transient state after long
+    // backgrounding): the first touch snaps it back into the safe area.
+    if(!_isMaximized) {
+        self.view.frame = [self clampFrameToSafeArea:self.view.frame];
+    }
 }
 
 - (void)updateVerticalConstraints {
@@ -577,6 +662,7 @@
     CGFloat oobOffset = MAX(30, frame.size.width - 30);
     frame.origin.x = MAX(maxFrame.origin.x - oobOffset, MIN(CGRectGetMaxX(maxFrame) - frame.size.width + oobOffset, center.x - frame.size.width / 2));
     frame.origin.y = MAX(maxFrame.origin.y, MIN(center.y - frame.size.height / 2, CGRectGetMaxY(maxFrame) - frame.size.height));
+    frame = [self clampFrameToSafeArea:frame];
     [UIView animateWithDuration:0.3 animations:^{
         self.view.frame = frame;
     }];
@@ -585,6 +671,10 @@
 - (void)updateOriginalFrame {
     if(_isMaximized) return;
     CGRect maxFrame = UIEdgeInsetsInsetRect(self.view.window.frame, self.view.window.safeAreaInsets);
+    if(CGRectIsEmpty(maxFrame)) {
+        // Window not attached yet; persisting now would store inf/NaN origins.
+        return;
+    }
     // save origin as normalized coordinates
     self.originalFrame = CGRectMake(self.view.frame.origin.x / maxFrame.size.width, self.view.frame.origin.y / maxFrame.size.height, self.view.frame.size.width, self.view.frame.size.height);
 }

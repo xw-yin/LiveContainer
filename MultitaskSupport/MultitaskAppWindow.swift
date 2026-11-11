@@ -252,7 +252,22 @@ class MultitaskRelaunchManager: NSObject {
             await relaunchApp(bundleId: bundleId, dataUUID: dataUUID)
         }
     }
-    
+
+    /// Relaunch after the user explicitly taps the terminated screen of a
+    /// virtual window. Unlike scheduleRelaunchIfNeeded this does not require
+    /// the LCSkipTerminatedScreen / LCRestartTerminatedApp settings: the tap
+    /// itself is the user's opt-in.
+    static func relaunchAppOnUserRequest(bundleId: String, dataUUID: String) {
+        let key = "\(bundleId)#\(dataUUID)"
+        guard markPendingIfNeeded(key: key) else { return }
+
+        Task {
+            defer { clearPending(key: key) }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            await relaunchApp(bundleId: bundleId, dataUUID: dataUUID)
+        }
+    }
+
     private static func markPendingIfNeeded(key: String) -> Bool {
         pendingLock.lock()
         defer { pendingLock.unlock() }
