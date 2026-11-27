@@ -128,6 +128,8 @@ The standalone and built-in SideStore versions have both been tested working on 
 > Apple completely removed or renamed the internal data structures (`sVersionMap`) inside the system frameworks that LiveContainer uses to spoof the SDK version. If you enable the "Spoof SDK Version" toggle on iOS 27, the app will search for a piece of code that no longer exists and crash instantly upon opening. **Please leave this toggle DISABLED on iOS 27 until a workaround is found.**
 
 ## Building
+Download [OpenSSL xcframework](https://github.com/krzyzanowskim/OpenSSL/releases), decompress and put it in Depencencies.
+
 Open Xcode, edit `DEVELOPMENT_TEAM[config=Debug]` in `xcconfigs/Global.xcconfig` to your team id and compile.
 
 ## Project structure
